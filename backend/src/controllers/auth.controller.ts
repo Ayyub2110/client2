@@ -140,7 +140,7 @@ export async function login(req: Request, res: Response): Promise<void> {
     // 2. Fetch profile from database, joining with shop
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('users')
-      .select('*, shop:shops(*)')
+      .select('*, shop:shops!fk_users_shop(*)')
       .eq('id', userId)
       .single();
 
@@ -295,7 +295,7 @@ export async function getMe(req: Request, res: Response): Promise<void> {
   try {
     const { data: profile, error } = await supabaseAdmin
       .from('users')
-      .select('*, shop:shops(*)')
+      .select('*, shop:shops!fk_users_shop(*)')
       .eq('id', user.id)
       .single();
 
@@ -415,7 +415,7 @@ export async function updateProfile(req: Request, res: Response): Promise<void> 
       .from('users')
       .update({ name })
       .eq('id', userId)
-      .select('*, shop:shops(*)')
+      .select('*, shop:shops!fk_users_shop(*)')
       .single();
 
     if (profileError || !profile) {
