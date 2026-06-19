@@ -6,6 +6,7 @@ import { generateJobNumber } from '../utils/jobNumber';
 import { generateTokenNumber } from '../utils/tokenNumber';
 import { v4 as uuidv4 } from 'uuid';
 import { generateReceiptPdf } from '../utils/receipt.generator';
+import { sendWhatsAppUpdate, getWhatsAppLogs } from '../utils/whatsapp';
 
 
 const createRepairSchema = z.object({
@@ -414,6 +415,24 @@ export async function createRepair(req: Request, res: Response): Promise<void> {
       await supabaseAdmin.from('repair_services').insert(servicePayload);
     }
 
+    // Trigger WhatsApp notification if send_whatsapp is true
+    if (validatedData.sendWhatsapp) {
+      (async () => {
+        try {
+          const { data: fullRepair } = await supabaseAdmin
+            .from('repairs')
+            .select('*, device:devices(*, customer:customers(*)), shop:shops(*)')
+            .eq('id', repairId)
+            .single();
+          if (fullRepair) {
+            await sendWhatsAppUpdate(fullRepair, 'pending', 'Repair order initialized');
+          }
+        } catch (e) {
+          console.error('[WhatsApp Trigger] Error in createRepair notification:', e);
+        }
+      })();
+    }
+
     res.status(201).json({ message: 'Repair order created successfully', repair });
   } catch (err) {
     if (err instanceof z.ZodError) {
@@ -477,6 +496,24 @@ export async function updateRepairStatus(req: Request, res: Response): Promise<v
     if (updateError) {
       res.status(400).json({ error: updateError.message });
       return;
+    }
+
+    // Trigger WhatsApp notification if send_whatsapp is true on the existing repair order and status has changed
+    if (existing.send_whatsapp && existing.status !== status) {
+      (async () => {
+        try {
+          const { data: fullRepair } = await supabaseAdmin
+            .from('repairs')
+            .select('*, device:devices(*, customer:customers(*)), shop:shops(*)')
+            .eq('id', id)
+            .single();
+          if (fullRepair) {
+            await sendWhatsAppUpdate(fullRepair, status, notes);
+          }
+        } catch (e) {
+          console.error('[WhatsApp Trigger] Error in updateRepairStatus notification:', e);
+        }
+      })();
     }
 
     // History is auto logged by db trigger `tr_log_repair_status_change`
@@ -761,6 +798,24 @@ export async function deliverRepair(req: Request, res: Response): Promise<void> 
       delete (repair.device as any).customer;
     }
 
+    // Trigger WhatsApp notification if send_whatsapp is true on the existing repair order
+    if (existing.send_whatsapp) {
+      (async () => {
+        try {
+          const { data: fullRepair } = await supabaseAdmin
+            .from('repairs')
+            .select('*, device:devices(*, customer:customers(*)), shop:shops(*)')
+            .eq('id', id)
+            .single();
+          if (fullRepair) {
+            await sendWhatsAppUpdate(fullRepair, 'delivered', validated.notes);
+          }
+        } catch (e) {
+          console.error('[WhatsApp Trigger] Error in deliverRepair notification:', e);
+        }
+      })();
+    }
+
     res.json({ message: 'Repair order delivered successfully', repair });
   } catch (err) {
     if (err instanceof z.ZodError) {
@@ -876,4 +931,69 @@ export async function getRepairReceipt(req: Request, res: Response): Promise<voi
     res.status(500).json({ error: 'Failed to generate receipt PDF' });
   }
 }
+
+export async function getWhatsAppLogsHandler(req: Request, res: Response): Promise<void> {
+  const user = req.user;
+  if (!user || !user.shop_id) {
+    res.status(400).json({ error: 'User must be associated with a shop' });
+    return;
+  }
+  
+  if (user.role !== 'owner') {
+    res.status(403).json({ error: 'Forbidden: Owner profile privilege required to view WhatsApp logs.' });
+    return;
+  }
+
+  try {
+    const logs = getWhatsAppLogs();
+    const { data: shop } = await supabaseAdmin
+      .from('shops')
+      .select('name')
+      .eq('id', user.shop_id)
+      .single();
+      
+    const shopName = shop?.name || '';
+    const filteredLogs = logs.filter(log => log.shopName === shopName);
+    res.json({ logs: filteredLogs });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to retrieve WhatsApp logs' });
+  }
+}
+
+export async function triggerWhatsAppNotification(req: Request, res: Response): Promise<void> {
+  const user = req.user;
+  const { id } = req.params;
+
+  if (!user || !user.shop_id) {
+    res.status(400).json({ error: 'User must be associated with a shop' });
+    return;
+  }
+
+  try {
+    const { data: fullRepair, error: fetchError } = await supabaseAdmin
+      .from('repairs')
+      .select('*, device:devices(*, customer:customers(*)), shop:shops(*)')
+      .eq('id', id)
+      .eq('shop_id', user.shop_id)
+      .single();
+
+    if (fetchError || !fullRepair) {
+      res.status(404).json({ error: 'Repair order not found' });
+      return;
+    }
+
+    const result = await sendWhatsAppUpdate(fullRepair, fullRepair.status, fullRepair.notes);
+    if (!result.success) {
+      res.status(500).json({ error: result.error || 'Failed to send WhatsApp message' });
+      return;
+    }
+
+    res.json({ message: 'WhatsApp notification triggered successfully', success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to trigger WhatsApp notification' });
+  }
+}
+
 

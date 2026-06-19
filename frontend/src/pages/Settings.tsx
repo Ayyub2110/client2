@@ -34,7 +34,8 @@ import {
   FileText,
   Phone,
   ChevronRight,
-  ShieldCheck
+  ShieldCheck,
+  MessageSquare
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -116,6 +117,30 @@ export default function SettingsPage({ defaultTab }: SettingsPageProps = {}) {
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const [isStaffMgmtOpen, setIsStaffMgmtOpen] = useState(defaultTab === 'staff');
   const [isRateCardsOpen, setIsRateCardsOpen] = useState(defaultTab === 'price-list');
+  const [isWhatsAppOpen, setIsWhatsAppOpen] = useState(defaultTab === 'whatsapp');
+
+  // WhatsApp logs state
+  const [whatsAppLogs, setWhatsAppLogs] = useState<any[]>([]);
+  const [loadingLogs, setLoadingLogs] = useState(false);
+
+  const fetchWhatsAppLogs = async () => {
+    setLoadingLogs(true);
+    try {
+      const data = await apiClient.get<{ logs: any[] }>('/repairs/whatsapp/logs');
+      setWhatsAppLogs(data.logs || []);
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Failed to load WhatsApp logs.');
+    } finally {
+      setLoadingLogs(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isWhatsAppOpen) {
+      fetchWhatsAppLogs();
+    }
+  }, [isWhatsAppOpen]);
 
   // Generic Mock Info Modal State
   const [isGenericModalOpen, setIsGenericModalOpen] = useState(false);
@@ -414,6 +439,13 @@ export default function SettingsPage({ defaultTab }: SettingsPageProps = {}) {
           toast.error("Access Denied: Owner profile privilege required to recruit or manage staff.");
         }
         break;
+      case 'whatsapp':
+        if (isOwner) {
+          setIsWhatsAppOpen(true);
+        } else {
+          toast.error("Access Denied: Owner profile privilege required to access WhatsApp logs.");
+        }
+        break;
       default:
         break;
     }
@@ -464,6 +496,7 @@ export default function SettingsPage({ defaultTab }: SettingsPageProps = {}) {
         {[
           { id: 'community', title: 'Community', desc: 'Connect with other Technicians for help or support', icon: Users, color: 'text-orange-500', bg: 'bg-orange-500/10 border-orange-500/20' },
           { id: 'deleted', title: 'Deleted Orders', desc: 'Track and recover deleted order history', icon: Trash2, color: 'text-red-500', bg: 'bg-red-500/10 border-red-500/20' },
+          { id: 'whatsapp', title: 'WhatsApp Notifications', desc: 'Monitor automated updates status and system log audits', icon: MessageSquare, color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20' },
           { id: 'email', title: 'Update email', desc: 'Update Display Name and Account Email ID', icon: Mail, color: 'text-blue-500', bg: 'bg-blue-500/10 border-blue-500/20' },
           { id: 'password', title: 'Update password', desc: 'Verify current credentials and change password', icon: Lock, color: 'text-purple-500', bg: 'bg-purple-500/10 border-purple-500/20' },
           { id: 'terms', title: 'Update Terms & Conditions', desc: 'Review solution usage and software licensing terms', icon: FileText, color: 'text-zinc-500', bg: 'bg-zinc-500/10 border-zinc-500/20' },
@@ -845,6 +878,137 @@ export default function SettingsPage({ defaultTab }: SettingsPageProps = {}) {
             Define labor rates per model and service action. These rate cards are queried by the terminal order system to auto-fill ticket estimates.
           </p>
           <RateCards />
+        </div>
+      </Dialog>
+
+      {/* Modal: WhatsApp Integration Logs */}
+      <Dialog
+        isOpen={isWhatsAppOpen}
+        onClose={() => {
+          setIsWhatsAppOpen(false);
+          if (defaultTab === 'whatsapp') {
+            navigate('/settings');
+          }
+        }}
+        title="WhatsApp Notification Hub"
+        description="Review automated notification templates, sync configurations, and transmission audit logs."
+        className="max-w-4xl w-full"
+      >
+        <div className="space-y-6 max-w-4xl overflow-y-auto max-h-[70vh] pr-1 select-none text-white">
+          {/* Config card */}
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="md:col-span-2 bg-secondary/15 border border-border/60 rounded-xl p-4 space-y-2">
+              <h4 className="text-xs font-extrabold text-white uppercase tracking-wider">Sync Engine Setup</h4>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Automated status updates are dispatched on ticket creation, technician state transitions, and delivery closures. To switch providers, configure your <code className="font-mono text-primary bg-secondary/40 px-1 py-0.5 rounded text-[10px]">backend/.env</code>:
+              </p>
+              <div className="grid grid-cols-2 gap-2 font-mono text-[9px] text-white/90 bg-secondary/20 p-2.5 rounded-lg border border-border/40">
+                <div>
+                  <span className="text-muted-foreground block text-[8px] uppercase font-bold mb-0.5">Twilio SMS Gateway</span>
+                  WHATSAPP_PROVIDER=twilio<br />
+                  TWILIO_ACCOUNT_SID=...<br />
+                  TWILIO_AUTH_TOKEN=...
+                </div>
+                <div>
+                  <span className="text-muted-foreground block text-[8px] uppercase font-bold mb-0.5">Meta Cloud API (Official)</span>
+                  WHATSAPP_PROVIDER=meta<br />
+                  WHATSAPP_META_ACCESS_TOKEN=...<br />
+                  WHATSAPP_META_PHONE_NUMBER_ID=...
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 flex flex-col justify-between">
+              <div>
+                <h4 className="text-xs font-extrabold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                  Active Engine
+                </h4>
+                <p className="text-[11px] text-emerald-300/80 leading-relaxed mt-2">
+                  Sandbox / Mock mode is active by default. It captures updates in our audit panel below without incurring carrier fees.
+                </p>
+              </div>
+              <div className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider mt-2">
+                Running in Sandbox
+              </div>
+            </div>
+          </div>
+
+          {/* Audit Logs Area */}
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">
+                Notification Feed ({whatsAppLogs.length})
+              </span>
+              <Button size="sm" variant="outline" onClick={fetchWhatsAppLogs} className="gap-1.5 h-8 border-border/80 hover:bg-secondary/40">
+                <RefreshCw className={`h-3.5 w-3.5 ${loadingLogs ? 'animate-spin' : ''}`} />
+                <span>Refresh Log</span>
+              </Button>
+            </div>
+
+            {loadingLogs ? (
+              <div className="flex flex-col items-center justify-center py-10 gap-3">
+                <Loader2 className="h-7 w-7 animate-spin text-primary" />
+                <span className="text-xs text-muted-foreground font-semibold">Loading log feed...</span>
+              </div>
+            ) : whatsAppLogs.length > 0 ? (
+              <div className="border border-border rounded-xl overflow-hidden bg-card/10 max-h-[40vh] overflow-y-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Job Number</TableHead>
+                      <TableHead>Recipient</TableHead>
+                      <TableHead>Status Stage</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Message Log</TableHead>
+                      <TableHead className="text-right">Timestamp</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {whatsAppLogs.map((log, idx) => (
+                      <TableRow key={log.id + idx} className="hover:bg-secondary/15">
+                        <TableCell className="font-mono text-xs text-primary font-bold">
+                          {log.jobNumber}
+                        </TableCell>
+                        <TableCell>
+                          <div className="font-semibold text-white text-xs">{log.recipientName}</div>
+                          <div className="text-[10px] text-muted-foreground">{log.recipientPhone}</div>
+                        </TableCell>
+                        <TableCell className="capitalize text-xs">
+                          <span className="font-bold text-white uppercase bg-secondary/80 border border-border/60 rounded px-1.5 py-0.5">
+                            {log.stage}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold ${
+                            log.status === 'sent' 
+                              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
+                              : log.status === 'failed' 
+                                ? 'bg-red-500/10 text-red-400 border border-red-500/20' 
+                                : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                          }`}>
+                            {log.status === 'sent' ? 'Sent' : log.status === 'failed' ? 'Failed' : 'Sandbox'}
+                          </span>
+                        </TableCell>
+                        <TableCell className="max-w-[180px] truncate text-[11px] text-muted-foreground/90 font-medium" title={log.message}>
+                          {log.message.split('\n')[2] || log.message}
+                        </TableCell>
+                        <TableCell className="text-right text-[10px] text-muted-foreground font-mono">
+                          {new Date(log.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                          <div className="text-[8px] opacity-75">{new Date(log.timestamp).toLocaleDateString()}</div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            ) : (
+              <div className="text-center py-10 border border-dashed border-border rounded-xl">
+                <Bell className="h-10 w-10 text-muted-foreground/60 mx-auto mb-2 animate-pulse" />
+                <p className="text-xs text-muted-foreground font-semibold">No sync updates dispatched in this session.</p>
+              </div>
+            )}
+          </div>
         </div>
       </Dialog>
 

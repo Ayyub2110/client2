@@ -9,7 +9,9 @@ import {
   updateRepair,
   deleteRepair,
   deliverRepair,
-  getRepairReceipt
+  getRepairReceipt,
+  getWhatsAppLogsHandler,
+  triggerWhatsAppNotification
 } from '../controllers/repairs.controller';
 
 const router = Router();
@@ -29,10 +31,13 @@ router.post(
   createRepair
 );
 
+router.get('/whatsapp/logs', requireOwner, getWhatsAppLogsHandler);
+
 router.get('/:id', getRepairById);
 router.post('/:id/deliver', deliverRepair);
 router.get('/:id/receipt', getRepairReceipt);
 router.put('/:id/status', updateRepairStatus);
+router.post('/:id/whatsapp/trigger', triggerWhatsAppNotification);
 router.put('/:id', requireOwner, updateRepair);
 router.delete('/:id', requireOwner, deleteRepair);
 

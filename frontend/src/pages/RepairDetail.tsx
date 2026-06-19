@@ -14,7 +14,9 @@ import {
   History,
   FileText,
   Download,
-  ArrowLeft
+  ArrowLeft,
+  MessageSquare,
+  RefreshCw
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -167,6 +169,56 @@ export default function RepairDetail() {
     }
   });
 
+  // Mutation to trigger backend WhatsApp notification manually
+  const triggerWhatsAppMutation = useMutation({
+    mutationFn: () => 
+      apiClient.post(`/repairs/${id}/whatsapp/trigger`, {}),
+    onSuccess: () => {
+      toast.success('WhatsApp notification dispatched successfully!');
+    },
+    onError: (err: any) => {
+      toast.error(err.message || 'Failed to trigger notification');
+    }
+  });
+
+  const handleManualWhatsApp = () => {
+    if (!data?.repair?.customer || !data.repair.customer.phone) {
+      toast.error('No customer phone number registered.');
+      return;
+    }
+    
+    const repair = data.repair;
+    if (!repair.customer) {
+      toast.error('No customer phone number registered.');
+      return;
+    }
+    
+    let phoneNum = repair.customer.phone.replace(/\D/g, '');
+    if (phoneNum.length === 10) {
+      phoneNum = '91' + phoneNum;
+    }
+    
+    const stageMsg: Record<string, string> = {
+      pending: 'has been received and is pending analysis.',
+      repairing: 'is currently under repair.',
+      ready: `is ready for pickup! Balance due: ₹${(repair.estimate - repair.advance).toFixed(2)}. Please visit the shop to collect it.`,
+      delivered: 'has been successfully delivered.',
+      cancelled: 'has been cancelled.'
+    };
+
+    const statusText = stageMsg[repair.status] || `status is currently: ${repair.status}.`;
+    
+    let message = `Hello ${repair.customer.name},\n\n`;
+    message += `Your repair order *${repair.job_number}* for *${repair.device?.brand || ''} ${repair.device?.model || ''}* ${statusText}\n\n`;
+    if (repair.notes) {
+      message += `*Notes:* ${repair.notes}\n\n`;
+    }
+    message += `Regards,\nGK Repair Shop`;
+    
+    const url = `https://api.whatsapp.com/send?phone=${phoneNum}&text=${encodeURIComponent(message)}`;
+    window.open(url, '_blank');
+  };
+
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-32 gap-3">
@@ -290,7 +342,7 @@ export default function RepairDetail() {
                 <CardTitle className="text-base text-white">Customer Profile</CardTitle>
                 <CardDescription>Primary coordinates for device ownership.</CardDescription>
               </CardHeader>
-              <CardContent className="flex items-center justify-between gap-4">
+              <CardContent className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <h3 className="font-bold text-white text-base">
                     <Link to={`/customers/${repair.customer.id}`} className="hover:text-primary transition-colors">
@@ -303,9 +355,20 @@ export default function RepairDetail() {
                     </span>
                   </div>
                 </div>
-                <Button variant="outline" size="sm" asChild>
-                  <Link to={`/customers/${repair.customer.id}`}>View Profile</Link>
-                </Button>
+                <div className="flex flex-wrap gap-2 shrink-0">
+                  <Button variant="outline" size="sm" asChild>
+                    <Link to={`/customers/${repair.customer.id}`}>View Profile</Link>
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleManualWhatsApp}
+                    className="border-green-500/40 text-green-400 hover:bg-green-500/10 gap-1.5"
+                  >
+                    <MessageSquare className="h-3.5 w-3.5" />
+                    <span>WhatsApp Manual</span>
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           )}
@@ -523,6 +586,19 @@ export default function RepairDetail() {
                   <Clock className="h-4 w-4" />
                   {repair.status}
                 </span>
+                <Button
+                  onClick={() => triggerWhatsAppMutation.mutate()}
+                  disabled={triggerWhatsAppMutation.isPending}
+                  variant="ghost"
+                  className="w-full mt-1.5 h-8 text-[11px] text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 border border-emerald-500/25 gap-1"
+                >
+                  {triggerWhatsAppMutation.isPending ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-3 w-3" />
+                  )}
+                  <span>Dispatch Auto Update</span>
+                </Button>
               </div>
 
               <div className="space-y-1">
