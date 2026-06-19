@@ -59,6 +59,7 @@ export default function App() {
                 <Route element={<OwnerRoute />}>
                   <Route path="/reports" element={<Reports />} />
                   <Route path="/settings/staff" element={<SettingsPage defaultTab="staff" />} />
+                  <Route path="/settings/price-list" element={<SettingsPage defaultTab="price-list" />} />
                 </Route>
               </Route>
             </Route>

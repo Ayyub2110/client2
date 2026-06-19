@@ -9,8 +9,13 @@ const registerOwnerSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   shopName: z.string().min(2, 'Shop name must be at least 2 characters'),
-  shopAddress: z.string().optional(),
-  shopPhone: z.string().optional()
+  shopAddress: z.string().optional().nullable(),
+  shopPhone: z.string().optional().nullable(),
+  shopType: z.string().default('Mobile Repair'),
+  gstNumber: z.string().optional().nullable(),
+  communityUsername: z.string().optional().nullable(),
+  currencyCode: z.string().default('INR'),
+  currencySymbol: z.string().default('₹')
 });
 
 const loginSchema = z.object({
@@ -32,6 +37,15 @@ const refreshSchema = z.object({
 export async function registerOwner(req: Request, res: Response): Promise<void> {
   try {
     const data = registerOwnerSchema.parse(req.body);
+
+    let logoUrl: string | null = null;
+    if (req.file) {
+      try {
+        logoUrl = await uploadPhoto(req.file as Express.Multer.File, 'shop-logos');
+      } catch (uploadErr: any) {
+        console.error('Failed to upload shop logo during registration:', uploadErr);
+      }
+    }
 
     // 1. Create auth user with supabaseAdmin (so we can auto-confirm their email)
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
@@ -56,13 +70,28 @@ export async function registerOwner(req: Request, res: Response): Promise<void> 
         name: data.shopName,
         address: data.shopAddress || null,
         phone: data.shopPhone || null,
-        owner_id: userId
+        owner_id: userId,
+        shop_type: data.shopType,
+        gst_number: data.gstNumber || null,
+        currency_symbol: data.currencySymbol,
+        currency_code: data.currencyCode,
+        logo_url: logoUrl
       })
       .select()
       .single();
 
     if (shopError || !shop) {
       // Cleanup: delete the auth user if shop creation fails to prevent orphan auth records
+      if (logoUrl) {
+        try {
+          const path = logoUrl.split('/shop-logos/')[1];
+          if (path) {
+            await supabaseAdmin.storage.from('shop-logos').remove([path]);
+          }
+        } catch (e) {
+          console.error('Failed to cleanup logo:', e);
+        }
+      }
       await supabaseAdmin.auth.admin.deleteUser(userId);
       res.status(400).json({ error: shopError?.message || 'Failed to create shop' });
       return;
@@ -71,7 +100,10 @@ export async function registerOwner(req: Request, res: Response): Promise<void> 
     // 3. Update the user with the shop_id (the trigger automatically created the user record in public.users, but shop_id was null)
     const { data: user, error: userError } = await supabaseAdmin
       .from('users')
-      .update({ shop_id: shop.id })
+      .update({ 
+        shop_id: shop.id,
+        community_username: data.communityUsername || null
+      })
       .eq('id', userId)
       .select()
       .single();

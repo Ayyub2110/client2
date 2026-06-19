@@ -2,6 +2,8 @@ import { useState, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import SignatureCanvas from 'react-signature-canvas';
+
+const ReactSignatureCanvas = (SignatureCanvas as any).default || SignatureCanvas;
 import { 
   Loader2, 
   ChevronRight, 
@@ -11,7 +13,8 @@ import {
   Download, 
   Printer, 
   Phone,
-  AlertCircle
+  AlertCircle,
+  ArrowLeft
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -345,17 +348,28 @@ export default function DeliverRepair() {
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
       {/* Navigation breadcrumb */}
-      <div>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground font-semibold uppercase tracking-wider">
-          <Link to="/repairs" className="hover:text-foreground">Repairs</Link>
-          <ChevronRight className="h-3.5 w-3.5" />
-          <Link to={`/repairs/${repair.id}`} className="hover:text-foreground">{repair.job_number}</Link>
-          <ChevronRight className="h-3.5 w-3.5" />
-          <span className="text-primary">Deliver</span>
+      <div className="flex items-center gap-3">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate(`/repairs/${repair.id}`)}
+          className="h-9 w-9 p-0 rounded-xl hover:bg-secondary/40 border border-border/40 flex-shrink-0"
+        >
+          <ArrowLeft className="h-4.5 w-4.5 text-white" />
+        </Button>
+        <div>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground font-semibold uppercase tracking-wider">
+            <Link to="/repairs" className="hover:text-foreground">Repairs</Link>
+            <ChevronRight className="h-3.5 w-3.5" />
+            <Link to={`/repairs/${repair.id}`} className="hover:text-foreground">{repair.job_number}</Link>
+            <ChevronRight className="h-3.5 w-3.5" />
+            <span className="text-primary">Deliver</span>
+          </div>
+          <h2 className="text-2xl font-extrabold text-white tracking-tight mt-1 flex items-center gap-2.5">
+            <span>Deliver Device Hand-off</span>
+          </h2>
         </div>
-        <h2 className="text-2xl font-extrabold text-white tracking-tight mt-1 flex items-center gap-2.5">
-          <span>Deliver Device Hand-off</span>
-        </h2>
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
@@ -518,7 +532,7 @@ export default function DeliverRepair() {
                 <span className="absolute top-2 left-2 text-[10px] uppercase font-bold text-slate-400 select-none bg-slate-100/60 px-1.5 py-0.5 rounded">
                   Sign Here
                 </span>
-                <SignatureCanvas 
+                <ReactSignatureCanvas 
                   ref={sigPadRef}
                   penColor="black"
                   canvasProps={{

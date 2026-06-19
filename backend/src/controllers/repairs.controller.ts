@@ -24,7 +24,19 @@ const createRepairSchema = z.object({
   services: z.array(z.object({
     service_name: z.string().min(1),
     labor_cost: z.number().nonnegative()
-  })).optional().default([])
+  })).optional().default([]),
+  lockCode: z.string().optional().nullable(),
+  patternLock: z.string().optional().nullable(),
+  accessoryAdapter: z.boolean().optional().default(false),
+  accessoryKeyboardMouse: z.boolean().optional().default(false),
+  accessoryOther: z.boolean().optional().default(false),
+  serialNumber: z.string().optional().nullable(),
+  warranty: z.string().optional().nullable(),
+  sendWhatsapp: z.boolean().optional().default(false),
+  sendEmail: z.boolean().optional().default(false),
+  allowCashback: z.boolean().optional().default(false),
+  expense: z.number().optional().default(0),
+  kycDetails: z.string().optional().nullable()
 }).refine((data) => data.advance <= data.estimate, {
   message: 'Advance cannot exceed estimate amount',
   path: ['advance']
@@ -41,7 +53,19 @@ const updateRepairSchema = z.object({
   advance: z.number().nonnegative().optional(),
   deliveryDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
   staffId: z.string().uuid().optional().nullable(),
-  notes: z.string().optional().nullable()
+  notes: z.string().optional().nullable(),
+  lockCode: z.string().optional().nullable(),
+  patternLock: z.string().optional().nullable(),
+  accessoryAdapter: z.boolean().optional(),
+  accessoryKeyboardMouse: z.boolean().optional(),
+  accessoryOther: z.boolean().optional(),
+  serialNumber: z.string().optional().nullable(),
+  warranty: z.string().optional().nullable(),
+  sendWhatsapp: z.boolean().optional(),
+  sendEmail: z.boolean().optional(),
+  allowCashback: z.boolean().optional(),
+  expense: z.number().optional(),
+  kycDetails: z.string().optional().nullable()
 });
 
 export async function getAllRepairs(req: Request, res: Response): Promise<void> {
@@ -103,14 +127,28 @@ export async function getAllRepairs(req: Request, res: Response): Promise<void> 
       return;
     }
 
-    // 4. Client-side search matching job number or customer name
+    // 4. Client-side search matching job number, customer name, phone, or imei
     let filteredRepairs = repairs || [];
     if (search) {
       const lowerSearch = search.toLowerCase();
+      const searchByPhone = req.query.searchByPhone === 'true';
+      const searchByIMEI = req.query.searchByIMEI === 'true';
+
       filteredRepairs = filteredRepairs.filter((r: any) => {
-        const matchesJob = r.job_number.toLowerCase().includes(lowerSearch);
+        const matchesJob = r.job_number?.toLowerCase().includes(lowerSearch);
         const matchesCustomer = r.device?.customer?.name?.toLowerCase().includes(lowerSearch);
-        return matchesJob || matchesCustomer;
+        const matchesPhone = r.device?.customer?.phone?.toLowerCase().includes(lowerSearch);
+        const matchesImei = r.device?.imei?.toLowerCase().includes(lowerSearch);
+
+        if (searchByPhone && searchByIMEI) {
+          return matchesPhone || matchesImei;
+        } else if (searchByPhone) {
+          return matchesPhone;
+        } else if (searchByIMEI) {
+          return matchesImei;
+        } else {
+          return matchesJob || matchesCustomer;
+        }
       });
     }
 
@@ -138,12 +176,11 @@ export async function getRepairById(req: Request, res: Response): Promise<void> 
   }
 
   try {
-    const { data: repair, error } = await supabaseAdmin
+    const { data: dbRepair, error } = await supabaseAdmin
       .from('repairs')
       .select(`
         *,
-        device:devices(*),
-        customer:customers(*),
+        device:devices(*, customer:customers(*)),
         assigned_staff:users!repairs_staff_id_fkey(id, name, staff_id),
         history:repair_history(*, changed_by_user:users(id, name, role)),
         services:repair_services(*)
@@ -152,15 +189,23 @@ export async function getRepairById(req: Request, res: Response): Promise<void> 
       .eq('shop_id', user.shop_id)
       .single();
 
-    if (error || !repair) {
+    if (error || !dbRepair) {
       res.status(404).json({ error: 'Repair order not found' });
       return;
     }
 
     // Access control check
-    if (user.role === 'staff' && repair.staff_id !== user.id) {
+    if (user.role === 'staff' && dbRepair.staff_id !== user.id) {
       res.status(403).json({ error: 'Forbidden: You are not assigned to this repair order' });
       return;
+    }
+
+    const repair = {
+      ...dbRepair,
+      customer: (dbRepair as any).device?.customer || null
+    };
+    if (repair.device) {
+      delete (repair.device as any).customer;
     }
 
     res.json({ repair });
@@ -191,7 +236,21 @@ export async function createRepair(req: Request, res: Response): Promise<void> {
       deliveryDate: req.body.deliveryDate || null,
       staffId: req.body.staffId || null,
       notes: req.body.notes || null,
-      services: req.body.services ? JSON.parse(req.body.services) : []
+      services: req.body.services ? JSON.parse(req.body.services) : [],
+      
+      // new fields
+      lockCode: req.body.lockCode || null,
+      patternLock: req.body.patternLock || null,
+      accessoryAdapter: req.body.accessoryAdapter === 'true',
+      accessoryKeyboardMouse: req.body.accessoryKeyboardMouse === 'true',
+      accessoryOther: req.body.accessoryOther === 'true',
+      serialNumber: req.body.serialNumber || null,
+      warranty: req.body.warranty || null,
+      sendWhatsapp: req.body.sendWhatsapp === 'true',
+      sendEmail: req.body.sendEmail === 'true',
+      allowCashback: req.body.allowCashback === 'true',
+      expense: parseFloat(req.body.expense || '0'),
+      kycDetails: req.body.kycDetails || null
     };
 
     const validatedData = createRepairSchema.parse(rawBody);
@@ -224,7 +283,14 @@ export async function createRepair(req: Request, res: Response): Promise<void> {
         quality: validatedData.quality,
         physical_damage: validatedData.physicalDamage || null,
         front_photo_url: frontPhotoUrl,
-        back_photo_url: backPhotoUrl
+        back_photo_url: backPhotoUrl,
+        lock_code: validatedData.lockCode,
+        pattern_lock: validatedData.patternLock,
+        accessory_adapter: validatedData.accessoryAdapter,
+        accessory_keyboard_mouse: validatedData.accessoryKeyboardMouse,
+        accessory_other: validatedData.accessoryOther,
+        serial_number: validatedData.serialNumber,
+        warranty: validatedData.warranty
       })
       .select()
       .single();
@@ -257,7 +323,12 @@ export async function createRepair(req: Request, res: Response): Promise<void> {
         staff_id: validatedData.staffId || null,
         created_by: user.id,
         updated_by: user.id,
-        notes: validatedData.notes || null
+        notes: validatedData.notes || null,
+        send_whatsapp: validatedData.sendWhatsapp,
+        send_email: validatedData.sendEmail,
+        allow_cashback: validatedData.allowCashback,
+        expense: validatedData.expense,
+        kyc_details: validatedData.kycDetails
       })
       .select()
       .single();
@@ -590,7 +661,7 @@ export async function deliverRepair(req: Request, res: Response): Promise<void> 
     // 4. Update the repair order status
     const deliverySummary = `Received by ${validated.receivedBy}. Notes: ${validated.notes || 'No notes'}`;
 
-    const { data: repair, error: updateError } = await supabaseAdmin
+    const { data: dbRepair, error: updateError } = await supabaseAdmin
       .from('repairs')
       .update({
         status: 'delivered',
@@ -606,14 +677,13 @@ export async function deliverRepair(req: Request, res: Response): Promise<void> 
       .eq('id', id)
       .select(`
         *,
-        device:devices(*),
-        customer:customers(*),
+        device:devices(*, customer:customers(*)),
         assigned_staff:users!repairs_staff_id_fkey(id, name, staff_id),
         history:repair_history(*, changed_by_user:users(id, name, role))
       `)
       .single();
 
-    if (updateError || !repair) {
+    if (updateError || !dbRepair) {
       res.status(400).json({ error: updateError?.message || 'Failed to update repair order' });
       return;
     }
@@ -627,6 +697,14 @@ export async function deliverRepair(req: Request, res: Response): Promise<void> 
       })
       .eq('repair_id', id)
       .eq('new_status', 'delivered');
+
+    const repair = {
+      ...dbRepair,
+      customer: (dbRepair as any).device?.customer || null
+    };
+    if (repair.device) {
+      delete (repair.device as any).customer;
+    }
 
     res.json({ message: 'Repair order delivered successfully', repair });
   } catch (err) {
@@ -650,20 +728,27 @@ export async function getRepairReceipt(req: Request, res: Response): Promise<voi
 
   try {
     // 1. Fetch repair with device and customer
-    const { data: repair, error: fetchError } = await supabaseAdmin
+    const { data: dbRepair, error: fetchError } = await supabaseAdmin
       .from('repairs')
       .select(`
         *,
-        device:devices(*),
-        customer:customers(*)
+        device:devices(*, customer:customers(*))
       `)
       .eq('id', id)
       .eq('shop_id', user.shop_id)
       .single();
 
-    if (fetchError || !repair) {
+    if (fetchError || !dbRepair) {
       res.status(404).json({ error: 'Repair order not found' });
       return;
+    }
+
+    const repair = {
+      ...dbRepair,
+      customer: (dbRepair as any).device?.customer || null
+    };
+    if (repair.device) {
+      delete (repair.device as any).customer;
     }
 
     // Access control: staff can only download their own assigned job receipt

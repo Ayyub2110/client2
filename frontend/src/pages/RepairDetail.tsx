@@ -13,7 +13,8 @@ import {
   CheckSquare,
   History,
   FileText,
-  Download
+  Download,
+  ArrowLeft
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -215,12 +216,21 @@ export default function RepairDetail() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border pb-4">
-        <div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground font-semibold uppercase tracking-wider">
-            <Link to="/repairs" className="hover:text-foreground">Repairs</Link>
-            <ChevronRight className="h-3.5 w-3.5" />
-            <span>Ticket details</span>
-          </div>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/repairs')}
+            className="h-9 w-9 p-0 rounded-xl hover:bg-secondary/40 border border-border/40 flex-shrink-0"
+          >
+            <ArrowLeft className="h-4.5 w-4.5 text-white" />
+          </Button>
+          <div>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground font-semibold uppercase tracking-wider">
+              <Link to="/repairs" className="hover:text-foreground">Repairs</Link>
+              <ChevronRight className="h-3.5 w-3.5" />
+              <span className="text-primary">Ticket details</span>
+            </div>
           <h2 className="text-2xl font-extrabold text-white tracking-tight flex items-center gap-2.5 mt-1">
             <span className="font-mono text-primary">{repair.job_number}</span>
             {repair.token_number && (
@@ -233,6 +243,7 @@ export default function RepairDetail() {
             Opened on {new Date(repair.created_at).toLocaleString()}
           </p>
         </div>
+      </div>
 
         {/* Deliver & Receipt Actions */}
         <div className="flex flex-wrap gap-2">

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -14,7 +14,9 @@ import {
   Edit3,
   Calendar,
   DollarSign,
-  Plus
+  Plus,
+  ArrowLeft,
+  ChevronRight
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -137,6 +139,25 @@ export default function CustomerProfile() {
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumbs and Back Navigation */}
+      <div className="flex items-center gap-3">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate('/customers')}
+          className="h-9 w-9 p-0 rounded-xl hover:bg-secondary/40 border border-border/40 flex-shrink-0"
+        >
+          <ArrowLeft className="h-4.5 w-4.5 text-white" />
+        </Button>
+        <div>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground font-semibold uppercase tracking-wider">
+            <Link to="/customers" className="hover:text-foreground">Customers</Link>
+            <ChevronRight className="h-3.5 w-3.5" />
+            <span className="text-primary">Profile details</span>
+          </div>
+        </div>
+      </div>
+
       {/* Profile Header Block */}
       <Card>
         <CardContent className="p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">

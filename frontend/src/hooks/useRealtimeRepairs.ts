@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -8,6 +8,11 @@ export function useRealtimeRepairs(onNewAssignment?: (repairId: string) => void)
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [isConnected, setIsConnected] = useState(false);
+
+  const onNewAssignmentRef = useRef(onNewAssignment);
+  useEffect(() => {
+    onNewAssignmentRef.current = onNewAssignment;
+  }, [onNewAssignment]);
 
   useEffect(() => {
     if (!user || !user.shop_id) return;
@@ -49,8 +54,8 @@ export function useRealtimeRepairs(onNewAssignment?: (repairId: string) => void)
               toast.success(`You have been assigned a new repair order: ${newRecord.job_number}`, {
                 duration: 6000
               });
-              if (onNewAssignment) {
-                onNewAssignment(newRecord.id);
+              if (onNewAssignmentRef.current) {
+                onNewAssignmentRef.current(newRecord.id);
               }
             }
 
@@ -111,7 +116,7 @@ export function useRealtimeRepairs(onNewAssignment?: (repairId: string) => void)
     return () => {
       channel.unsubscribe();
     };
-  }, [user, queryClient, onNewAssignment]);
+  }, [user, queryClient]);
 
   return { isConnected };
 }

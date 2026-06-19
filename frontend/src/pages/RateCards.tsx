@@ -281,19 +281,29 @@ export default function RateCards() {
                     <CardDescription>Edit service names and their ₹ labor costs</CardDescription>
                   </div>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-red-400 border-red-500/30 hover:bg-red-500/10 h-8"
-                  onClick={() => {
-                    if (confirm(`Delete rate card for ${selectedCard.brand} ${selectedCard.model}?`)) {
-                      deleteMutation.mutate(selectedCard.id);
-                    }
-                  }}
-                  disabled={deleteMutation.isPending}
-                >
-                  <Trash2 className="h-3.5 w-3.5 mr-1" /> Delete
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-red-400 border-red-500/30 hover:bg-red-500/10 h-8"
+                    onClick={() => {
+                      if (confirm(`Delete rate card for ${selectedCard.brand} ${selectedCard.model}?`)) {
+                        deleteMutation.mutate(selectedCard.id);
+                      }
+                    }}
+                    disabled={deleteMutation.isPending}
+                  >
+                    <Trash2 className="h-3.5 w-3.5 mr-1" /> Delete
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 hover:bg-secondary/40 text-muted-foreground hover:text-foreground"
+                    onClick={() => setSelectedCard(null)}
+                  >
+                    <X className="h-3.5 w-3.5 mr-1" /> Close
+                  </Button>
+                </div>
               </div>
             </CardHeader>
 

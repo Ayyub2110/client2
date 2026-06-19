@@ -3,7 +3,7 @@ import RateCards from './RateCards';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { 
   Settings, 
   Save, 
@@ -28,12 +28,18 @@ import {
   CheckCircle2,
   Clock,
   Eye,
-  EyeOff
+  EyeOff,
+  Star,
+  Bell,
+  FileText,
+  Phone,
+  ChevronRight,
+  ShieldCheck
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../components/ui/Table';
+import { Table, TableHeader, TableBody, TableRow, TableCell, TableHead } from '../components/ui/Table';
 import { Dialog } from '../components/ui/Dialog';
 import { SkeletonList, Skeleton } from '../components/ui/Skeleton';
 import { useAuth } from '../context/AuthContext';
@@ -75,46 +81,15 @@ interface StaffMember {
   created_at: string;
 }
 
-interface AuditLog {
-  id: string;
-  repair_id: string;
-  changed_by: string;
-  old_status: string;
-  new_status: string;
-  note: string;
-  created_at: string;
-  old_value: string | null;
-  new_value: string | null;
-  repair: {
-    id: string;
-    job_number: string;
-    device: {
-      id: string;
-      brand: string;
-      model: string;
-    };
-  };
-  changer: {
-    id: string;
-    name: string;
-    role: string;
-  } | null;
-}
-
 interface SettingsPageProps {
   defaultTab?: string;
 }
 
-export default function SettingsPage({ defaultTab = 'shop' }: SettingsPageProps) {
+export default function SettingsPage({ defaultTab }: SettingsPageProps = {}) {
   const { user, role, shop, reloadProfile } = useAuth();
   const isOwner = role === 'owner';
+  const navigate = useNavigate();
   
-  // Tab Management
-  const [activeTab, setActiveTab] = useState<string>(() => {
-    if (defaultTab === 'staff' && isOwner) return 'staff';
-    return 'shop';
-  });
-
   // Shop Profile state
   const [shopName, setShopName] = useState(shop?.name || '');
   const [shopAddress, setShopAddress] = useState(shop?.address || '');
@@ -135,14 +110,20 @@ export default function SettingsPage({ defaultTab = 'shop' }: SettingsPageProps)
   const [showCurrentPass, setShowCurrentPass] = useState(false);
   const [showNewPass, setShowNewPass] = useState(false);
 
-  // System Audit state
-  const [logs, setLogs] = useState<AuditLog[]>([]);
-  const [loadingLogs, setLoadingLogs] = useState(false);
-  const [logsPage, setLogsPage] = useState(1);
-  const [hasMoreLogs, setHasMoreLogs] = useState(true);
-  const [filterStaff, setFilterStaff] = useState('');
-  const [filterFrom, setFilterFrom] = useState('');
-  const [filterTo, setFilterTo] = useState('');
+  // Modal Open/Close States
+  const [isEditShopOpen, setIsEditShopOpen] = useState(false);
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const [isStaffMgmtOpen, setIsStaffMgmtOpen] = useState(defaultTab === 'staff');
+  const [isRateCardsOpen, setIsRateCardsOpen] = useState(defaultTab === 'price-list');
+
+  // Generic Mock Info Modal State
+  const [isGenericModalOpen, setIsGenericModalOpen] = useState(false);
+  const [genericModalTitle, setGenericModalTitle] = useState('');
+  const [genericModalDescription, setGenericModalDescription] = useState('');
+  const [genericModalContent, setGenericModalContent] = useState('');
+
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   // Forms
   const {
@@ -211,42 +192,12 @@ export default function SettingsPage({ defaultTab = 'shop' }: SettingsPageProps)
     }
   };
 
-  // Load Audit logs
-  const fetchLogs = async (page: number, append = false) => {
-    if (!isOwner) return;
-    setLoadingLogs(true);
-    try {
-      let url = `/audit?page=${page}&limit=10`;
-      if (filterStaff) url += `&staffId=${filterStaff}`;
-      if (filterFrom) url += `&from=${filterFrom}`;
-      if (filterTo) url += `&to=${filterTo}`;
-
-      const data = await apiClient.get<{ logs: AuditLog[]; hasMore: boolean }>(url);
-      if (append) {
-        setLogs((prev) => [...prev, ...data.logs]);
-      } else {
-        setLogs(data.logs);
-      }
-      setHasMoreLogs(data.hasMore);
-      setLogsPage(page);
-    } catch (err: any) {
-      console.error(err);
-      toast.error('Failed to retrieve audit log feed.');
-    } finally {
-      setLoadingLogs(false);
-    }
-  };
-
-  // Trigger loads based on active tab
+  // Fetch staff list when staff modal opens
   useEffect(() => {
-    if (activeTab === 'staff') {
+    if (isStaffMgmtOpen) {
       fetchStaff();
-    } else if (activeTab === 'audit') {
-      setLogs([]);
-      fetchLogs(1, false);
-      fetchStaff(); // Load staff list for filter dropdown
     }
-  }, [activeTab, filterStaff, filterFrom, filterTo]);
+  }, [isStaffMgmtOpen]);
 
   // File logo pickers
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -305,6 +256,7 @@ export default function SettingsPage({ defaultTab = 'shop' }: SettingsPageProps)
       toast.success('Shop details saved successfully!');
       setLogoFile(null);
       await reloadProfile();
+      setIsEditShopOpen(false);
     } catch (err: any) {
       console.error(err);
       toast.error(err.message || 'Failed to update shop details');
@@ -364,6 +316,7 @@ export default function SettingsPage({ defaultTab = 'shop' }: SettingsPageProps)
       await apiClient.put('/auth/update-profile', values);
       toast.success('Profile details updated successfully.');
       await reloadProfile();
+      setIsEditProfileOpen(false);
     } catch (err: any) {
       console.error(err);
       toast.error(err.message || 'Failed to update profile details.');
@@ -382,6 +335,7 @@ export default function SettingsPage({ defaultTab = 'shop' }: SettingsPageProps)
       });
       toast.success('Password changed successfully!');
       resetPassword();
+      setIsChangePasswordOpen(false);
     } catch (err: any) {
       console.error(err);
       toast.error(err.message || 'Failed to update password.');
@@ -390,612 +344,528 @@ export default function SettingsPage({ defaultTab = 'shop' }: SettingsPageProps)
     }
   };
 
-  // Status badging helpers
-  const getStatusBadgeClass = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'pending':
-        return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
-      case 'repairing':
-        return 'bg-blue-500/10 text-blue-400 border-blue-500/20';
-      case 'ready':
-        return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
-      case 'delivered':
-        return 'bg-purple-500/10 text-purple-400 border-purple-500/20';
-      case 'cancelled':
-        return 'bg-red-500/10 text-red-400 border-red-500/20';
+  const handleMenuClick = (menuId: string) => {
+    switch (menuId) {
+      case 'offers':
+        setGenericModalTitle("ALL OFFERS & NOTIFICATIONS");
+        setGenericModalDescription("Active campaigns, announcements and terminal alerts.");
+        setGenericModalContent("Offers & System Alerts:\n1. Parts channel logistics discounts: 15% off on batch screen shipments.\n2. Community technical webinars starting next Friday.\n3. Dynamic billing reports are now live for all registered shops.");
+        setIsGenericModalOpen(true);
+        break;
+      case 'community':
+        setGenericModalTitle("Community Connection Portal");
+        setGenericModalDescription("Engage with micro-electronics engineers worldwide.");
+        setGenericModalContent(`User Community Username: ${user?.community_username || user?.name || 'N/A'}\nShop Type: ${shop?.shop_type || 'Mobile Solution'}\n\nFeatures:\n- Schematics board diagnostics forum.\n- Solder reballing repair guides.\n- Part supplier reviews.`);
+        setIsGenericModalOpen(true);
+        break;
+      case 'purchases':
+        setGenericModalTitle("Purchasing History Database");
+        setGenericModalDescription("Manage supply chain transactions and hardware acquisitions.");
+        setGenericModalContent("Purchase logs are archived per calendar year. Connect parts vendors to automatically sync invoices to your local terminal store node.\n\nActive Vendor Syncs: 0\nPending Invoices: 0");
+        setIsGenericModalOpen(true);
+        break;
+      case 'ratecards':
+        if (isOwner) {
+          setIsRateCardsOpen(true);
+        } else {
+          toast.error("Access Denied: Service Rate Cards can only be updated by the store Owner.");
+        }
+        break;
+      case 'deleted':
+        setGenericModalTitle("Trash & Order Retention Archive");
+        setGenericModalDescription("Logs of job orders flagged as deleted.");
+        setGenericModalContent("Orders remain in the trash database partition for 30 days before clean-up. Non-owners are restricted from purging deleted records.");
+        setIsGenericModalOpen(true);
+        break;
+      case 'email':
+        setIsEditProfileOpen(true);
+        break;
+      case 'password':
+        setIsChangePasswordOpen(true);
+        break;
+      case 'terms':
+        setGenericModalTitle("GK Repair Solution Terms & Conditions");
+        setGenericModalDescription("License terms of software platform service.");
+        setGenericModalContent("This system is licensed on a single-node owner basis. All database records (customers, repairs, devices) are stored in your isolated database schema under your Supabase tenant. Terms apply per terminal.");
+        setIsGenericModalOpen(true);
+        break;
+      case 'privacy':
+        setGenericModalTitle("Data Privacy Policy");
+        setGenericModalDescription("Policies regarding data handling.");
+        setGenericModalContent("Your data is end-to-end isolated under secure RLS policies. Your staff members only have permission to view tickets explicitly assigned to their technician ID.");
+        setIsGenericModalOpen(true);
+        break;
+      case 'about':
+        setGenericModalTitle("About Terminal Node");
+        setGenericModalDescription("GK Repair Software Version Details");
+        setGenericModalContent(`App Version: 1.0.0 (Stable release)\nDatabase Scheme: Supabase RLS Protected\nUser Name: ${user?.name}\nShop Name: ${shop?.name}`);
+        setIsGenericModalOpen(true);
+        break;
+      case 'contact':
+        setGenericModalTitle("Support & Admin Contacts");
+        setGenericModalDescription("Reach technical support desk.");
+        setGenericModalContent("If you experience database syncing issues, auth timeouts or terminal outages, please email support@gkrepair.com or contact terminal network administrators at +1 (800) 555-0199.");
+        setIsGenericModalOpen(true);
+        break;
+      case 'staff':
+        if (isOwner) {
+          setIsStaffMgmtOpen(true);
+        } else {
+          toast.error("Access Denied: Owner profile privilege required to recruit or manage staff.");
+        }
+        break;
       default:
-        return 'bg-secondary text-muted-foreground border-border/40';
+        break;
     }
   };
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto pb-8">
+    <div className="space-y-6 max-w-2xl mx-auto pb-12 select-none text-white">
       <div>
         <h2 className="text-2xl font-extrabold text-foreground tracking-tight flex items-center gap-2">
           <Settings className="h-6 w-6 text-primary" /> Management Settings
         </h2>
-        <p className="text-muted-foreground text-sm">Configure GK Repair details, staff permissions, and review audit records.</p>
+        <p className="text-muted-foreground text-sm">Configure GK Repair details, staff logins, invoice terms, and policies.</p>
       </div>
 
-      {/* Dynamic Tab Controllers */}
-      <div className="border-b border-border flex flex-wrap gap-2">
-        <button
-          onClick={() => setActiveTab('shop')}
-          className={`px-4 py-2 text-sm font-semibold border-b-2 transition-all flex items-center gap-2 ${
-            activeTab === 'shop'
-              ? 'border-primary text-primary font-bold'
-              : 'border-transparent text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          <Building className="h-4 w-4" /> Shop Profile
-        </button>
-
+      {/* Profile Banner Card */}
+      <Card className="relative bg-card/45 backdrop-blur-xl border border-border/85 p-6 flex items-center justify-center">
         {isOwner && (
           <button
-            onClick={() => setActiveTab('staff')}
-            className={`px-4 py-2 text-sm font-semibold border-b-2 transition-all flex items-center gap-2 ${
-              activeTab === 'staff'
-                ? 'border-primary text-primary font-bold'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
-            }`}
+            onClick={() => setIsEditShopOpen(true)}
+            className="absolute top-4 right-4 inline-flex items-center justify-center rounded-lg bg-primary/20 hover:bg-primary/30 border border-primary/45 px-3 py-1.5 text-xs font-semibold text-primary transition-all active:scale-[0.98]"
           >
-            <Users className="h-4 w-4" /> Staff Management
+            Edit Details
           </button>
         )}
+        
+        <div className="flex flex-col sm:flex-row items-center gap-6">
+          <div className="relative h-20 w-20 rounded-full border-2 border-primary overflow-hidden bg-secondary/35 group flex items-center justify-center shrink-0 shadow-lg">
+            {logoPreview ? (
+              <img src={logoPreview} alt="Shop Logo" className="h-full w-full object-cover" />
+            ) : (
+              <Building className="h-10 w-10 text-muted-foreground/60" />
+            )}
+          </div>
 
-        <button
-          onClick={() => setActiveTab('account')}
-          className={`px-4 py-2 text-sm font-semibold border-b-2 transition-all flex items-center gap-2 ${
-            activeTab === 'account'
-              ? 'border-primary text-primary font-bold'
-              : 'border-transparent text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          <UserCog className="h-4 w-4" /> Account Profile
-        </button>
+          <div className="text-center sm:text-left space-y-1">
+            <h3 className="text-lg font-extrabold text-white tracking-tight leading-tight">
+              {user?.name || 'Loading Name...'}
+            </h3>
+            <p className="text-sm font-semibold text-muted-foreground">{shopName || 'GK Repair Shop'}</p>
+            <p className="text-xs text-muted-foreground/80">{shopPhone || 'No Phone Registered'}</p>
+          </div>
+        </div>
 
-        {isOwner && (
-          <button
-            onClick={() => setActiveTab('audit')}
-            className={`px-4 py-2 text-sm font-semibold border-b-2 transition-all flex items-center gap-2 ${
-              activeTab === 'audit'
-                ? 'border-primary text-primary font-bold'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
-            }`}
+      </Card>
+
+      {/* Settings Options List Menu */}
+      <div className="bg-card/35 backdrop-blur-md border border-border/80 rounded-2xl overflow-hidden divide-y divide-border/60 shadow-lg">
+        {[
+          { id: 'community', title: 'Community', desc: 'Connect with other Technicians for help or support', icon: Users, color: 'text-orange-500', bg: 'bg-orange-500/10 border-orange-500/20' },
+          { id: 'deleted', title: 'Deleted Orders', desc: 'Track and recover deleted order history', icon: Trash2, color: 'text-red-500', bg: 'bg-red-500/10 border-red-500/20' },
+          { id: 'email', title: 'Update email', desc: 'Update Display Name and Account Email ID', icon: Mail, color: 'text-blue-500', bg: 'bg-blue-500/10 border-blue-500/20' },
+          { id: 'password', title: 'Update password', desc: 'Verify current credentials and change password', icon: Lock, color: 'text-purple-500', bg: 'bg-purple-500/10 border-purple-500/20' },
+          { id: 'terms', title: 'Update Terms & Conditions', desc: 'Review solution usage and software licensing terms', icon: FileText, color: 'text-zinc-500', bg: 'bg-zinc-500/10 border-zinc-500/20' },
+          { id: 'privacy', title: 'Privacy Policy', desc: 'App terms of collection and data privacy policies', icon: Shield, color: 'text-emerald-500', bg: 'bg-emerald-500/10 border-emerald-500/20' },
+          { id: 'about', title: 'About', desc: 'Software terminal version details and developer info', icon: Info, color: 'text-sky-500', bg: 'bg-sky-500/10 border-sky-500/20' },
+          { id: 'contact', title: 'Contacts Us', desc: 'Reach our terminal network administration support desk', icon: Phone, color: 'text-pink-500', bg: 'bg-pink-500/10 border-pink-500/20' },
+          { id: 'staff', title: 'Add Staff Members', desc: 'Recruit terminal assistants, set status, and manage logins', icon: UserPlus, color: 'text-green-500', bg: 'bg-green-500/10 border-green-500/20' }
+        ].map((item) => (
+          <div
+            key={item.id}
+            onClick={() => handleMenuClick(item.id)}
+            className="p-4 flex items-center justify-between hover:bg-secondary/25 cursor-pointer transition-all active:scale-[0.99] gap-4"
           >
-            <Shield className="h-4 w-4" /> System Audit Logs
-          </button>
-        )}
-
-        {isOwner && (
-          <button
-            onClick={() => setActiveTab('ratecards')}
-            className={`px-4 py-2 text-sm font-semibold border-b-2 transition-all flex items-center gap-2 ${
-              activeTab === 'ratecards'
-                ? 'border-primary text-primary font-bold'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            <Smartphone className="h-4 w-4" /> Service Rate Cards
-          </button>
-        )}
-      </div>
-
-      {/* Tab Panels */}
-      <div className="space-y-6">
-        {/* Tab 1: Shop Profile */}
-        {activeTab === 'shop' && (
-          <Card>
-            <form onSubmit={onSaveShop}>
-              <CardHeader>
-                <CardTitle className="text-lg font-bold text-foreground">Shop Credentials</CardTitle>
-                <CardDescription>Update name, contacts, and receipts invoice branding logo.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Logo Area */}
-                <div className="flex flex-col sm:flex-row items-center gap-6 pb-6 border-b border-border/40">
-                  <div className="relative h-24 w-24 rounded-xl border border-border bg-secondary/20 flex items-center justify-center overflow-hidden group shadow-inner">
-                    {logoPreview ? (
-                      <img src={logoPreview} alt="Shop Logo Preview" className="h-full w-full object-contain" />
-                    ) : (
-                      <Building className="h-10 w-10 text-muted-foreground/60" />
-                    )}
-                  </div>
-                  <div className="flex-1 space-y-2 text-center sm:text-left">
-                    <h4 className="text-sm font-bold text-foreground">Receipt Logo</h4>
-                    <p className="text-xs text-muted-foreground">Supported file formats: JPEG, PNG, WEBP. Max size: 1MB.</p>
-                    <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
-                      <label className="cursor-pointer inline-flex items-center justify-center rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/95 transition-all">
-                        Browse Image
-                        <input type="file" accept="image/*" onChange={handleLogoChange} className="hidden" disabled={!isOwner} />
-                      </label>
-                      {logoPreview && isOwner && (
-                        <button
-                          type="button"
-                          onClick={handleRemoveLogo}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-destructive/30 hover:bg-destructive/10 text-destructive text-xs font-semibold transition-colors"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" /> Remove
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-1">
-                    <label className="text-xs text-muted-foreground font-semibold">Store Brand Name</label>
-                    <Input
-                      value={shopName}
-                      onChange={(e) => setShopName(e.target.value)}
-                      disabled={!isOwner}
-                      placeholder="Shop Name"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-xs text-muted-foreground font-semibold">Store Phone Contact</label>
-                    <Input
-                      value={shopPhone}
-                      onChange={(e) => setShopPhone(e.target.value)}
-                      disabled={!isOwner}
-                      placeholder="+123 456 7890"
-                    />
-                  </div>
-
-                  <div className="space-y-1 md:col-span-2">
-                    <label className="text-xs text-muted-foreground font-semibold">Shop Physical Address</label>
-                    <Input
-                      value={shopAddress}
-                      onChange={(e) => setShopAddress(e.target.value)}
-                      disabled={!isOwner}
-                      placeholder="Street Address, City, Country"
-                    />
-                  </div>
-                </div>
-              </CardContent>
-              {isOwner && (
-                <CardFooter className="justify-end border-t border-border/40 pt-4">
-                  <Button type="submit" disabled={savingShop} className="gap-2">
-                    {savingShop ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                    Save Changes
-                  </Button>
-                </CardFooter>
-              )}
-            </form>
-          </Card>
-        )}
-
-        {/* Tab 2: Staff Management */}
-        {activeTab === 'staff' && isOwner && (
-          <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <h3 className="text-lg font-bold text-foreground">Store Staff Directory</h3>
-                <p className="text-sm text-muted-foreground">Recruit assistants, manage logins, and reset accounts.</p>
+            <div className="flex items-center gap-4">
+              <div className={`h-10 w-10 rounded-xl border flex items-center justify-center shrink-0 ${item.bg}`}>
+                <item.icon className={`h-5 w-5 ${item.color}`} />
               </div>
-              <Button onClick={() => setRecruitOpen(true)} className="gap-2 self-start sm:self-auto">
-                <UserPlus className="h-4.5 w-4.5" /> Recruit Staff
+              <div className="flex flex-col text-left">
+                <span className="text-sm font-bold text-foreground">{item.title}</span>
+                <span className="text-xs text-muted-foreground/80 leading-snug">{item.desc}</span>
+              </div>
+            </div>
+            <ChevronRight className="h-4.5 w-4.5 text-muted-foreground shrink-0" />
+          </div>
+        ))}
+      </div>
+
+      {/* ---------------------------------------------------- */}
+      {/* DIALOG MODALS SECTION */}
+      {/* ---------------------------------------------------- */}
+
+      {/* Modal 1: Edit Shop Details */}
+      <Dialog
+        isOpen={isEditShopOpen}
+        onClose={() => setIsEditShopOpen(false)}
+        title="Shop Credentials"
+        description="Update brand name, telephone contacts, address, and receipts logo."
+      >
+        <form onSubmit={onSaveShop} className="space-y-5">
+          {/* Logo Area */}
+          <div className="flex flex-col sm:flex-row items-center gap-6 pb-6 border-b border-border/40">
+            <div className="relative h-24 w-24 rounded-xl border border-border bg-secondary/20 flex items-center justify-center overflow-hidden shrink-0 group shadow-inner">
+              {logoPreview ? (
+                <img src={logoPreview} alt="Shop Logo Preview" className="h-full w-full object-contain" />
+              ) : (
+                <Building className="h-10 w-10 text-muted-foreground/60" />
+              )}
+            </div>
+            <div className="flex-1 space-y-2 text-center sm:text-left">
+              <h4 className="text-sm font-bold text-foreground">Receipt Logo</h4>
+              <p className="text-xs text-muted-foreground">Formats: JPEG, PNG, WEBP. Max: 1MB.</p>
+              <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
+                <label className="cursor-pointer inline-flex items-center justify-center rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/95 transition-all">
+                  Browse Image
+                  <input type="file" ref={logoInputRef} accept="image/*" onChange={handleLogoChange} className="hidden" disabled={!isOwner} />
+                </label>
+                {logoPreview && isOwner && (
+                  <button
+                    type="button"
+                    onClick={handleRemoveLogo}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-destructive/30 hover:bg-destructive/10 text-destructive text-xs font-semibold transition-colors"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" /> Remove
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground font-semibold">Store Brand Name</label>
+              <Input
+                value={shopName}
+                onChange={(e) => setShopName(e.target.value)}
+                disabled={!isOwner}
+                placeholder="Shop Name"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground font-semibold">Store Phone Contact</label>
+              <Input
+                value={shopPhone}
+                onChange={(e) => setShopPhone(e.target.value)}
+                disabled={!isOwner}
+                placeholder="+123 456 7890"
+              />
+            </div>
+
+            <div className="space-y-1 md:col-span-2">
+              <label className="text-xs text-muted-foreground font-semibold">Shop Physical Address</label>
+              <Input
+                value={shopAddress}
+                onChange={(e) => setShopAddress(e.target.value)}
+                disabled={!isOwner}
+                placeholder="Street Address, City, Country"
+              />
+            </div>
+          </div>
+
+          {isOwner && (
+            <div className="flex justify-end gap-3 pt-4 border-t border-border/40">
+              <Button type="button" variant="outline" onClick={() => setIsEditShopOpen(false)} disabled={savingShop}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={savingShop} className="gap-2">
+                {savingShop ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                Save Changes
               </Button>
             </div>
+          )}
+        </form>
+      </Dialog>
 
-            <Card>
-              <CardContent className="p-0">
-                {loadingStaff ? (
-                  <div className="flex flex-col items-center justify-center py-20 gap-3">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">
-                      Loading Directory...
-                    </span>
-                  </div>
-                ) : staffList.length > 0 ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Staff Badge ID</TableHead>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Terminal Role</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {staffList.map((emp) => (
-                        <TableRow key={emp.id}>
-                          <TableCell className="font-mono text-xs font-semibold text-primary">
-                            {emp.staff_id || 'N/A'}
-                          </TableCell>
-                          <TableCell>
-                            <div className="font-semibold text-foreground">{emp.name}</div>
-                            <div className="text-[11px] text-muted-foreground">Joined: {new Date(emp.created_at).toLocaleDateString()}</div>
-                          </TableCell>
-                          <TableCell className="capitalize text-xs font-semibold text-muted-foreground">
-                            {emp.role}
-                          </TableCell>
-                          <TableCell>
-                            <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                              emp.is_active ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
-                            }`}>
-                              <span className={`h-1.5 w-1.5 rounded-full ${emp.is_active ? 'bg-emerald-400' : 'bg-red-400'}`} />
-                              {emp.is_active ? 'Active' : 'Inactive'}
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              <button
-                                onClick={() => handleResetStaffPassword(emp.id)}
-                                title="Send Recovery Reset Link"
-                                className="inline-flex items-center gap-1 px-2.5 py-1.5 border border-border/80 hover:bg-secondary/80 rounded-lg text-xs text-muted-foreground hover:text-white transition-colors"
-                              >
-                                <KeyRound className="h-3.5 w-3.5" /> Reset Pass
-                              </button>
-                              <button
-                                onClick={() => handleToggleStaff(emp.id, emp.is_active)}
-                                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
-                                  emp.is_active
-                                    ? 'border-red-500/30 text-red-400 hover:bg-red-500/10'
-                                    : 'border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10'
-                                }`}
-                              >
-                                {emp.is_active ? (
-                                  <>
-                                    <ToggleRight className="h-4 w-4" /> Deactivate
-                                  </>
-                                ) : (
-                                  <>
-                                    <ToggleLeft className="h-4 w-4" /> Activate
-                                  </>
-                                )}
-                              </button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                ) : (
-                  <div className="text-center py-16">
-                    <ShieldAlert className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-                    <h3 className="text-sm font-semibold text-foreground">No staff members found</h3>
-                    <p className="text-xs text-muted-foreground mt-1">Recruit staff members using the button above.</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Recruit Dialog */}
-            <Dialog
-              isOpen={recruitOpen}
-              onClose={() => setRecruitOpen(false)}
-              title="Recruit Staff Member"
-              description="Register login credentials for a new terminal assistant."
-            >
-              <form onSubmit={handleSubmitStaff(onRecruitStaff)} className="space-y-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
-                    Full Name
-                  </label>
-                  <Input placeholder="Employee Name" {...registerStaff('name')} />
-                  {staffErrors.name && (
-                    <p className="text-[11px] font-medium text-destructive">{staffErrors.name.message}</p>
-                  )}
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
-                    Email Address
-                  </label>
-                  <Input type="email" placeholder="staff@gkrepair.com" {...registerStaff('email')} />
-                  {staffErrors.email && (
-                    <p className="text-[11px] font-medium text-destructive">{staffErrors.email.message}</p>
-                  )}
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
-                    Temporary Password
-                  </label>
-                  <Input type="password" placeholder="••••••••" {...registerStaff('password')} />
-                  {staffErrors.password && (
-                    <p className="text-[11px] font-medium text-destructive">{staffErrors.password.message}</p>
-                  )}
-                </div>
-
-                <div className="flex justify-end gap-3 pt-4 border-t border-border/40">
-                  <Button type="button" variant="outline" onClick={() => setRecruitOpen(false)} disabled={recruiting}>
-                    Cancel
-                  </Button>
-                  <Button type="submit" disabled={recruiting}>
-                    {recruiting ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : null}
-                    Recruit Member
-                  </Button>
-                </div>
-              </form>
-            </Dialog>
+      {/* Modal 2: Edit Account Profile */}
+      <Dialog
+        isOpen={isEditProfileOpen}
+        onClose={() => setIsEditProfileOpen(false)}
+        title="Profile Details"
+        description="Update your display name and primary account email ID."
+      >
+        <form onSubmit={handleSubmitProfile(onSaveProfile)} className="space-y-4">
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground font-semibold">Display Name</label>
+            <Input {...registerProfile('name')} placeholder="Full Name" />
+            {profileErrors.name && (
+              <p className="text-[11px] font-medium text-destructive">{profileErrors.name.message}</p>
+            )}
           </div>
-        )}
 
-        {/* Tab 3: Account Profile Settings */}
-        {activeTab === 'account' && (
-          <div className="grid gap-6 md:grid-cols-2">
-            {/* Identity Form */}
-            <Card>
-              <form onSubmit={handleSubmitProfile(onSaveProfile)}>
-                <CardHeader>
-                  <CardTitle className="text-lg font-bold text-foreground">Profile Details</CardTitle>
-                  <CardDescription>Manage your username display and primary account contact email.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-1">
-                    <label className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
-                      Display Name
-                    </label>
-                    <Input {...registerProfile('name')} placeholder="Full Name" />
-                    {profileErrors.name && (
-                      <p className="text-[11px] font-medium text-destructive">{profileErrors.name.message}</p>
-                    )}
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
-                      Email Address
-                    </label>
-                    <Input type="email" {...registerProfile('email')} placeholder="email@address.com" />
-                    {profileErrors.email && (
-                      <p className="text-[11px] font-medium text-destructive">{profileErrors.email.message}</p>
-                    )}
-                  </div>
-                </CardContent>
-                <CardFooter className="justify-end border-t border-border/40 pt-4">
-                  <Button type="submit" disabled={savingProfile} className="gap-2">
-                    {savingProfile ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                    Update Profile
-                  </Button>
-                </CardFooter>
-              </form>
-            </Card>
-
-            {/* Password Form */}
-            <Card>
-              <form onSubmit={handleSubmitPassword(onChangePassword)}>
-                <CardHeader>
-                  <CardTitle className="text-lg font-bold text-foreground">Change Password</CardTitle>
-                  <CardDescription>Verify your current password and secure your terminal access.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-1">
-                    <label className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
-                      Current Password
-                    </label>
-                    <div className="relative">
-                      <Input
-                        type={showCurrentPass ? 'text' : 'password'}
-                        {...registerPassword('currentPassword')}
-                        placeholder="••••••••"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowCurrentPass(!showCurrentPass)}
-                        className="absolute inset-y-0 right-3 flex items-center text-muted-foreground hover:text-foreground"
-                      >
-                        {showCurrentPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    </div>
-                    {passwordErrors.currentPassword && (
-                      <p className="text-[11px] font-medium text-destructive">{passwordErrors.currentPassword.message}</p>
-                    )}
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
-                      New Password
-                    </label>
-                    <div className="relative">
-                      <Input
-                        type={showNewPass ? 'text' : 'password'}
-                        {...registerPassword('newPassword')}
-                        placeholder="••••••••"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowNewPass(!showNewPass)}
-                        className="absolute inset-y-0 right-3 flex items-center text-muted-foreground hover:text-foreground"
-                      >
-                        {showNewPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    </div>
-                    {passwordErrors.newPassword && (
-                      <p className="text-[11px] font-medium text-destructive">{passwordErrors.newPassword.message}</p>
-                    )}
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
-                      Confirm New Password
-                    </label>
-                    <Input
-                      type="password"
-                      {...registerPassword('confirmNewPassword')}
-                      placeholder="••••••••"
-                    />
-                    {passwordErrors.confirmNewPassword && (
-                      <p className="text-[11px] font-medium text-destructive">{passwordErrors.confirmNewPassword.message}</p>
-                    )}
-                  </div>
-                </CardContent>
-                <CardFooter className="justify-end border-t border-border/40 pt-4">
-                  <Button type="submit" disabled={savingPassword} className="gap-2">
-                    {savingPassword ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
-                    Update Password
-                  </Button>
-                </CardFooter>
-              </form>
-            </Card>
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground font-semibold">Email Address</label>
+            <Input type="email" {...registerProfile('email')} placeholder="email@address.com" />
+            {profileErrors.email && (
+              <p className="text-[11px] font-medium text-destructive">{profileErrors.email.message}</p>
+            )}
           </div>
-        )}
 
-        {/* Tab 4: System Audit Logs */}
-        {activeTab === 'audit' && isOwner && (
-          <div className="space-y-6">
-            {/* Analytical Filters */}
-            <Card className="bg-card/45 backdrop-blur-md">
-              <CardContent className="pt-6 grid gap-4 grid-cols-1 sm:grid-cols-3">
-                <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground font-bold flex items-center gap-1">
-                    <Mail className="h-3 w-3" /> Filter by Staff
-                  </label>
-                  <select
-                    value={filterStaff}
-                    onChange={(e) => setFilterStaff(e.target.value)}
-                    className="w-full h-10 rounded-lg border border-border bg-secondary/35 text-sm text-foreground px-3 focus:outline-none focus:ring-1 focus:ring-primary"
-                  >
-                    <option value="">All Shop Users</option>
-                    {staffList.map((emp) => (
-                      <option key={emp.id} value={emp.id}>
-                        {emp.name} ({emp.staff_id || 'Owner'})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground font-bold flex items-center gap-1">
-                    <Calendar className="h-3 w-3" /> Log Range From
-                  </label>
-                  <Input type="date" value={filterFrom} onChange={(e) => setFilterFrom(e.target.value)} />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground font-bold flex items-center gap-1">
-                    <Calendar className="h-3 w-3" /> Log Range To
-                  </label>
-                  <Input type="date" value={filterTo} onChange={(e) => setFilterTo(e.target.value)} />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Vertical timeline feed */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-lg font-bold text-foreground">Operational Audit Trail</CardTitle>
-                    <CardDescription>Track state history modifications, closure details, and user actions.</CardDescription>
-                  </div>
-                  <button
-                    onClick={() => fetchLogs(1, false)}
-                    className="p-2 border border-border rounded-lg text-muted-foreground hover:bg-secondary/40 hover:text-white transition-all"
-                    title="Refresh logs"
-                  >
-                    <RefreshCw className="h-4 w-4" />
-                  </button>
-                </div>
-              </CardHeader>
-              <CardContent className="relative pl-6 sm:pl-8 space-y-8">
-                {/* Timeline vertical line */}
-                <div className="absolute left-9 sm:left-11 top-6 bottom-6 w-0.5 bg-border/80" />
-
-                {loadingLogs && logs.length === 0 ? (
-                  <div className="py-6">
-                    <SkeletonList count={4} className="h-16 w-full" />
-                  </div>
-                ) : logs.length > 0 ? (
-                  logs.map((log) => (
-                    <div key={log.id} className="relative flex flex-col sm:flex-row gap-4 items-start group">
-                      {/* Timeline dot */}
-                      <div className="absolute -left-5 sm:-left-7 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-background border-2 border-primary z-10 group-hover:scale-110 transition-transform">
-                        <Clock className="h-3.5 w-3.5 text-primary" />
-                      </div>
-
-                      <div className="flex-1 space-y-1.5 bg-secondary/15 border border-border/40 hover:border-primary/20 p-4 rounded-xl transition-all duration-300">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 border-b border-border/25 pb-2">
-                          <span className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
-                            <Calendar className="h-3.5 w-3.5" />
-                            {new Date(log.created_at).toLocaleString()}
-                          </span>
-                          <Link
-                            to={`/repairs/${log.repair_id}`}
-                            className="font-mono text-xs font-extrabold text-primary hover:underline"
-                          >
-                            Job: {log.repair?.job_number || 'N/A'}
-                          </Link>
-                        </div>
-
-                        <div className="text-sm font-semibold text-foreground flex items-center flex-wrap gap-1">
-                          <span>{log.changer?.name || 'System Auto'}</span>
-                          <span className="text-xs text-muted-foreground font-normal">({log.changer?.role || 'Trigger'})</span>
-                          <span className="text-muted-foreground font-normal">updated status to</span>
-                          <span className={`px-2 py-0.5 rounded border text-xs font-bold ${getStatusBadgeClass(log.new_status)}`}>
-                            {log.new_status}
-                          </span>
-                        </div>
-
-                        {/* Value logs details */}
-                        {(log.old_value || log.new_value) && (
-                          <div className="grid grid-cols-2 gap-2 bg-secondary/20 p-2 rounded-lg text-xs font-mono border border-border/30">
-                            <div>
-                              <span className="text-muted-foreground font-bold block text-[10px] uppercase">Old Status</span>
-                              <span className="text-red-400 font-semibold">{log.old_value || 'None'}</span>
-                            </div>
-                            <div>
-                              <span className="text-muted-foreground font-bold block text-[10px] uppercase">New Status</span>
-                              <span className="text-emerald-400 font-semibold">{log.new_value || 'None'}</span>
-                            </div>
-                          </div>
-                        )}
-
-                        {log.note && (
-                          <p className="text-xs text-muted-foreground bg-card/65 p-2 rounded border border-border/20 italic">
-                            &ldquo;{log.note}&rdquo;
-                          </p>
-                        )}
-                        {log.repair?.device && (
-                          <p className="text-[11px] text-muted-foreground flex items-center gap-1">
-                            <Info className="h-3.5 w-3.5" /> Device: {log.repair.device.brand} {log.repair.device.model}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center py-12 pl-0 sm:pl-4">
-                    <Info className="h-10 w-10 text-muted-foreground/60 mx-auto mb-2" />
-                    <p className="text-sm font-semibold text-foreground">No events found in this date range.</p>
-                  </div>
-                )}
-
-                {/* Load More scroll appends */}
-                {hasMoreLogs && logs.length > 0 && (
-                  <div className="flex justify-center pt-4 pl-0 sm:pl-4">
-                    <Button
-                      variant="outline"
-                      onClick={() => fetchLogs(logsPage + 1, true)}
-                      disabled={loadingLogs}
-                      className="gap-2"
-                    >
-                      {loadingLogs ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                      Load More History
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+          <div className="flex justify-end gap-3 pt-4 border-t border-border/40">
+            <Button type="button" variant="outline" onClick={() => setIsEditProfileOpen(false)} disabled={savingProfile}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={savingProfile} className="gap-2">
+              {savingProfile ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              Update Profile
+            </Button>
           </div>
-        )}
+        </form>
+      </Dialog>
 
-        {/* Tab 5: Rate Cards (Owner only) */}
-        {activeTab === 'ratecards' && isOwner && (
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-lg font-bold text-foreground">Service Rate Cards</h3>
-              <p className="text-sm text-muted-foreground">
-                Define repair services and their ₹ labor costs per device model. Used for auto-filling estimates on repair tickets.
-              </p>
+      {/* Modal 3: Change Password */}
+      <Dialog
+        isOpen={isChangePasswordOpen}
+        onClose={() => setIsChangePasswordOpen(false)}
+        title="Change Password"
+        description="Change password settings to keep terminal credentials secure."
+      >
+        <form onSubmit={handleSubmitPassword(onChangePassword)} className="space-y-4">
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground font-semibold">Current Password</label>
+            <div className="relative">
+              <Input
+                type={showCurrentPass ? 'text' : 'password'}
+                {...registerPassword('currentPassword')}
+                placeholder="••••••••"
+              />
+              <button
+                type="button"
+                onClick={() => setShowCurrentPass(!showCurrentPass)}
+                className="absolute inset-y-0 right-3 flex items-center text-muted-foreground hover:text-foreground"
+              >
+                {showCurrentPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
             </div>
-            <RateCards />
+            {passwordErrors.currentPassword && (
+              <p className="text-[11px] font-medium text-destructive">{passwordErrors.currentPassword.message}</p>
+            )}
           </div>
-        )}
-      </div>
+
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground font-semibold">New Password</label>
+            <div className="relative">
+              <Input
+                type={showNewPass ? 'text' : 'password'}
+                {...registerPassword('newPassword')}
+                placeholder="••••••••"
+              />
+              <button
+                type="button"
+                onClick={() => setShowNewPass(!showNewPass)}
+                className="absolute inset-y-0 right-3 flex items-center text-muted-foreground hover:text-foreground"
+              >
+                {showNewPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+            {passwordErrors.newPassword && (
+              <p className="text-[11px] font-medium text-destructive">{passwordErrors.newPassword.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground font-semibold">Confirm New Password</label>
+            <Input
+              type="password"
+              {...registerPassword('confirmNewPassword')}
+              placeholder="••••••••"
+            />
+            {passwordErrors.confirmNewPassword && (
+              <p className="text-[11px] font-medium text-destructive">{passwordErrors.confirmNewPassword.message}</p>
+            )}
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t border-border/40">
+            <Button type="button" variant="outline" onClick={() => setIsChangePasswordOpen(false)} disabled={savingPassword}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={savingPassword} className="gap-2">
+              {savingPassword ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
+              Update Password
+            </Button>
+          </div>
+        </form>
+      </Dialog>
+
+      {/* Modal 4: Staff Directory Management */}
+      <Dialog
+        isOpen={isStaffMgmtOpen}
+        onClose={() => {
+          setIsStaffMgmtOpen(false);
+          if (defaultTab === 'staff') {
+            navigate('/settings');
+          }
+        }}
+        title="Store Staff Directory"
+        description="Recruit assistants, manage logins, and toggle credentials."
+        className="max-w-3xl w-full"
+      >
+        <div className="space-y-5 max-w-3xl overflow-y-auto max-h-[70vh] pr-1">
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">
+              Staff List ({staffList.length})
+            </span>
+            <Button size="sm" onClick={() => setRecruitOpen(true)} className="gap-1.5 h-8">
+              <UserPlus className="h-3.5 w-3.5" /> Recruit Staff
+            </Button>
+          </div>
+
+          {loadingStaff ? (
+            <div className="flex flex-col items-center justify-center py-10 gap-3">
+              <Loader2 className="h-7 w-7 animate-spin text-primary" />
+              <span className="text-xs text-muted-foreground font-semibold">Loading list...</span>
+            </div>
+          ) : staffList.length > 0 ? (
+            <div className="border border-border rounded-xl overflow-hidden bg-card/10">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Staff Badge ID</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {staffList.map((emp) => (
+                    <TableRow key={emp.id}>
+                      <TableCell className="font-mono text-xs text-primary font-bold">
+                        {emp.staff_id || 'N/A'}
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-semibold text-white text-xs">{emp.name}</div>
+                      </TableCell>
+                      <TableCell className="capitalize text-xs text-muted-foreground">
+                        {emp.role}
+                      </TableCell>
+                      <TableCell>
+                        <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                          emp.is_active ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
+                        }`}>
+                          {emp.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => handleResetStaffPassword(emp.id)}
+                            title="Send Reset Password recovery"
+                            className="p-1.5 border border-border hover:bg-secondary/40 rounded-lg text-muted-foreground hover:text-white"
+                          >
+                            <KeyRound className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleToggleStaff(emp.id, emp.is_active)}
+                            className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition-colors ${
+                              emp.is_active
+                                ? 'border-red-500/30 text-red-400 hover:bg-red-500/10'
+                                : 'border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10'
+                            }`}
+                          >
+                            {emp.is_active ? 'Deactivate' : 'Activate'}
+                          </button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <div className="text-center py-10 border border-dashed border-border rounded-xl">
+              <ShieldAlert className="h-10 w-10 text-muted-foreground/60 mx-auto mb-2" />
+              <p className="text-xs text-muted-foreground font-semibold">No active staff assistants registered.</p>
+            </div>
+          )}
+
+          {/* Recruit Inline Dialog Overlay */}
+          <Dialog
+            isOpen={recruitOpen}
+            onClose={() => setRecruitOpen(false)}
+            title="Recruit Staff Member"
+            description="Register login credentials for a new terminal assistant."
+          >
+            <form onSubmit={handleSubmitStaff(onRecruitStaff)} className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-muted-foreground block">Full Name</label>
+                <Input placeholder="Employee Name" {...registerStaff('name')} />
+                {staffErrors.name && (
+                  <p className="text-[11px] font-medium text-destructive">{staffErrors.name.message}</p>
+                )}
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-muted-foreground block">Email Address</label>
+                <Input type="email" placeholder="staff@gkrepair.com" {...registerStaff('email')} />
+                {staffErrors.email && (
+                  <p className="text-[11px] font-medium text-destructive">{staffErrors.email.message}</p>
+                )}
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-muted-foreground block">Temporary Password</label>
+                <Input type="password" placeholder="••••••••" {...registerStaff('password')} />
+                {staffErrors.password && (
+                  <p className="text-[11px] font-medium text-destructive">{staffErrors.password.message}</p>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-border/40">
+                <Button type="button" variant="outline" onClick={() => setRecruitOpen(false)} disabled={recruiting}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={recruiting}>
+                  {recruiting ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : null}
+                  Recruit Member
+                </Button>
+              </div>
+            </form>
+          </Dialog>
+        </div>
+      </Dialog>
+
+      {/* Modal 5: Service Rate Cards & Terms */}
+      <Dialog
+        isOpen={isRateCardsOpen}
+        onClose={() => {
+          setIsRateCardsOpen(false);
+          if (defaultTab === 'price-list') {
+            navigate('/settings');
+          }
+        }}
+        title="Service Rate Cards & Invoice Config"
+        description="Configure standard repair labor costs and invoicing terms."
+        className="max-w-4xl w-full"
+      >
+        <div className="space-y-4 max-w-4xl overflow-y-auto max-h-[70vh] pr-1">
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Define labor rates per model and service action. These rate cards are queried by the terminal order system to auto-fill ticket estimates.
+          </p>
+          <RateCards />
+        </div>
+      </Dialog>
+
+      {/* Modal 6: Generic Info Modal */}
+      <Dialog
+        isOpen={isGenericModalOpen}
+        onClose={() => setIsGenericModalOpen(false)}
+        title={genericModalTitle}
+        description={genericModalDescription}
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-foreground/90 whitespace-pre-line leading-relaxed">
+            {genericModalContent}
+          </p>
+          <div className="flex justify-end pt-4 border-t border-border/40">
+            <Button onClick={() => setIsGenericModalOpen(false)}>
+              Got it
+            </Button>
+          </div>
+        </div>
+      </Dialog>
     </div>
   );
 }

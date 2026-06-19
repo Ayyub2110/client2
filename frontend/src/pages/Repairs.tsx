@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -58,11 +58,15 @@ export default function Repairs() {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [status, setStatus] = useState('all');
   const [page, setPage] = useState(1);
+  const [searchByPhone, setSearchByPhone] = useState(false);
+  const [searchByImei, setSearchByImei] = useState(false);
 
   const [newlyAssignedIds, setNewlyAssignedIds] = useState<string[]>([]);
-  const { isConnected } = useRealtimeRepairs((newId) => {
+  const handleNewAssignment = useCallback((newId: string) => {
     setNewlyAssignedIds((prev) => [...prev, newId]);
-  });
+  }, []);
+
+  const { isConnected } = useRealtimeRepairs(handleNewAssignment);
 
   // Debounce search input
   useEffect(() => {
@@ -76,10 +80,10 @@ export default function Repairs() {
 
   // Fetch repairs using TanStack Query
   const { data, isLoading } = useQuery<RepairsResponse>({
-    queryKey: ['repairs-list', debouncedSearch, status, page],
+    queryKey: ['repairs-list', debouncedSearch, status, page, searchByPhone, searchByImei],
     queryFn: () => 
       apiClient.get(
-        `/repairs?search=${debouncedSearch}&status=${status}&page=${page}&limit=8`
+        `/repairs?search=${debouncedSearch}&status=${status}&page=${page}&limit=8&searchByPhone=${searchByPhone}&searchByIMEI=${searchByImei}`
       )
   });
 
@@ -106,7 +110,7 @@ export default function Repairs() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 border-b border-border/60 pb-5">
         <div>
           <h2 className="text-2xl font-extrabold text-white tracking-tight flex items-center gap-2">
             <Wrench className="h-6 w-6 text-primary" /> Repair Orders
@@ -124,10 +128,48 @@ export default function Repairs() {
             Track hardware tickets, status checkpoints, and balances.
           </p>
         </div>
-        <Button onClick={() => navigate('/repairs/new')} className="gap-2 self-start sm:self-auto">
-          <Plus className="h-4.5 w-4.5" />
-          <span>New Repair Order</span>
-        </Button>
+
+        {/* Search Input, contains checkboxes, and create button inline */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 lg:flex-1 lg:justify-end max-w-3xl w-full">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9 bg-secondary/35 border-border/80 w-full"
+            />
+          </div>
+
+          <div className="flex items-center gap-3.5 text-xs font-semibold text-muted-foreground select-none shrink-0">
+            <span className="text-foreground">Contains:</span>
+            <label htmlFor="searchByPhone" className="flex items-center gap-1.5 cursor-pointer hover:text-white transition-colors">
+              <input 
+                id="searchByPhone"
+                type="checkbox" 
+                checked={searchByPhone} 
+                onChange={(e) => setSearchByPhone(e.target.checked)}
+                className="rounded border-border bg-secondary/30 text-primary focus:ring-primary h-3.5 w-3.5 cursor-pointer"
+              />
+              <span>Phone</span>
+            </label>
+            <label htmlFor="searchByImei" className="flex items-center gap-1.5 cursor-pointer hover:text-white transition-colors">
+              <input 
+                id="searchByImei"
+                type="checkbox" 
+                checked={searchByImei} 
+                onChange={(e) => setSearchByImei(e.target.checked)}
+                className="rounded border-border bg-secondary/30 text-primary focus:ring-primary h-3.5 w-3.5 cursor-pointer"
+              />
+              <span>IMEI</span>
+            </label>
+          </div>
+
+          <Button onClick={() => navigate('/repairs/new')} className="gap-2 shrink-0">
+            <Plus className="h-4.5 w-4.5" />
+            <span>New Repair Order</span>
+          </Button>
+        </div>
       </div>
 
       {/* Filter Tabs Navigation */}
@@ -154,21 +196,6 @@ export default function Repairs() {
         ))}
       </div>
 
-      {/* Filter Panel Search */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by Job # or Customer name..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 bg-secondary/35 border-border/80 w-full"
-            />
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Content list Grid */}
       {isLoading ? (
         <div className="flex flex-col items-center justify-center py-24 gap-3">
@@ -184,7 +211,7 @@ export default function Repairs() {
               <Card
                 key={r.id}
                 onClick={() => navigate(`/repairs/${r.id}`)}
-                className="cursor-pointer hover:border-primary/45 transition-all group"
+                className="cursor-pointer hover:border-primary/45 transition-colors group"
               >
                 <CardContent className="p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                   {/* Job ID / Device name */}

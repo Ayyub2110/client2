@@ -157,7 +157,7 @@ export default function CustomerList() {
               <Card
                 key={cust.id}
                 onClick={() => navigate(`/customers/${cust.id}`)}
-                className="cursor-pointer hover:border-primary/45 transition-all group"
+                className="cursor-pointer hover:border-primary/45 transition-colors group"
               >
                 <CardContent className="p-6 flex items-start gap-4">
                   {/* Photo Profile */}

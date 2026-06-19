@@ -10,6 +10,7 @@ interface UserProfile {
   staff_id: string | null;
   shop_id: string | null;
   is_active: boolean;
+  community_username?: string | null;
   created_at: string;
 }
 
@@ -20,6 +21,10 @@ interface ShopProfile {
   address: string | null;
   phone: string | null;
   owner_id: string;
+  shop_type?: string | null;
+  gst_number?: string | null;
+  currency_symbol?: string | null;
+  currency_code?: string | null;
 }
 
 interface AuthContextType {

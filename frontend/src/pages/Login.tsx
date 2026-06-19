@@ -4,6 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useAuth } from '../context/AuthContext';
+import logo from '../logo.png';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -56,9 +57,7 @@ export default function Login() {
 
       <Card className="w-full max-w-md bg-card/45 backdrop-blur-xl border-border/80">
         <CardHeader className="space-y-3.5 text-center">
-          <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-tr from-primary to-purple-600 shadow-md shadow-primary/20">
-            <Smartphone className="h-6 w-6 text-white" />
-          </div>
+          <img src={logo} alt="GK Repair Logo" className="mx-auto h-12 w-12 object-contain rounded-xl bg-card" />
           <div className="space-y-1">
             <CardTitle className="text-2xl font-bold tracking-tight">GK Repair System</CardTitle>
             <CardDescription className="text-muted-foreground text-xs">

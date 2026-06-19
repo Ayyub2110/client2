@@ -25,7 +25,7 @@ const upload = multer({
 });
 
 // Public routes
-router.post('/register-owner', registerOwner);
+router.post('/register-owner', upload.single('logo'), registerOwner);
 router.post('/login', login);
 router.post('/refresh', refresh);
 router.post('/logout', logout);

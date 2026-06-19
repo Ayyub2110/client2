@@ -34,7 +34,11 @@ describe('Authentication & RBAC API Endpoint Tests', () => {
         password: 'ownerpassword123',
         shopName: 'Jane Repair Center',
         shopAddress: '456 Main St',
-        shopPhone: '1234567890'
+        shopPhone: '1234567890',
+        shopType: 'Mobile Repair',
+        communityUsername: 'jane_owner',
+        currencyCode: 'INR',
+        currencySymbol: '₹'
       });
     
     console.log('REGISTRATION FAILED WITH BODY:', regRes.body);

@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import logo from '../../logo.png';
 import { 
   Wrench, 
   Users, 
@@ -9,7 +10,8 @@ import {
   UserSquare2, 
   X,
   Smartphone,
-  TrendingUp
+  TrendingUp,
+  ClipboardList
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -22,15 +24,16 @@ interface NavItem {
   to: string;
   icon: React.ComponentType<{ className?: string }>;
   ownerOnly?: boolean;
+  end?: boolean;
 }
 
 const navigation: NavItem[] = [
-  { name: 'Dashboard', to: '/', icon: LayoutDashboard },
+  { name: 'Dashboard', to: '/', icon: LayoutDashboard, end: true },
   { name: 'Repair Jobs', to: '/repairs', icon: Wrench },
   { name: 'Customers', to: '/customers', icon: Users },
   { name: 'Reports', to: '/reports', icon: TrendingUp, ownerOnly: true },
-  { name: 'Staff Management', to: '/settings/staff', icon: UserSquare2, ownerOnly: true },
-  { name: 'Settings', to: '/settings', icon: Settings },
+  { name: 'Repairing Price List', to: '/settings/price-list', icon: ClipboardList, ownerOnly: true },
+  { name: 'Settings', to: '/settings', icon: Settings, end: true },
 ];
 
 export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
@@ -55,9 +58,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
         {/* Header (Brand) */}
         <div className="flex h-16 items-center justify-between px-6 border-b border-border">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-tr from-primary to-purple-600 shadow-md shadow-primary/20">
-              <Smartphone className="h-5 w-5 text-white" />
-            </div>
+            <img src={logo} alt="GK Repair Logo" className="h-9 w-9 object-contain rounded-lg bg-card" />
             <div>
               <h1 className="font-bold text-sm leading-none tracking-wide text-foreground">GK REPAIR</h1>
               <span className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider">Management</span>
@@ -78,6 +79,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
             <NavLink
               key={item.name}
               to={item.to}
+              end={item.end}
               onClick={() => setIsOpen(false)} // Close sidebar on mobile navigation
               className={({ isActive }) =>
                 `flex items-center gap-3.5 rounded-lg px-3.5 py-2.5 text-sm font-medium transition-all duration-200 group ${
@@ -113,11 +115,12 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
       {/* Mobile Bottom Tab Bar */}
       <div className="fixed bottom-0 left-0 right-0 z-40 flex h-16 border-t border-border bg-card/85 backdrop-blur-lg lg:hidden justify-around items-center px-1 pb-safe shadow-lg">
         {filteredNavigation
-          .filter((item) => item.to !== '/settings/staff')
+          .filter((item) => item.to !== '/settings/staff' && item.to !== '/settings/price-list')
           .map((item) => (
             <NavLink
               key={item.name}
               to={item.to}
+              end={item.end}
               className={({ isActive }) =>
                 `flex flex-col items-center justify-center flex-1 py-1 text-[10px] font-semibold transition-all ${
                   isActive ? 'text-primary scale-105' : 'text-muted-foreground hover:text-white'
