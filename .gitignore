@@ -64,3 +64,8 @@ coverage/
 # Misc
 # ================================
 *.local
+
+# ================================
+# WhatsApp Logs (Dynamic Server Outputs)
+# ================================
+backend/whatsapp_logs.json
