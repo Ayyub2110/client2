@@ -10,8 +10,13 @@ import {
   ChevronLeft, 
   ChevronRight,
   Filter,
-  Loader2
+  Loader2,
+  Check,
+  Phone,
+  Trash2
 } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -30,6 +35,9 @@ interface RepairListItem {
   device?: {
     brand: string;
     model: string;
+    front_photo_url?: string | null;
+    back_photo_url?: string | null;
+    problem?: string | null;
     customer?: {
       name: string;
       phone: string;
@@ -67,6 +75,62 @@ export default function Repairs() {
   }, []);
 
   const { isConnected } = useRealtimeRepairs(handleNewAssignment);
+
+  const queryClient = useQueryClient();
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => apiClient.delete(`/repairs/${id}`),
+    onSuccess: () => {
+      toast.success('Repair order cancelled successfully');
+      queryClient.invalidateQueries({ queryKey: ['repairs-list'] });
+    },
+    onError: (err: any) => {
+      toast.error(err.message || 'Failed to cancel repair order');
+    }
+  });
+
+  const handleDelete = (e: React.MouseEvent, id: string, jobNumber: string) => {
+    e.stopPropagation();
+    if (window.confirm(`Are you sure you want to cancel repair order ${jobNumber}?`)) {
+      deleteMutation.mutate(id);
+    }
+  };
+
+  const handleDownloadInvoice = async (e: React.MouseEvent, id: string, jobNumber: string) => {
+    e.stopPropagation();
+    try {
+      const token = localStorage.getItem('gk_access_token');
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/repairs/${id}/receipt?download=true`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+      if (!response.ok) throw new Error('Receipt generation failed');
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${jobNumber}-receipt.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success('Invoice download started');
+    } catch (err: any) {
+      toast.error(err.message || 'Could not download invoice');
+    }
+  };
+
+  const handleCall = (e: React.MouseEvent, phoneNum: string) => {
+    e.stopPropagation();
+    if (!phoneNum) {
+      toast.error('No phone number registered for this customer');
+      return;
+    }
+    window.location.href = `tel:${phoneNum}`;
+  };
 
   // Debounce search input
   useEffect(() => {
@@ -173,27 +237,35 @@ export default function Repairs() {
       </div>
 
       {/* Filter Tabs Navigation */}
-      <div className="flex flex-wrap gap-1.5 border-b border-border pb-1">
+      <div className="flex flex-wrap gap-2.5 border-b border-border/40 pb-3 select-none">
         {[
           { key: 'all', label: 'All Jobs' },
-          { key: 'pending', label: 'Pending' },
+          { key: 'pending', label: 'Ordered' },
           { key: 'repairing', label: 'Repairing' },
-          { key: 'ready', label: 'Ready' },
+          { key: 'ready', label: 'Repaired' },
           { key: 'delivered', label: 'Delivered' },
           { key: 'cancelled', label: 'Cancelled' }
-        ].map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => handleTabChange(tab.key)}
-            className={`px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-t-lg border-b-2 transition-all ${
-              status === tab.key
-                ? 'border-primary text-primary bg-primary/5'
-                : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-secondary/20'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+        ].map((tab) => {
+          const isActive = status === tab.key;
+          return (
+            <button
+              key={tab.key}
+              onClick={() => handleTabChange(tab.key)}
+              className={`px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-full border transition-all flex items-center gap-1.5 ${
+                isActive
+                  ? 'bg-white text-black border-white shadow-sm shadow-white/5'
+                  : 'bg-secondary/40 text-muted-foreground border-border/60 hover:bg-secondary/60 hover:text-foreground'
+              }`}
+            >
+              {isActive && (
+                <span className="h-4 w-4 rounded-full bg-emerald-500 flex items-center justify-center border border-emerald-500/10">
+                  <Check className="h-3 w-3 text-white stroke-[3.5px]" />
+                </span>
+              )}
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Content list Grid */}
@@ -206,65 +278,110 @@ export default function Repairs() {
         </div>
       ) : data?.repairs && data.repairs.length > 0 ? (
         <div className="space-y-6">
-          <div className="grid gap-4">
+          <div className="grid gap-6 md:grid-cols-2">
             {data.repairs.map((r) => (
               <Card
                 key={r.id}
                 onClick={() => navigate(`/repairs/${r.id}`)}
-                className="cursor-pointer hover:border-primary/45 transition-colors group"
+                className="relative overflow-hidden bg-card/45 backdrop-blur-xl border border-border/80 rounded-xl hover:border-primary/45 transition-colors group flex flex-col pt-5 cursor-pointer"
               >
-                <CardContent className="p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                  {/* Job ID / Device name */}
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-3">
-                      <span className="font-mono text-sm font-extrabold text-primary">{r.job_number}</span>
-                      <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase border ${statusColors[r.status] || ''}`}>
-                        <span className={`h-1.5 w-1.5 rounded-full ${statusDotColors[r.status] || 'bg-slate-400'}`} />
-                        {r.status}
-                      </span>
-                      {newlyAssignedIds.includes(r.id) && (
-                        <span className="inline-flex items-center rounded-full bg-violet-500/10 text-violet-400 border border-violet-500/25 px-2 py-0.5 text-[10px] font-extrabold uppercase animate-pulse">
-                          New Assignment
-                        </span>
-                      )}
-                    </div>
-                    <h3 className="font-bold text-base text-white group-hover:text-primary transition-colors">
-                      {r.device ? `${r.device.brand} ${r.device.model}` : 'Unknown Device'}
-                    </h3>
-                    <div className="text-xs text-muted-foreground">
-                      Client: <span className="font-semibold text-foreground">{r.device?.customer?.name || 'Walk-In'}</span>
-                      {r.assigned_staff && (
-                        <>
-                          <span className="mx-2">•</span>
-                          Tech: <span className="font-semibold text-foreground">{r.assigned_staff.name}</span>
-                        </>
-                      )}
-                    </div>
+                {/* Pill header with Date */}
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-primary text-primary-foreground text-[10px] font-bold px-3.5 py-1 rounded-full shadow-md tracking-wider">
+                  {new Date(r.created_at).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                  })} {new Date(r.created_at).toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                  })}
+                </div>
+
+                <div className="p-5 flex gap-5 items-start">
+                  {/* Left Column: Device Photo */}
+                  <div className="w-24 h-24 rounded-xl border border-border/60 bg-secondary/35 flex-shrink-0 overflow-hidden flex items-center justify-center">
+                    {r.device?.front_photo_url ? (
+                      <img 
+                        src={r.device.front_photo_url} 
+                        alt="device front" 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : r.device?.back_photo_url ? (
+                      <img 
+                        src={r.device.back_photo_url} 
+                        alt="device back" 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="h-full w-full bg-secondary/20 flex items-center justify-center">
+                        <Wrench className="h-8 w-8 text-muted-foreground/60" />
+                      </div>
+                    )}
                   </div>
 
-                  {/* Financial metrics & Pick-up Calendar */}
-                  <div className="flex flex-wrap items-center gap-6 text-sm">
-                    <div className="flex flex-col">
-                      <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Estimate</span>
-                      <span className="font-bold text-white">₹{Number(r.estimate).toFixed(2)}</span>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Balance</span>
-                      <span className={`font-bold ${r.balance > 0 ? 'text-amber-400' : 'text-slate-400'}`}>
-                        ₹{Number(r.balance).toFixed(2)}
-                      </span>
+                  {/* Right Column: Diagnostics details */}
+                  <div className="flex-1 space-y-1.5 text-xs text-muted-foreground">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-sm">
+                        <span className="font-bold text-white">Model:</span>
+                        <span className="text-foreground/90 font-medium">{r.device ? `${r.device.brand} ${r.device.model}` : 'Unknown Device'}</span>
+                      </div>
+                      <span className="font-mono text-xs font-extrabold text-primary">{r.job_number}</span>
                     </div>
 
-                    <div className="flex flex-col border-l border-border/80 pl-6">
-                      <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider flex items-center gap-1">
-                        <Calendar className="h-3 w-3" /> Due Date
-                      </span>
-                      <span className="font-semibold text-white mt-0.5">
-                        {r.delivery_date ? new Date(r.delivery_date).toLocaleDateString() : 'Unscheduled'}
-                      </span>
+                    <div className="flex flex-col">
+                      <span className="font-bold text-white">Problem:</span>
+                      <div className="pl-1 mt-0.5 text-xs text-muted-foreground space-y-0.5 font-medium">
+                        {r.device?.problem ? (
+                          r.device.problem.split(/[\n,;]+/).map((p: string, idx: number) => (
+                            <p key={idx}>{idx + 1}. {p.trim()}</p>
+                          ))
+                        ) : (
+                          <p>No problem description</p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-white">Estimated Price:</span>
+                      <span className="text-foreground/90 font-semibold">₹{Number(r.estimate).toFixed(2)}</span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-white">Cust Name:</span>
+                      <span className="text-foreground/90 font-semibold">{r.device?.customer?.name || 'Walk-In'}</span>
                     </div>
                   </div>
-                </CardContent>
+                </div>
+
+                {/* Bottom button actions */}
+                <div className="grid grid-cols-4 border-t border-border mt-auto select-none">
+                  <button
+                    onClick={(e) => handleDelete(e, r.id, r.job_number)}
+                    className="py-3 text-xs font-bold uppercase tracking-wider text-center text-red-400 bg-secondary/15 hover:bg-red-500/10 transition-colors border-r border-border hover:text-red-300"
+                  >
+                    Delete
+                  </button>
+                  <button
+                    onClick={(e) => handleDownloadInvoice(e, r.id, r.job_number)}
+                    className="py-3 text-xs font-bold uppercase tracking-wider text-center text-primary-foreground bg-primary hover:bg-primary/95 transition-colors border-r border-border"
+                  >
+                    Invoice
+                  </button>
+                  <button
+                    onClick={() => navigate(`/repairs/${r.id}`)}
+                    className="py-3 text-xs font-bold uppercase tracking-wider text-center text-primary-foreground bg-primary hover:bg-primary/95 transition-colors border-r border-border"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={(e) => handleCall(e, r.device?.customer?.phone || '')}
+                    className="py-3 text-xs font-bold uppercase tracking-wider text-center text-emerald-400 bg-secondary/15 hover:bg-emerald-500/10 transition-colors hover:text-emerald-300"
+                  >
+                    Call
+                  </button>
+                </div>
               </Card>
             ))}
           </div>
