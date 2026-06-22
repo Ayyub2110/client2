@@ -10,7 +10,8 @@ const createRateCardSchema = z.object({
 
 const serviceItemSchema = z.object({
   service_name: z.string().min(1, 'Service name is required'),
-  labor_cost: z.number().nonnegative('Cost must be 0 or positive'),
+  og_cost: z.number().nonnegative('Cost must be 0 or positive').optional().default(0),
+  ditto_cost: z.number().nonnegative('Cost must be 0 or positive').optional().default(0),
   sort_order: z.number().int().optional().default(0),
 });
 
@@ -284,7 +285,8 @@ export async function upsertRateCardServices(req: Request, res: Response): Promi
       const insertPayload = services.map((svc, idx) => ({
         rate_card_id: id,
         service_name: svc.service_name,
-        labor_cost: svc.labor_cost,
+        og_cost: svc.og_cost ?? 0,
+        ditto_cost: svc.ditto_cost ?? 0,
         sort_order: svc.sort_order ?? idx,
       }));
 

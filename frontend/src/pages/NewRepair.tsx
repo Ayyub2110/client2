@@ -110,6 +110,7 @@ export default function NewRepair() {
     idCardBack: string | null;
     mobileFront: string | null;
     mobileBack: string | null;
+    customerPhoto: string | null;
     video: string | null;
     signature: string | null;
     documentNumber: string;
@@ -118,6 +119,7 @@ export default function NewRepair() {
     idCardBack: null,
     mobileFront: null,
     mobileBack: null,
+    customerPhoto: null,
     video: null,
     signature: '',
     documentNumber: ''
@@ -210,7 +212,7 @@ export default function NewRepair() {
   // Fetch Rate Cards based on Brand and Model
   const watchBrand = watch('brand');
   const watchModel = watch('model');
-  const { data: rateCardData } = useQuery<{ rateCard: { services: Array<{ id: string; service_name: string; labor_cost: number }> } | null }>({
+  const { data: rateCardData } = useQuery<{ rateCard: { services: Array<{ id: string; service_name: string; og_cost: number; ditto_cost: number }> } | null }>({
     queryKey: ['rate-card-lookup', watchBrand, watchModel],
     queryFn: () => apiClient.get(`/ratecards/lookup?brand=${encodeURIComponent(watchBrand)}&model=${encodeURIComponent(watchModel)}`),
     enabled: watchBrand.length > 0 && watchModel.length > 0
@@ -621,24 +623,43 @@ export default function NewRepair() {
 
           {/* Rate Card Autocomplete Services List */}
           {rateCardData?.rateCard?.services && rateCardData.rateCard.services.length > 0 && (
-            <div className="border border-primary/20 bg-primary/5 rounded-xl p-3 space-y-2">
+            <div className="border border-primary/20 bg-primary/5 rounded-xl p-4 space-y-3">
               <span className="text-[10px] font-black text-primary/95 uppercase tracking-widest block">Quick Rate Card Services</span>
-              <div className="flex flex-wrap gap-2">
-                {rateCardData.rateCard.services.map((svc) => {
-                  const isSelected = selectedServices.some(s => s.service_name === svc.service_name);
+              <div className="space-y-3">
+                {rateCardData.rateCard.services.map((svc: any) => {
+                  const ogName = `${svc.service_name} (OG)`;
+                  const dittoName = `${svc.service_name} (Ditto)`;
+                  const isOgSelected = selectedServices.some(s => s.service_name === ogName);
+                  const isDittoSelected = selectedServices.some(s => s.service_name === dittoName);
+
                   return (
-                    <button
-                      key={svc.id}
-                      type="button"
-                      onClick={() => toggleService({ service_name: svc.service_name, labor_cost: svc.labor_cost })}
-                      className={`px-3 py-1.5 rounded-lg border text-xs font-bold transition-all ${
-                        isSelected
-                          ? 'bg-primary text-white border-transparent'
-                          : 'bg-secondary/40 border-border/80 text-muted-foreground hover:text-white hover:border-primary/50'
-                      }`}
-                    >
-                      {svc.service_name} (₹{svc.labor_cost})
-                    </button>
+                    <div key={svc.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-2.5 rounded-lg bg-secondary/20 border border-border/40">
+                      <span className="text-xs font-bold text-foreground">{svc.service_name}</span>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => toggleService({ service_name: ogName, labor_cost: svc.og_cost ?? 0 })}
+                          className={`px-3 py-1.5 rounded-lg border text-[11px] font-extrabold transition-all flex items-center gap-1.5 ${
+                            isOgSelected
+                              ? 'bg-primary text-white border-transparent shadow-[0_0_10px_rgba(168,85,247,0.3)]'
+                              : 'bg-secondary/40 border-border/80 text-muted-foreground hover:text-foreground hover:border-primary/50'
+                          }`}
+                        >
+                          <span>OG: ₹{svc.og_cost ?? 0}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => toggleService({ service_name: dittoName, labor_cost: svc.ditto_cost ?? 0 })}
+                          className={`px-3 py-1.5 rounded-lg border text-[11px] font-extrabold transition-all flex items-center gap-1.5 ${
+                            isDittoSelected
+                              ? 'bg-emerald-600 text-white border-transparent shadow-[0_0_10px_rgba(16,185,129,0.3)]'
+                              : 'bg-secondary/40 border-border/80 text-muted-foreground hover:text-foreground hover:border-emerald-500/50'
+                          }`}
+                        >
+                          <span>Ditto: ₹{svc.ditto_cost ?? 0}</span>
+                        </button>
+                      </div>
+                    </div>
                   );
                 })}
               </div>
@@ -1122,6 +1143,28 @@ export default function NewRepair() {
                     type="file"
                     accept="image/*"
                     onChange={(e) => handleFileUpload(e, 'mobileBack', true)}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+
+              {/* Customer Photo */}
+              <div className="space-y-1.5 text-center">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Customer Image</span>
+                <label className="border border-border/80 rounded-xl p-3.5 bg-secondary/15 relative h-28 flex flex-col justify-center items-center cursor-pointer hover:border-primary/50 overflow-hidden">
+                  {kycData.customerPhoto ? (
+                    <img src={kycData.customerPhoto} className="h-full w-full object-cover rounded-lg" alt="Customer Profile" />
+                  ) : (
+                    <>
+                      <Camera className="h-5 w-5 text-primary" />
+                      <span className="text-[10px] text-white font-semibold mt-1">Take Photo</span>
+                    </>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="user"
+                    onChange={(e) => handleFileUpload(e, 'customerPhoto')}
                     className="hidden"
                   />
                 </label>

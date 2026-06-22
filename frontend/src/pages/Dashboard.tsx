@@ -98,6 +98,40 @@ export default function Dashboard() {
   const [selectedStatus, setSelectedStatus] = useState('');
   const [statusNote, setStatusNote] = useState('');
 
+  // Slide Carousel State
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  const slides = [
+    {
+      title: "Boost Shop Operations & Pick-up Speed",
+      description: "Utilize status filters to quickly identify device statuses. Proactively follow up on 'Ready' jobs to speed up customer collection and minimize workspace load.",
+      color: "from-primary/25 to-secondary/15 border-primary/30",
+      textColor: "text-primary",
+      icon: <Clock className="h-6 w-6 text-primary" />
+    },
+    {
+      title: "Original (OG) vs Copy (Ditto) Rates",
+      description: "Double column service rates are live! Inform customers of warranty and performance differences between Original and Copy parts to secure higher satisfaction.",
+      color: "from-emerald-500/20 to-secondary/15 border-emerald-500/25",
+      textColor: "text-emerald-500",
+      icon: <DollarSign className="h-6 w-6 text-emerald-400" />
+    },
+    {
+      title: "Confirm Device Security & Signatures",
+      description: "Protect client privacy. Make sure you lock the device with pattern patterns, complete full KYC front/back images, and capture picker signatures on delivery.",
+      color: "from-amber-500/20 to-secondary/15 border-amber-500/25",
+      textColor: "text-amber-500",
+      icon: <Wrench className="h-6 w-6 text-amber-500" />
+    }
+  ];
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % slides.length);
+    }, 6000);
+    return () => clearInterval(timer);
+  }, [slides.length]);
+
   // 1. Fetch dashboard stats with 5 min staleTime
   const { data, isLoading, refetch } = useQuery<DashboardData>({
     queryKey: ['dashboard-data'],
@@ -258,6 +292,35 @@ export default function Dashboard() {
             <Plus className="h-4.5 w-4.5" />
             <span>New Ticket</span>
           </Button>
+        </div>
+      </div>
+
+      {/* Slide Carousel Banner */}
+      <div className={`relative overflow-hidden p-5 rounded-2xl border bg-gradient-to-br ${slides[currentSlide].color} transition-all duration-500 shadow-md flex items-start gap-4`}>
+        <div className="p-3 rounded-xl bg-secondary/50 border border-border/40 shrink-0 shadow-sm">
+          {slides[currentSlide].icon}
+        </div>
+        <div className="space-y-1.5 flex-1 min-w-0 pr-12">
+          <h4 className="text-sm font-black tracking-tight text-foreground uppercase">
+            {slides[currentSlide].title}
+          </h4>
+          <p className="text-xs text-muted-foreground leading-relaxed max-w-2xl">
+            {slides[currentSlide].description}
+          </p>
+        </div>
+        
+        {/* Carousel controls */}
+        <div className="absolute right-4 bottom-4 flex items-center gap-1.5 z-10">
+          {slides.map((_, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => setCurrentSlide(idx)}
+              className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
+                currentSlide === idx ? 'w-4 bg-primary' : 'bg-muted-foreground/30'
+              }`}
+            />
+          ))}
         </div>
       </div>
 
