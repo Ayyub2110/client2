@@ -13,7 +13,8 @@ import {
   Loader2,
   TrendingUp,
   Smartphone,
-  CheckCircle
+  CheckCircle,
+  Calendar
 } from 'lucide-react';
 import { 
   ResponsiveContainer, 
@@ -25,7 +26,6 @@ import {
   PieChart, 
   Pie, 
   Cell, 
-  Legend,
   CartesianGrid
 } from 'recharts';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/Card';
@@ -56,6 +56,36 @@ interface DashboardData {
   monthlyRevenue: { month: string; revenue: number; repairsCount: number }[];
   topDeviceBrands: { brand: string; count: number }[];
 }
+
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-neutral-950/95 border border-white/10 backdrop-blur-xl p-3.5 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.7)] border-t-primary/40 border-t-2">
+        <p className="text-[10px] font-black text-white/60 mb-2 tracking-wider uppercase">{label}</p>
+        <div className="space-y-2">
+          {payload.map((item: any, idx: number) => {
+            const isRevenue = item.name.toLowerCase().includes('revenue');
+            const valueFormatted = isRevenue 
+              ? `₹${Number(item.value).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+              : item.value;
+            return (
+              <div key={idx} className="flex items-center justify-between gap-6 text-[11px]">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.fill || item.color }} />
+                  <span className="text-neutral-300 font-medium">{item.name}</span>
+                </div>
+                <span className="font-mono font-bold text-white text-right">
+                  {valueFormatted}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -178,14 +208,39 @@ export default function Dashboard() {
     cancelled: 'bg-red-500/10 text-red-500 border-red-500/20'
   };
 
+  const statusDot: Record<string, string> = {
+    pending: 'bg-amber-500',
+    repairing: 'bg-blue-500',
+    ready: 'bg-emerald-500',
+    delivered: 'bg-slate-400',
+    cancelled: 'bg-red-500'
+  };
+
+  const totalActiveRepairs = pieData.reduce((acc, curr) => acc + curr.value, 0);
+
+  const todayDate = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+
   return (
     <div className="space-y-6">
       {/* Welcome & Toolbar */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-extrabold text-white tracking-tight">System Dashboard</h2>
-          <p className="text-muted-foreground text-sm">
-            Overview of today&apos;s metrics, shop revenues, and technician pipelines.
+          <div className="flex items-center gap-2.5">
+            <h2 className="text-3xl font-black text-white tracking-tight bg-gradient-to-r from-white via-neutral-200 to-neutral-400 bg-clip-text text-transparent">
+              Shop Overview
+            </h2>
+            <span className="px-2.5 py-0.5 text-[10px] font-bold tracking-wider text-primary-foreground bg-primary rounded-full uppercase shadow-[0_0_15px_rgba(168,85,247,0.35)]">
+              {authRole}
+            </span>
+          </div>
+          <p className="text-muted-foreground text-xs flex items-center gap-1.5 mt-1">
+            <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>Real-time shop diagnostics &bull; {todayDate}</span>
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -194,14 +249,14 @@ export default function Dashboard() {
             size="sm"
             onClick={handleRefresh}
             disabled={refreshing}
-            className="gap-1.5"
+            className="gap-1.5 border-border/80 text-white bg-secondary/15 hover:bg-secondary/40"
           >
             <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-            <span>Refresh Data</span>
+            <span>Refresh</span>
           </Button>
-          <Button onClick={() => navigate('/repairs/new')} className="gap-1.5 sm:flex">
+          <Button onClick={() => navigate('/repairs/new')} className="gap-1.5 shadow-[0_0_15px_rgba(168,85,247,0.25)] hover:shadow-[0_0_20px_rgba(168,85,247,0.4)]">
             <Plus className="h-4.5 w-4.5" />
-            <span>New Repair Ticket</span>
+            <span>New Ticket</span>
           </Button>
         </div>
       </div>
@@ -209,64 +264,88 @@ export default function Dashboard() {
       {/* KPI Cards Row */}
       {stats && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Card>
+          {/* Card 1: Today's New Repairs */}
+          <Card className="relative overflow-hidden bg-gradient-to-br from-card/30 to-secondary/30 border border-border/80 hover:border-amber-500/30 transition-all duration-300 group">
+            <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-amber-500/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
               <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-none bg-clip-border text-current">
                 Today&apos;s New Repairs
               </CardTitle>
-              <Wrench className="h-5 w-5 text-amber-500" />
+              <div className="p-2 rounded-lg bg-amber-500/10 text-amber-500 border border-amber-500/20 transition-all duration-300 group-hover:scale-110 group-hover:shadow-[0_0_12px_rgba(245,158,11,0.25)]">
+                <Wrench className="h-4.5 w-4.5" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-black text-white tracking-tight">{stats.newRepairs}</div>
-              <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1">
+              <div className="text-3xl font-black text-white tracking-tight">
+                {stats.newRepairs}
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-2.5 flex items-center gap-1.5">
                 <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
                 <span>Active tickets initialized today</span>
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          {/* Card 2: Ready for Pickup */}
+          <Card className="relative overflow-hidden bg-gradient-to-br from-card/30 to-secondary/30 border border-border/80 hover:border-emerald-500/30 transition-all duration-300 group">
+            <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-emerald-500/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
               <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-none bg-clip-border text-current">
                 Ready for Pickup
               </CardTitle>
-              <Clock className="h-5 w-5 text-emerald-500" />
+              <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 transition-all duration-300 group-hover:scale-110 group-hover:shadow-[0_0_12px_rgba(16,185,129,0.25)]">
+                <Clock className="h-4.5 w-4.5" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-black text-white tracking-tight">{stats.pendingDeliveries}</div>
-              <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1">
-                <AlertCircle className="h-3.5 w-3.5 text-amber-500" />
+              <div className="text-3xl font-black text-white tracking-tight">
+                {stats.pendingDeliveries}
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-2.5 flex items-center gap-1.5">
+                <AlertCircle className="h-3.5 w-3.5 text-amber-500 animate-pulse" />
                 <span>Awaiting customer delivery</span>
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          {/* Card 3: Today's Advances */}
+          <Card className="relative overflow-hidden bg-gradient-to-br from-card/30 to-secondary/30 border border-border/80 hover:border-primary/30 transition-all duration-300 group">
+            <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-primary/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
               <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-none bg-clip-border text-current">
                 Today&apos;s Advances
               </CardTitle>
-              <DollarSign className="h-5 w-5 text-primary" />
+              <div className="p-2 rounded-lg bg-primary/10 text-primary border border-primary/20 transition-all duration-300 group-hover:scale-110 group-hover:shadow-[0_0_12px_rgba(168,85,247,0.25)]">
+                <DollarSign className="h-4.5 w-4.5" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-black text-white tracking-tight">₹{Number(stats.revenueCollected).toFixed(2)}</div>
-              <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1">
+              <div className="text-3xl font-black text-white tracking-tight">
+                ₹{Number(stats.revenueCollected).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-2.5 flex items-center gap-1.5">
                 <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
                 <span>Collected cash advances today</span>
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          {/* Card 4: Outstanding Balance */}
+          <Card className="relative overflow-hidden bg-gradient-to-br from-card/30 to-secondary/30 border border-border/80 hover:border-red-500/30 transition-all duration-300 group">
+            <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-red-500/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
               <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-none bg-clip-border text-current">
                 Outstanding Balance
               </CardTitle>
-              <DollarSign className="h-5 w-5 text-red-500" />
+              <div className="p-2 rounded-lg bg-red-500/10 text-red-500 border border-red-500/20 transition-all duration-300 group-hover:scale-110 group-hover:shadow-[0_0_12px_rgba(239,68,68,0.25)]">
+                <DollarSign className="h-4.5 w-4.5" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-black text-white tracking-tight">₹{Number(stats.totalOutstandingBalance).toFixed(2)}</div>
-              <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1">
+              <div className="text-3xl font-black text-white tracking-tight">
+                ₹{Number(stats.totalOutstandingBalance).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-2.5 flex items-center gap-1.5">
                 <AlertCircle className="h-3.5 w-3.5 text-red-500" />
                 <span>Outstanding dues for active jobs</span>
               </p>
@@ -276,35 +355,53 @@ export default function Dashboard() {
       )}
 
       {/* QUICK ACTIONS ROW */}
-      <div className="flex flex-wrap gap-3">
-        <Button variant="outline" size="sm" onClick={() => navigate('/repairs?status=pending')} className="bg-secondary/25 border-border/80 text-white gap-1.5">
-          <Clock className="h-4 w-4" /> View Pending list
-        </Button>
-        <Button variant="outline" size="sm" onClick={() => navigate('/repairs?status=ready')} className="bg-secondary/25 border-border/80 text-white gap-1.5">
-          <CheckCircle className="h-4 w-4 text-emerald-400" /> View Ready for pickup
-        </Button>
+      <div className="flex flex-wrap items-center gap-3 bg-secondary/10 border border-border/40 p-2 rounded-xl w-fit">
+        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-2">Quick Filters:</span>
+        <button
+          onClick={() => navigate('/repairs?status=pending')}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-amber-500/5 hover:bg-amber-500/10 border border-amber-500/10 hover:border-amber-500/30 transition-all duration-200"
+        >
+          <Clock className="h-3.5 w-3.5 text-amber-500" />
+          <span>Pending Pipeline</span>
+        </button>
+        <button
+          onClick={() => navigate('/repairs?status=ready')}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-emerald-500/5 hover:bg-emerald-500/10 border border-emerald-500/10 hover:border-emerald-500/30 transition-all duration-200"
+        >
+          <CheckCircle className="h-3.5 w-3.5 text-emerald-500" />
+          <span>Ready for Pickup</span>
+        </button>
       </div>
 
       {/* CHARTS CONTAINER GRID */}
       <div className="grid gap-6 md:grid-cols-3">
         {/* Dual Axis Monthly Revenue chart */}
         <Card className="md:col-span-2">
-          <CardHeader>
+          <CardHeader className="border-b border-border/40 pb-4">
             <CardTitle className="text-base text-white">Monthly Repair & Revenues</CardTitle>
             <CardDescription>Aggregate orders and estimated values over the last 6 months.</CardDescription>
           </CardHeader>
-          <CardContent className="h-72">
+          <CardContent className="h-80 pt-6">
             {monthlyRevenue.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={monthlyRevenue} margin={{ left: -10, right: -10, top: 10 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#242424" />
-                  <XAxis dataKey="month" stroke="#888888" fontSize={11} />
-                  <YAxis yAxisId="left" orientation="left" stroke="#8884d8" fontSize={11} label={{ value: 'Revenue ($)', angle: -90, position: 'insideLeft', style: { fill: '#8884d8' } }} />
-                  <YAxis yAxisId="right" orientation="right" stroke="#82ca9d" fontSize={11} label={{ value: 'Repairs Count', angle: 90, position: 'insideRight', style: { fill: '#82ca9d' } }} />
-                  <Tooltip contentStyle={{ backgroundColor: '#171717', borderColor: '#2e2e2e', borderRadius: '8px' }} />
-                  <Bar yAxisId="left" dataKey="revenue" fill="#8884d8" name="Revenue Forecast" radius={[4, 4, 0, 0]} />
-                  <Bar yAxisId="right" dataKey="repairsCount" fill="#82ca9d" name="Repairs count" radius={[4, 4, 0, 0]} />
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                  <defs>
+                    <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.85}/>
+                      <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.15}/>
+                    </linearGradient>
+                    <linearGradient id="repairsCountGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#10b981" stopOpacity={0.85}/>
+                      <stop offset="100%" stopColor="#10b981" stopOpacity={0.15}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
+                  <XAxis dataKey="month" stroke="rgba(255,255,255,0.3)" fontSize={10} tickLine={false} axisLine={false} dy={4} />
+                  <YAxis yAxisId="left" orientation="left" stroke="#a855f7" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(val) => `₹${val}`} dx={-4} />
+                  <YAxis yAxisId="right" orientation="right" stroke="#10b981" fontSize={10} tickLine={false} axisLine={false} dx={4} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar yAxisId="left" dataKey="revenue" fill="url(#revenueGradient)" name="Revenue Forecast" radius={[4, 4, 0, 0]} barSize={28} />
+                  <Bar yAxisId="right" dataKey="repairsCount" fill="url(#repairsCountGradient)" name="Repairs Count" radius={[4, 4, 0, 0]} barSize={28} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -317,38 +414,45 @@ export default function Dashboard() {
 
         {/* Donut Chart: Repairs by status */}
         <Card>
-          <CardHeader>
+          <CardHeader className="border-b border-border/40 pb-4">
             <CardTitle className="text-base text-white">Repairs by Status</CardTitle>
             <CardDescription>Status breakdown of repair orders.</CardDescription>
           </CardHeader>
-          <CardContent className="h-72 flex flex-col justify-center">
+          <CardContent className="h-80 flex flex-col justify-between pt-6">
             {pieData.length > 0 ? (
               <>
-                <div className="h-48">
+                <div className="h-44 relative flex items-center justify-center">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none mt-2">
+                    <span className="text-2xl font-black text-white tracking-tight">{totalActiveRepairs}</span>
+                    <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-wider">Active</span>
+                  </div>
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
                         data={pieData}
                         cx="50%"
                         cy="50%"
-                        innerRadius={60}
-                        outerRadius={80}
-                        paddingAngle={5}
+                        innerRadius={55}
+                        outerRadius={70}
+                        paddingAngle={3}
                         dataKey="value"
                       >
                         {pieData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
+                          <Cell key={`cell-${index}`} fill={entry.color} stroke="rgba(0,0,0,0.3)" strokeWidth={2} />
                         ))}
                       </Pie>
-                      <Tooltip contentStyle={{ backgroundColor: '#171717', borderColor: '#2e2e2e', borderRadius: '8px' }} />
+                      <Tooltip content={<CustomTooltip />} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
-                <div className="flex flex-wrap justify-center gap-x-3 gap-y-1 mt-4">
+                <div className="grid grid-cols-2 gap-2 mt-2 px-1">
                   {pieData.map((d) => (
-                    <div key={d.name} className="flex items-center gap-1 text-[10px] text-white">
-                      <span className="h-2 w-2 rounded-full" style={{ backgroundColor: d.color }} />
-                      <span>{d.name}: {d.value}</span>
+                    <div key={d.name} className="flex items-center gap-2 p-1.5 rounded-lg bg-secondary/15 border border-border/30">
+                      <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: d.color }} />
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-[9px] text-muted-foreground font-semibold uppercase truncate">{d.name}</span>
+                        <span className="text-xs font-bold text-white font-mono leading-none mt-0.5">{d.value}</span>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -363,19 +467,25 @@ export default function Dashboard() {
 
         {/* Bar Chart: Top 5 Brands */}
         <Card className="md:col-span-3">
-          <CardHeader>
+          <CardHeader className="border-b border-border/40 pb-4">
             <CardTitle className="text-base text-white">Top Hardware Brands</CardTitle>
             <CardDescription>Frequency breakdown of device brands.</CardDescription>
           </CardHeader>
-          <CardContent className="h-64">
+          <CardContent className="h-64 pt-6">
             {topDeviceBrands.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={topDeviceBrands} layout="vertical" margin={{ left: 10, right: 10, top: 5, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#242424" />
-                  <XAxis type="number" stroke="#888888" fontSize={11} />
-                  <YAxis dataKey="brand" type="category" stroke="#888888" fontSize={11} width={80} />
-                  <Tooltip contentStyle={{ backgroundColor: '#171717', borderColor: '#2e2e2e', borderRadius: '8px' }} />
-                  <Bar dataKey="count" fill="#8884d8" name="Orders Checked" radius={[0, 4, 4, 0]} barSize={20} />
+                  <defs>
+                    <linearGradient id="brandGradient" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.85}/>
+                      <stop offset="100%" stopColor="#ec4899" stopOpacity={0.45}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" vertical={false} />
+                  <XAxis type="number" stroke="rgba(255,255,255,0.3)" fontSize={10} tickLine={false} axisLine={false} />
+                  <YAxis dataKey="brand" type="category" stroke="rgba(255,255,255,0.3)" fontSize={10} width={80} tickLine={false} axisLine={false} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar dataKey="count" fill="url(#brandGradient)" name="Orders Checked" radius={[0, 4, 4, 0]} barSize={16} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -389,13 +499,13 @@ export default function Dashboard() {
 
       {/* RECENT REPAIRS TABLE */}
       <Card>
-        <CardHeader>
+        <CardHeader className="border-b border-border/40 pb-4">
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-base text-white">Recent Repair Orders</CardTitle>
               <CardDescription>Overview of the last 5 registered repairs.</CardDescription>
             </div>
-            <Button variant="outline" size="sm" asChild className="gap-1">
+            <Button variant="outline" size="sm" asChild className="gap-1 border-border/80 text-white bg-secondary/15 hover:bg-secondary/40">
               <Link to="/repairs">
                 <span>All Repairs</span> <ArrowUpRight className="h-4 w-4" />
               </Link>
@@ -406,38 +516,50 @@ export default function Dashboard() {
           {recentRepairs.length > 0 ? (
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Job ID</TableHead>
-                  <TableHead>Client / Device</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Assigned staff</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                <TableRow className="hover:bg-transparent border-b border-border/40">
+                  <TableHead className="py-3 px-6 text-xs font-bold text-muted-foreground uppercase tracking-wider">Job ID</TableHead>
+                  <TableHead className="py-3 px-6 text-xs font-bold text-muted-foreground uppercase tracking-wider">Client / Device</TableHead>
+                  <TableHead className="py-3 px-6 text-xs font-bold text-muted-foreground uppercase tracking-wider">Status</TableHead>
+                  <TableHead className="py-3 px-6 text-xs font-bold text-muted-foreground uppercase tracking-wider">Assigned Staff</TableHead>
+                  <TableHead className="py-3 px-6 text-xs font-bold text-muted-foreground uppercase tracking-wider text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {recentRepairs.map((r) => (
-                  <TableRow key={r.id}>
-                    <TableCell className="font-mono text-xs font-semibold text-primary">
+                  <TableRow key={r.id} className="hover:bg-secondary/10 border-b border-border/40 transition-colors duration-200">
+                    <TableCell className="py-4 px-6 font-mono text-xs font-bold text-primary">
                       {r.job_number}
                     </TableCell>
-                    <TableCell>
-                      <div className="font-semibold text-white">
-                        {r.device ? `${r.device.brand} ${r.device.model}` : 'Unknown Device'}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {r.device?.customer?.name || 'Walk-In'}
+                    <TableCell className="py-4 px-6">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-secondary/45 border border-border/40 text-primary shrink-0">
+                          <Smartphone className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <div className="font-bold text-white text-xs">
+                            {r.device ? `${r.device.brand} ${r.device.model}` : 'Unknown Device'}
+                          </div>
+                          <div className="text-[10px] text-muted-foreground mt-0.5">
+                            {r.device?.customer?.name || 'Walk-In Customer'}
+                          </div>
+                        </div>
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase border ${statusColors[r.status] || ''}`}>
+                    <TableCell className="py-4 px-6">
+                      <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase border ${statusColors[r.status] || ''}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${statusDot[r.status] || 'bg-white'}`} />
                         {r.status}
                       </span>
                     </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
-                      {r.assigned_staff ? r.assigned_staff.name : 'Unassigned'}
+                    <TableCell className="py-4 px-6 text-xs text-muted-foreground">
+                      {r.assigned_staff ? (
+                        <span className="font-medium text-white">{r.assigned_staff.name}</span>
+                      ) : (
+                        <span className="italic text-muted-foreground/60">Unassigned</span>
+                      )}
                     </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1.5">
+                    <TableCell className="py-4 px-6 text-right">
+                      <div className="flex justify-end gap-2">
                         <Button
                           variant="outline"
                           size="sm"
@@ -445,7 +567,7 @@ export default function Dashboard() {
                             setSelectedRepairId(r.id);
                             setSelectedStatus(r.status);
                           }}
-                          className="h-8 text-[11px]"
+                          className="h-8 text-[11px] font-semibold border-border/85 text-neutral-300 hover:text-white bg-secondary/10 hover:bg-secondary/35"
                         >
                           Quick Status
                         </Button>
@@ -453,7 +575,7 @@ export default function Dashboard() {
                           variant="ghost"
                           size="sm"
                           onClick={() => navigate(`/repairs/${r.id}`)}
-                          className="h-8 w-8 p-0"
+                          className="h-8 w-8 p-0 hover:bg-secondary/30"
                         >
                           <ChevronRight className="h-4 w-4 text-muted-foreground" />
                         </Button>
@@ -464,7 +586,7 @@ export default function Dashboard() {
               </TableBody>
             </Table>
           ) : (
-            <div className="text-center py-10 text-xs text-muted-foreground">
+            <div className="text-center py-12 text-xs text-muted-foreground">
               No recent repairs found.
             </div>
           )}
@@ -523,7 +645,7 @@ export default function Dashboard() {
             <Button 
               onClick={() => updateStatusMutation.mutate({ status: selectedStatus, notes: statusNote })}
               disabled={updateStatusMutation.isPending}
-              className="gap-1.5"
+              className="gap-1.5 shadow-[0_0_15px_rgba(168,85,247,0.25)] hover:shadow-[0_0_20px_rgba(168,85,247,0.4)]"
             >
               {updateStatusMutation.isPending ? (
                 <>
