@@ -283,7 +283,7 @@ export default function Repairs() {
               <Card
                 key={r.id}
                 onClick={() => navigate(`/repairs/${r.id}`)}
-                className="relative overflow-hidden bg-card/45 backdrop-blur-xl border border-border/80 rounded-xl hover:border-primary/45 transition-colors group flex flex-col pt-5 cursor-pointer"
+                className="relative bg-card/45 backdrop-blur-xl border border-border/80 rounded-xl hover:border-primary/45 transition-colors group flex flex-col pt-5 cursor-pointer mt-4"
               >
                 {/* Pill header with Date */}
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-primary text-primary-foreground text-[10px] font-bold px-3.5 py-1 rounded-full shadow-md tracking-wider">
@@ -321,18 +321,20 @@ export default function Repairs() {
                   </div>
 
                   {/* Right Column: Diagnostics details */}
-                  <div className="flex-1 space-y-1.5 text-xs text-muted-foreground">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5 text-sm">
-                        <span className="font-bold text-white">Model:</span>
-                        <span className="text-foreground/90 font-medium">{r.device ? `${r.device.brand} ${r.device.model}` : 'Unknown Device'}</span>
-                      </div>
+                  <div className="flex-1 space-y-2.5">
+                    {/* Job Number header */}
+                    <div className="flex items-center justify-between border-b border-border/30 pb-1.5">
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Diagnostics</span>
                       <span className="font-mono text-xs font-extrabold text-primary">{r.job_number}</span>
                     </div>
 
-                    <div className="flex flex-col">
-                      <span className="font-bold text-white">Problem:</span>
-                      <div className="pl-1 mt-0.5 text-xs text-muted-foreground space-y-0.5 font-medium">
+                    {/* Table-like aligned grid */}
+                    <div className="grid grid-cols-[105px_1fr] gap-y-2 text-xs">
+                      <span className="font-bold text-white">Model:</span>
+                      <span className="text-foreground/90 font-semibold">{r.device ? `${r.device.brand} ${r.device.model}` : 'Unknown Device'}</span>
+
+                      <span className="font-bold text-white self-start">Problem:</span>
+                      <div className="text-muted-foreground font-semibold space-y-1">
                         {r.device?.problem ? (
                           r.device.problem.split(/[\n,;]+/).map((p: string, idx: number) => (
                             <p key={idx}>{idx + 1}. {p.trim()}</p>
@@ -341,14 +343,10 @@ export default function Repairs() {
                           <p>No problem description</p>
                         )}
                       </div>
-                    </div>
 
-                    <div className="flex items-center gap-2">
                       <span className="font-bold text-white">Estimated Price:</span>
-                      <span className="text-foreground/90 font-semibold">₹{Number(r.estimate).toFixed(2)}</span>
-                    </div>
+                      <span className="text-foreground/90 font-bold">₹{Number(r.estimate).toFixed(2)}</span>
 
-                    <div className="flex items-center gap-2">
                       <span className="font-bold text-white">Cust Name:</span>
                       <span className="text-foreground/90 font-semibold">{r.device?.customer?.name || 'Walk-In'}</span>
                     </div>
@@ -356,7 +354,7 @@ export default function Repairs() {
                 </div>
 
                 {/* Bottom button actions */}
-                <div className="grid grid-cols-4 border-t border-border mt-auto select-none">
+                <div className="grid grid-cols-4 border-t border-border mt-auto select-none rounded-b-xl overflow-hidden">
                   <button
                     onClick={(e) => handleDelete(e, r.id, r.job_number)}
                     className="py-3 text-xs font-bold uppercase tracking-wider text-center text-red-400 bg-secondary/15 hover:bg-red-500/10 transition-colors border-r border-border hover:text-red-300"
