@@ -109,7 +109,7 @@ export function requireSuperAdmin(
     'test@gkrepair.com'
   ];
 
-  if ((req.user.role as string) === 'superadmin' || (req.user.email && superAdminEmails.includes(req.user.email))) {
+  if ((req.user.role as string) === 'superadmin' || (req.user.email && superAdminEmails.includes(req.user.email.toLowerCase().trim()))) {
     next();
     return;
   }

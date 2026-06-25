@@ -77,7 +77,7 @@ export const SuperAdminRoute: React.FC<{ children?: React.ReactNode }> = ({ chil
     'test@gkrepair.com'
   ];
 
-  const isSuperAdmin = user && ((user.role as string) === 'superadmin' || (user.email && superAdminEmails.includes(user.email)));
+  const isSuperAdmin = !!(user && ((user.role as string) === 'superadmin' || (user.email && superAdminEmails.includes(user.email.toLowerCase().trim()))));
 
   if (!user || !isSuperAdmin) {
     return <Navigate to="/" replace />;

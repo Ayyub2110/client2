@@ -47,7 +47,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
     'admin@gkrepair.com',
     'test@gkrepair.com'
   ];
-  const isSuperAdmin = user && ((user.role as string) === 'superadmin' || (user.email && superAdminEmails.includes(user.email)));
+  const isSuperAdmin = !!(user && ((user.role as string) === 'superadmin' || (user.email && superAdminEmails.includes(user.email.toLowerCase().trim()))));
   const filteredNavigation = navigation.filter(item => {
     if (item.superAdminOnly) return isSuperAdmin;
     if (item.ownerOnly) return role === 'owner' || isSuperAdmin;

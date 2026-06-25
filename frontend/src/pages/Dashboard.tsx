@@ -98,7 +98,7 @@ export default function Dashboard() {
     'admin@gkrepair.com',
     'test@gkrepair.com'
   ];
-  const isSuperAdmin = user && ((user.role as string) === 'superadmin' || (user.email && superAdminEmails.includes(user.email)));
+  const isSuperAdmin = !!(user && ((user.role as string) === 'superadmin' || (user.email && superAdminEmails.includes(user.email.toLowerCase().trim()))));
   
   // Status update modal state
   const [selectedRepairId, setSelectedRepairId] = useState<string | null>(null);
