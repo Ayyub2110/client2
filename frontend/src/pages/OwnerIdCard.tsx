@@ -32,8 +32,11 @@ const OG = '#F5A623';   // orange
 const BL = '#2E3FA3';   // blue
 
 export default function OwnerIdCard() {
-  const { user, shop, reloadProfile } = useAuth();
+  const { user, reloadProfile } = useAuth();
 
+  const [ownerName, setOwnerName] = useState('');
+  const [shopName, setShopName] = useState('');
+  const [emailAddress, setEmailAddress] = useState('');
   const [homeAddress, setHomeAddress] = useState('');
   const [bloodGroup, setBloodGroup] = useState('');
   const [dob, setDob] = useState('');
@@ -44,15 +47,17 @@ export default function OwnerIdCard() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    if (user) {
-      setHomeAddress(user.home_address || '');
-      setBloodGroup(user.blood_group || '');
-      setDob(user.dob || '');
-      setPersonalPhone(user.personal_phone || '');
-      setAadharNumber(user.aadhar_number || '');
-      setPhotoPreview(user.photo_url || null);
-    }
-  }, [user]);
+    // Initialize with blank values so admin enters everything manually
+    setOwnerName('');
+    setShopName('');
+    setEmailAddress('');
+    setHomeAddress('');
+    setBloodGroup('');
+    setDob('');
+    setPersonalPhone('');
+    setAadharNumber('');
+    setPhotoPreview(null);
+  }, []);
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -63,25 +68,9 @@ export default function OwnerIdCard() {
     }
   };
 
-  const handleSave = async (e: React.FormEvent) => {
+  const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
-    try {
-      const fd = new FormData();
-      fd.append('homeAddress', homeAddress.trim());
-      fd.append('bloodGroup', bloodGroup.trim());
-      fd.append('dob', dob);
-      fd.append('personalPhone', personalPhone.trim());
-      fd.append('aadharNumber', aadharNumber.trim());
-      if (selectedPhoto) fd.append('photo', selectedPhoto);
-      await apiClient.put('/auth/profile/id-card', fd);
-      toast.success('ID Card details updated!');
-      await reloadProfile();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to update');
-    } finally {
-      setIsSubmitting(false);
-    }
+    toast.success('ID Card preview updated! You can now print the card.');
   };
 
   const formatDob = (s: string) => {
@@ -171,7 +160,7 @@ export default function OwnerIdCard() {
                     position: 'absolute', top: 80, left: 148,
                     zIndex: 4,
                   }}>
-                    <span style={{ fontSize: 12, color: 'white', fontWeight: 500 }}>{user?.name || ''}</span>
+                    <span style={{ fontSize: 12, color: 'white', fontWeight: 500 }}>{ownerName || ''}</span>
                   </div>
 
                   {/* ── Dynamic shop next to "கடை :" ── */}
@@ -179,13 +168,13 @@ export default function OwnerIdCard() {
                     position: 'absolute', top: 109, left: 148,
                     zIndex: 4,
                   }}>
-                    <span style={{ fontSize: 11, color: 'white', fontWeight: 500 }}>{shop?.name || ''}</span>
+                    <span style={{ fontSize: 11, color: 'white', fontWeight: 500 }}>{shopName || ''}</span>
                   </div>
 
                   {/* ── Dynamic Email ── */}
                   <div style={{
-                    position: 'absolute', top: 131, left: 95,
-                    width: 48, textAlign: 'right', whiteSpace: 'nowrap',
+                    position: 'absolute', top: 131, left: 99,
+                    width: 44, textAlign: 'right', whiteSpace: 'nowrap',
                     zIndex: 4,
                   }}>
                     <span style={{ fontSize: 11, color: 'white', fontWeight: 500 }}>Email :</span>
@@ -196,13 +185,13 @@ export default function OwnerIdCard() {
                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                     zIndex: 4,
                   }}>
-                    <span style={{ fontSize: 11, color: 'white', fontWeight: 500 }}>{(user?.email || '').trim()}</span>
+                    <span style={{ fontSize: 11, color: 'white', fontWeight: 500 }}>{emailAddress || ''}</span>
                   </div>
 
                   {/* ── Dynamic Aadhar ── */}
                   <div style={{
-                    position: 'absolute', top: 153, left: 95,
-                    width: 48, textAlign: 'right', whiteSpace: 'nowrap',
+                    position: 'absolute', top: 153, left: 99,
+                    width: 44, textAlign: 'right', whiteSpace: 'nowrap',
                     zIndex: 4,
                   }}>
                     <span style={{ fontSize: 11, color: 'white', fontWeight: 500 }}>Aadhar :</span>
@@ -248,26 +237,26 @@ export default function OwnerIdCard() {
 
                   {/* ── Dynamic Blood Group: next to "இரத்த வகை :" ── */}
                   <div style={{
-                    position: 'absolute', top: 130, left: 128,
+                    position: 'absolute', top: 123, left: 120,
                     zIndex: 4,
                   }}>
-                    <span style={{ fontSize: 11, color: '#1E469C', fontWeight: 500 }}>{(bloodGroup || '').trim()}</span>
+                    <span style={{ fontSize: 11, color: '#1E469C', fontWeight: 500 }}>{bloodGroup || ''}</span>
                   </div>
 
                   {/* ── Dynamic Date of Birth: next to "பிறந்த தேதி :" ── */}
                   <div style={{
-                    position: 'absolute', top: 152, left: 128,
+                    position: 'absolute', top: 145, left: 120,
                     zIndex: 4,
                   }}>
-                    <span style={{ fontSize: 11, color: '#1E469C', fontWeight: 500 }}>{formatDob(dob).trim()}</span>
+                    <span style={{ fontSize: 11, color: '#1E469C', fontWeight: 500 }}>{formatDob(dob)}</span>
                   </div>
 
                   {/* ── Dynamic Cell Number: next to "செல் நெம்பர் :" ── */}
                   <div style={{
-                    position: 'absolute', top: 174, left: 128,
+                    position: 'absolute', top: 167, left: 120,
                     zIndex: 4,
                   }}>
-                    <span style={{ fontSize: 11, color: '#1E469C', fontWeight: 500 }}>{(personalPhone || '').trim()}</span>
+                    <span style={{ fontSize: 11, color: '#1E469C', fontWeight: 500 }}>{personalPhone || ''}</span>
                   </div>
                 </div>
 
@@ -286,11 +275,33 @@ export default function OwnerIdCard() {
             <CardHeader className="pb-3 border-b border-border/40">
               <CardTitle className="text-lg font-bold">Customize Card Profile</CardTitle>
               <CardDescription className="text-xs">
-                Fill in your details — updates the card preview live.
+                Fill in details manually — updates the card preview live.
               </CardDescription>
             </CardHeader>
             <CardContent className="p-5">
               <form onSubmit={handleSave} className="space-y-4">
+
+                {/* Manual details */}
+                <div className="space-y-3 border-b border-border/40 pb-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-muted-foreground">Owner Name</label>
+                    <Input placeholder="Enter Owner Name..." value={ownerName}
+                      onChange={e => setOwnerName(e.target.value)}
+                      className="bg-secondary/35 border-border/80 text-xs" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-muted-foreground">Shop Name</label>
+                    <Input placeholder="Enter Shop Name..." value={shopName}
+                      onChange={e => setShopName(e.target.value)}
+                      className="bg-secondary/35 border-border/80 text-xs" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-muted-foreground">Email Address</label>
+                    <Input type="email" placeholder="Enter Email Address..." value={emailAddress}
+                      onChange={e => setEmailAddress(e.target.value)}
+                      className="bg-secondary/35 border-border/80 text-xs" />
+                  </div>
+                </div>
 
                 {/* Photo Upload */}
                 <div className="space-y-2">
@@ -360,17 +371,8 @@ export default function OwnerIdCard() {
                     value={homeAddress} onChange={e => setHomeAddress(e.target.value)}
                     className="flex w-full rounded-md border border-border/80 bg-secondary/35 px-3 py-2 text-xs shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary text-white resize-none" />
                 </div>
-
-                <div className="rounded-md bg-blue-950/40 border border-blue-800/40 px-3 py-2 text-xs text-blue-200 flex items-start gap-2">
-                  <Mail className="h-3.5 w-3.5 mt-0.5 shrink-0 text-blue-400" />
-                  <span>Your email <strong>{user?.email}</strong> is automatically shown on the ID card front.</span>
-                </div>
-
-                <Button type="submit" className="w-full text-xs font-bold uppercase tracking-wider mt-2"
-                  disabled={isSubmitting}>
-                  {isSubmitting
-                    ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</>
-                    : 'Save & Generate Card'}
+                <Button type="submit" className="w-full text-xs font-bold uppercase tracking-wider mt-2">
+                  Generate Preview
                 </Button>
               </form>
             </CardContent>

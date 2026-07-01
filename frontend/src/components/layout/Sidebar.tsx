@@ -35,7 +35,7 @@ const navigation: NavItem[] = [
   { name: 'Customers', to: '/customers', icon: Users },
   { name: 'Reports', to: '/reports', icon: TrendingUp, ownerOnly: true },
   { name: 'Repairing Price List', to: '/settings/price-list', icon: ClipboardList, ownerOnly: true },
-  { name: 'Owner ID Card', to: '/id-card', icon: Contact, ownerOnly: true },
+  { name: 'Owner ID Card', to: '/id-card', icon: Contact, superAdminOnly: true },
   { name: 'Settings', to: '/settings', icon: Settings, end: true },
   { name: 'Super Admin', to: '/superadmin', icon: UserSquare2, superAdminOnly: true },
 ];

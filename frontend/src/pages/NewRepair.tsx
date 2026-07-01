@@ -27,6 +27,19 @@ import { Input } from '../components/ui/Input';
 import { useAuth } from '../context/AuthContext';
 import { apiClient } from '../lib/api';
 import toast from 'react-hot-toast';
+import SignatureCanvas from 'react-signature-canvas';
+const ReactSignatureCanvas = (SignatureCanvas as any).default || SignatureCanvas;
+
+const DEVICE_BRANDS: Record<string, string[]> = {
+  'Apple': ['iPhone 11', 'iPhone 12', 'iPhone 13', 'iPhone 14', 'iPhone 15', 'iPhone 15 Pro', 'iPhone 15 Pro Max', 'iPad Air', 'iPad Pro'],
+  'Samsung': ['Galaxy S21', 'Galaxy S22', 'Galaxy S23', 'Galaxy S24', 'Galaxy A54', 'Galaxy M34', 'Galaxy Z Fold 5', 'Galaxy Z Flip 5'],
+  'OnePlus': ['OnePlus 10 Pro', 'OnePlus 11', 'OnePlus 12', 'OnePlus Nord 3', 'OnePlus Nord CE 3 Lite'],
+  'Google': ['Pixel 6', 'Pixel 7', 'Pixel 7a', 'Pixel 8', 'Pixel 8 Pro'],
+  'Xiaomi': ['Redmi Note 12', 'Redmi Note 13', 'Xiaomi 13 Pro', 'Poco F5', 'Poco X6 Pro'],
+  'Oppo': ['Reno 10', 'Reno 11', 'Oppo F23', 'Oppo A78'],
+  'Vivo': ['Vivo V29', 'Vivo V30', 'Vivo T2x', 'Vivo Y200'],
+  'Realme': ['Realme 11 Pro+', 'Realme 12 Pro', 'Realme C53', 'Realme Narzo 60']
+};
 
 // ----------------------------------------------------
 // Zod Schema for the complete Unified Form
@@ -97,7 +110,11 @@ export default function NewRepair() {
   const [phoneSearch, setPhoneSearch] = useState('');
   const [selectedServices, setSelectedServices] = useState<Array<{ service_name: string; labor_cost: number }>>([]);
   const [customProblem, setCustomProblem] = useState('');
-  const [deviceSearchText, setDeviceSearchText] = useState('');
+  // Split brand and model states
+  const [selectedBrand, setSelectedBrand] = useState('');
+  const [selectedModel, setSelectedModel] = useState('');
+  const [customBrand, setCustomBrand] = useState('');
+  const [customModel, setCustomModel] = useState('');
 
   // Date and Time Fields Displays
   const [repairDateDisplay, setRepairDateDisplay] = useState('');
@@ -131,8 +148,7 @@ export default function NewRepair() {
   const [mobileBackFile, setMobileBackFile] = useState<File | null>(null);
 
   // Signature Drawing Canvas Ref
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [isDrawing, setIsDrawing] = useState(false);
+  const sigPadRef = useRef<any>(null);
 
   // Form initialization
   const form = useForm<RepairOrderFormValues>({
@@ -294,61 +310,9 @@ export default function NewRepair() {
   };
 
   // Signature Canvas Drawing Logic
-  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    // Prevent scrolling on touch screens
-    if ('touches' in e) {
-      if (e.cancelable) e.preventDefault();
-    }
-
-    ctx.strokeStyle = '#000000';
-    ctx.lineWidth = 3;
-    ctx.lineCap = 'round';
-
-    const rect = canvas.getBoundingClientRect();
-    const clientX = ('touches' in e) ? e.touches[0].clientX : e.clientX;
-    const clientY = ('touches' in e) ? e.touches[0].clientY : e.clientY;
-    
-    // Scale coordinates based on actual rendering dimensions vs internal canvas resolution
-    const x = ((clientX - rect.left) / rect.width) * canvas.width;
-    const y = ((clientY - rect.top) / rect.height) * canvas.height;
-
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    setIsDrawing(true);
-  };
-
-  const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
-    if (!isDrawing) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    // Prevent scrolling on touch screens
-    if ('touches' in e) {
-      if (e.cancelable) e.preventDefault();
-    }
-
-    const rect = canvas.getBoundingClientRect();
-    const clientX = ('touches' in e) ? e.touches[0].clientX : e.clientX;
-    const clientY = ('touches' in e) ? e.touches[0].clientY : e.clientY;
-    
-    // Scale coordinates based on actual rendering dimensions vs internal canvas resolution
-    const x = ((clientX - rect.left) / rect.width) * canvas.width;
-    const y = ((clientY - rect.top) / rect.height) * canvas.height;
-
-    ctx.lineTo(x, y);
-    ctx.stroke();
-  };
-
   const saveSignature = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!sigPadRef.current) return;
+    const canvas = sigPadRef.current.getTrimmedCanvas();
     const base64Sig = canvas.toDataURL('image/png');
     setKycData(prev => ({ ...prev, signature: base64Sig }));
     setSignatureOpen(false);
@@ -356,10 +320,42 @@ export default function NewRepair() {
   };
 
   const clearSignature = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+    sigPadRef.current?.clear();
+  };
+
+  // Brand & Model Selection Handlers
+  const handleBrandChange = (brand: string) => {
+    setSelectedBrand(brand);
+    setSelectedModel('');
+    setCustomBrand('');
+    setCustomModel('');
+    
+    if (brand === 'Other') {
+      setValue('brand', '', { shouldValidate: true });
+      setValue('model', '', { shouldValidate: true });
+    } else {
+      setValue('brand', brand, { shouldValidate: true });
+      setValue('model', '', { shouldValidate: true });
+    }
+  };
+
+  const handleModelChange = (model: string) => {
+    setSelectedModel(model);
+    if (model === 'Other') {
+      setValue('model', '', { shouldValidate: true });
+    } else {
+      setValue('model', model, { shouldValidate: true });
+    }
+  };
+
+  const handleCustomBrandChange = (val: string) => {
+    setCustomBrand(val);
+    setValue('brand', val, { shouldValidate: true });
+  };
+
+  const handleCustomModelChange = (val: string) => {
+    setCustomModel(val);
+    setValue('model', val, { shouldValidate: true });
   };
 
   // Save KYC Data as a JSON string to form values
@@ -617,33 +613,86 @@ export default function NewRepair() {
             <p className="text-[11px] text-red-500 mt-1 font-semibold">{errors.customerId.message}</p>
           )}
 
-          {/* Device Model Input */}
-          <div className="space-y-1">
-            <input
-              type="text"
-              placeholder="Model (e.g. Apple iPhone 14)"
-              value={deviceSearchText}
-              onChange={(e) => {
-                const val = e.target.value;
-                setDeviceSearchText(val);
-                
-                const trimmed = val.trim();
-                const splitIdx = trimmed.indexOf(' ');
-                if (splitIdx > 0) {
-                  setValue('brand', trimmed.substring(0, splitIdx).trim(), { shouldValidate: true });
-                  setValue('model', trimmed.substring(splitIdx + 1).trim(), { shouldValidate: true });
-                } else {
-                  setValue('brand', trimmed, { shouldValidate: true });
-                  setValue('model', trimmed, { shouldValidate: true });
-                }
-              }}
-              className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold text-white"
-            />
+          {/* Brand & Model Selectors */}
+          <div className="space-y-3">
+            <div className="grid gap-3 sm:grid-cols-2">
+              {/* Brand Select */}
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-muted-foreground">Device Brand</label>
+                <select
+                  value={selectedBrand}
+                  onChange={(e) => handleBrandChange(e.target.value)}
+                  className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary font-semibold text-white select-custom"
+                >
+                  <option value="" className="bg-neutral-900 text-white">Select Brand</option>
+                  {Object.keys(DEVICE_BRANDS).map((b) => (
+                    <option key={b} value={b} className="bg-neutral-900 text-white">{b}</option>
+                  ))}
+                  <option value="Other" className="bg-neutral-900 text-white">Other (Custom Brand)</option>
+                </select>
+                {errors.brand && (
+                  <p className="text-[11px] text-red-500 mt-1 font-semibold">{errors.brand.message}</p>
+                )}
+              </div>
+
+              {/* Model Select (only if pre-defined brand is selected) */}
+              {selectedBrand && selectedBrand !== 'Other' && (
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-muted-foreground">Device Model</label>
+                  <select
+                    value={selectedModel}
+                    onChange={(e) => handleModelChange(e.target.value)}
+                    className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary font-semibold text-white select-custom"
+                  >
+                    <option value="" className="bg-neutral-900 text-white">Select Model</option>
+                    {DEVICE_BRANDS[selectedBrand]?.map((m) => (
+                      <option key={m} value={m} className="bg-neutral-900 text-white">{m}</option>
+                    ))}
+                    <option value="Other" className="bg-neutral-900 text-white">Other (Custom Model)</option>
+                  </select>
+                  {errors.model && (
+                    <p className="text-[11px] text-red-500 mt-1 font-semibold">{errors.model.message}</p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Custom Brand Input (if Brand is "Other") */}
+            {selectedBrand === 'Other' && (
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-muted-foreground">Enter Custom Brand</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Motorola"
+                  value={customBrand}
+                  onChange={(e) => handleCustomBrandChange(e.target.value)}
+                  className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold text-white"
+                />
+                {errors.brand && (
+                  <p className="text-[11px] text-red-500 mt-1 font-semibold">{errors.brand.message}</p>
+                )}
+              </div>
+            )}
+
+            {/* Custom Model Input (if Brand is "Other" or Model is "Other") */}
+            {(selectedBrand === 'Other' || selectedModel === 'Other') && (
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-muted-foreground">Enter Custom Model</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Moto G54"
+                  value={customModel}
+                  onChange={(e) => handleCustomModelChange(e.target.value)}
+                  className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold text-white"
+                />
+                {errors.model && (
+                  <p className="text-[11px] text-red-500 mt-1 font-semibold">{errors.model.message}</p>
+                )}
+              </div>
+            )}
+
             <input type="hidden" {...register('brand')} />
             <input type="hidden" {...register('model')} />
-            {errors.model && (
-              <p className="text-[11px] text-red-500 mt-1 font-semibold">{errors.model.message}</p>
-            )}
           </div>
 
           {/* Problem description with Add Button */}
@@ -1340,19 +1389,16 @@ export default function NewRepair() {
               Draw Signature on Screen
             </h3>
             
-            <div className="border border-border/80 rounded-xl overflow-hidden bg-white">
-              <canvas
-                ref={canvasRef}
-                width={300}
-                height={200}
-                onMouseDown={startDrawing}
-                onMouseMove={draw}
-                onMouseUp={() => setIsDrawing(false)}
-                onMouseLeave={() => setIsDrawing(false)}
-                onTouchStart={startDrawing}
-                onTouchMove={draw}
-                onTouchEnd={() => setIsDrawing(false)}
-                className="w-full cursor-crosshair touch-none"
+            <div className="relative border border-border/80 rounded-xl overflow-hidden bg-white h-44">
+              <span className="absolute top-2 left-2 text-[10px] uppercase font-bold text-slate-400 select-none bg-slate-100/60 px-1.5 py-0.5 rounded z-10">
+                Sign Here
+              </span>
+              <ReactSignatureCanvas 
+                ref={sigPadRef}
+                penColor="black"
+                canvasProps={{
+                  className: 'w-full h-full cursor-crosshair'
+                }}
               />
             </div>
 

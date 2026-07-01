@@ -66,12 +66,12 @@ export default function App() {
                   <Route path="/reports" element={<Reports />} />
                   <Route path="/settings/staff" element={<SettingsPage defaultTab="staff" />} />
                   <Route path="/settings/price-list" element={<SettingsPage defaultTab="price-list" />} />
-                  <Route path="/id-card" element={<OwnerIdCard />} />
                 </Route>
 
                 {/* Super Admin exclusive controls */}
                 <Route element={<SuperAdminRoute />}>
                   <Route path="/superadmin" element={<SuperAdminDashboard />} />
+                  <Route path="/id-card" element={<OwnerIdCard />} />
                 </Route>
               </Route>
             </Route>
