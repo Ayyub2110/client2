@@ -184,8 +184,8 @@ export default function OwnerIdCard() {
 
                   {/* ── Dynamic Email ── */}
                   <div style={{
-                    position: 'absolute', top: 131, left: 99,
-                    width: 44, textAlign: 'right', whiteSpace: 'nowrap',
+                    position: 'absolute', top: 131, left: 95,
+                    width: 48, textAlign: 'right', whiteSpace: 'nowrap',
                     zIndex: 4,
                   }}>
                     <span style={{ fontSize: 11, color: 'white', fontWeight: 500 }}>Email :</span>
@@ -196,20 +196,20 @@ export default function OwnerIdCard() {
                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                     zIndex: 4,
                   }}>
-                    <span style={{ fontSize: 11, color: 'white', fontWeight: 500 }}>{user?.email || ''}</span>
+                    <span style={{ fontSize: 11, color: 'white', fontWeight: 500 }}>{(user?.email || '').trim()}</span>
                   </div>
 
                   {/* ── Dynamic Aadhar ── */}
                   <div style={{
-                    position: 'absolute', top: 153, left: 107,
-                    width: 44, textAlign: 'right', whiteSpace: 'nowrap',
+                    position: 'absolute', top: 153, left: 95,
+                    width: 48, textAlign: 'right', whiteSpace: 'nowrap',
                     zIndex: 4,
                   }}>
                     <span style={{ fontSize: 11, color: 'white', fontWeight: 500 }}>Aadhar :</span>
                   </div>
                   <div style={{
-                    position: 'absolute', top: 153, left: 156,
-                    width: 157,
+                    position: 'absolute', top: 153, left: 148,
+                    width: 165,
                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                     zIndex: 4,
                   }}>
@@ -248,26 +248,26 @@ export default function OwnerIdCard() {
 
                   {/* ── Dynamic Blood Group: next to "இரத்த வகை :" ── */}
                   <div style={{
-                    position: 'absolute', top: 123, left: 135,
+                    position: 'absolute', top: 130, left: 128,
                     zIndex: 4,
                   }}>
-                    <span style={{ fontSize: 11, color: '#1E469C', fontWeight: 500 }}>{bloodGroup || ''}</span>
+                    <span style={{ fontSize: 11, color: '#1E469C', fontWeight: 500 }}>{(bloodGroup || '').trim()}</span>
                   </div>
 
                   {/* ── Dynamic Date of Birth: next to "பிறந்த தேதி :" ── */}
                   <div style={{
-                    position: 'absolute', top: 145, left: 135,
+                    position: 'absolute', top: 152, left: 128,
                     zIndex: 4,
                   }}>
-                    <span style={{ fontSize: 11, color: '#1E469C', fontWeight: 500 }}>{formatDob(dob)}</span>
+                    <span style={{ fontSize: 11, color: '#1E469C', fontWeight: 500 }}>{formatDob(dob).trim()}</span>
                   </div>
 
                   {/* ── Dynamic Cell Number: next to "செல் நெம்பர் :" ── */}
                   <div style={{
-                    position: 'absolute', top: 167, left: 135,
+                    position: 'absolute', top: 174, left: 128,
                     zIndex: 4,
                   }}>
-                    <span style={{ fontSize: 11, color: '#1E469C', fontWeight: 500 }}>{personalPhone || ''}</span>
+                    <span style={{ fontSize: 11, color: '#1E469C', fontWeight: 500 }}>{(personalPhone || '').trim()}</span>
                   </div>
                 </div>
 
