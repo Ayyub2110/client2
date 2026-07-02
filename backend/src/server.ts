@@ -126,7 +126,7 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   });
 });
 
-if (process.env.NODE_ENV !== 'test') {
+if (process.env.NODE_ENV !== 'test' && !process.env.VERCEL) {
   app.listen(PORT, () => {
     console.log(`GK Repair System backend running on port ${PORT}`);
     console.log(`Allowed origins: ${FRONTEND_URLS.join(', ')}`);
