@@ -62,7 +62,7 @@ interface DashboardData {
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-neutral-950/95 border border-white/10 backdrop-blur-xl p-3.5 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.7)] border-t-primary/40 border-t-2">
+      <div className="bg-neutral-950/95 border border-white/10 p-3.5 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.7)] border-t-primary/40 border-t-2">
         <p className="text-[10px] font-black text-white/60 mb-2 tracking-wider uppercase">{label}</p>
         <div className="space-y-2">
           {payload.map((item: any, idx: number) => {
@@ -339,19 +339,41 @@ export default function Dashboard() {
             <span>Real-time shop diagnostics &bull; {todayDate}</span>
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Search Billing Input */}
+          <div className="relative w-48 sm:w-56 md:w-64">
+            <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Search Job ID..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleSearchBilling();
+              }}
+              className="w-full pl-8 pr-3 h-8 bg-secondary/15 border border-border/80 focus:border-primary text-foreground placeholder:text-muted-foreground text-xs font-semibold rounded-lg focus:outline-none text-white animate-none"
+            />
+          </div>
+          <Button 
+            onClick={handleSearchBilling} 
+            disabled={searchingBilling}
+            className="h-8 text-xs font-bold uppercase px-3 shadow-[0_0_15px_rgba(168,85,247,0.15)] bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg"
+          >
+            {searchingBilling ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Search'}
+          </Button>
+
           <Button
             variant="outline"
             size="sm"
             onClick={handleRefresh}
             disabled={refreshing}
-            className="gap-1.5 border-border/80 text-foreground bg-secondary/15 hover:bg-secondary/40"
+            className="gap-1.5 border-border/80 text-foreground bg-secondary/15 hover:bg-secondary/40 h-8 rounded-lg"
           >
             <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
             <span>Refresh</span>
           </Button>
-          <Button onClick={() => navigate('/repairs/new')} className="gap-1.5 shadow-[0_0_15px_rgba(168,85,247,0.25)] hover:shadow-[0_0_20px_rgba(168,85,247,0.4)]">
-            <Plus className="h-4.5 w-4.5" />
+          <Button onClick={() => navigate('/repairs/new')} className="gap-1.5 shadow-[0_0_15px_rgba(168,85,247,0.25)] hover:shadow-[0_0_20px_rgba(168,85,247,0.4)] h-8 rounded-lg">
+            <Plus className="h-4 w-4" />
             <span>New Ticket</span>
           </Button>
         </div>
@@ -405,35 +427,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Search Billing Number Bar */}
-      <div className="bg-gradient-to-r from-secondary/10 via-secondary/20 to-secondary/10 border border-border/85 rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-md">
-        <div className="space-y-1">
-          <h3 className="text-sm font-bold uppercase tracking-wider text-foreground">Search Billing Number</h3>
-          <p className="text-[11px] text-muted-foreground">Find a repair order instantly by entering its unique job ID.</p>
-        </div>
-        <div className="flex items-center gap-2 w-full md:max-w-md">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder="e.g. GK-20260701-001"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleSearchBilling();
-              }}
-              className="pl-9 bg-background/50 border-border/80 focus:border-primary text-foreground placeholder:text-muted-foreground text-xs font-semibold text-white"
-            />
-          </div>
-          <Button 
-            onClick={handleSearchBilling} 
-            disabled={searchingBilling}
-            className="shrink-0 text-xs font-bold uppercase tracking-wider px-4 shadow-[0_0_15px_rgba(168,85,247,0.15)] bg-primary text-primary-foreground hover:bg-primary/90"
-          >
-            {searchingBilling ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Search'}
-          </Button>
-        </div>
-      </div>
 
       {/* KPI Cards Row */}
       {stats && (

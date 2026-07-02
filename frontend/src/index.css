@@ -91,3 +91,9 @@
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.25);
 }
+
+/* Force dark styling on select option tags for readability */
+option {
+  background-color: #12131a !important;
+  color: #ffffff !important;
+}

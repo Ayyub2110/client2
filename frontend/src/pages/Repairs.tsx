@@ -284,7 +284,7 @@ export default function Repairs() {
               <Card
                 key={r.id}
                 onClick={() => navigate(`/repairs/${r.id}`)}
-                className="relative bg-card/45 backdrop-blur-xl border border-border/80 rounded-xl hover:border-primary/45 transition-colors group flex flex-col pt-5 cursor-pointer mt-4"
+                className="relative bg-card/90 border border-border/80 rounded-xl hover:border-primary/45 transition-colors group flex flex-col pt-5 cursor-pointer mt-4"
               >
                 {/* Pill header with Date */}
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-primary text-primary-foreground text-[10px] font-bold px-3.5 py-1 rounded-full shadow-md tracking-wider">

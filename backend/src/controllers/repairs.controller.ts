@@ -37,7 +37,8 @@ const createRepairSchema = z.object({
   sendEmail: z.boolean().optional().default(false),
   allowCashback: z.boolean().optional().default(false),
   expense: z.number().optional().default(0),
-  kycDetails: z.string().optional().nullable()
+  kycDetails: z.string().optional().nullable(),
+  jobNumber: z.string().optional().nullable()
 }).refine((data) => data.advance <= data.estimate, {
   message: 'Advance cannot exceed estimate amount',
   path: ['advance']
@@ -306,7 +307,8 @@ export async function createRepair(req: Request, res: Response): Promise<void> {
       sendEmail: req.body.sendEmail === 'true',
       allowCashback: req.body.allowCashback === 'true',
       expense: parseFloat(req.body.expense || '0'),
-      kycDetails: req.body.kycDetails || null
+      kycDetails: req.body.kycDetails || null,
+      jobNumber: req.body.jobNumber || null
     };
 
     const validatedData = createRepairSchema.parse(rawBody);
@@ -357,7 +359,22 @@ export async function createRepair(req: Request, res: Response): Promise<void> {
     }
 
     // 4. Generate unique sequential job number atomically
-    const job_number = await generateJobNumber(user.shop_id);
+    let job_number = validatedData.jobNumber;
+    if (job_number) {
+      // Check if this job number is already used for this shop
+      const { data: existingRepair } = await supabaseAdmin
+        .from('repairs')
+        .select('id')
+        .eq('shop_id', user.shop_id)
+        .eq('job_number', job_number)
+        .maybeSingle();
+
+      if (existingRepair) {
+        job_number = await generateJobNumber(user.shop_id);
+      }
+    } else {
+      job_number = await generateJobNumber(user.shop_id);
+    }
 
     // 4b. Generate per-customer token number (C-0001 style)
     const token_number = await generateTokenNumber(validatedData.customerId);

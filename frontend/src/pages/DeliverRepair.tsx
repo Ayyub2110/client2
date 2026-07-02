@@ -297,7 +297,7 @@ export default function DeliverRepair() {
   if (isSuccess) {
     return (
       <div className="max-w-xl mx-auto py-12">
-        <Card className="border-emerald-500/20 bg-slate-900/40 backdrop-blur-md">
+        <Card className="border-emerald-500/20 bg-slate-900/90">
           <CardContent className="flex flex-col items-center justify-center p-8 text-center space-y-6">
             <CheckCircle className="h-16 w-16 text-emerald-500 animate-bounce" />
             

@@ -25,14 +25,14 @@ export const Dialog: React.FC<DialogProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-background/80 backdrop-blur-sm transition-opacity duration-300"
+        className="absolute inset-0 bg-black/35 transition-opacity duration-300"
         onClick={onClose}
       />
 
       {/* Dialog Content */}
       <div
         className={cn(
-          'relative w-full max-w-lg rounded-xl border border-border bg-card/95 p-6 shadow-xl backdrop-blur-md transition-all duration-300 transform scale-100 opacity-100 z-10',
+          'relative w-[92%] sm:w-full max-w-lg rounded-xl border border-border bg-card/95 p-5 sm:p-6 shadow-xl transition-all duration-300 transform scale-100 opacity-100 z-10 max-h-[88vh] overflow-y-auto scrollbar-thin',
           className
         )}
       >

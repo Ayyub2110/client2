@@ -169,7 +169,7 @@ export default function Register() {
       <div className="absolute top-1/4 left-1/4 h-72 w-72 rounded-full bg-primary/10 blur-[100px] pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 h-72 w-72 rounded-full bg-purple-500/10 blur-[100px] pointer-events-none" />
 
-      <Card className="w-full max-w-2xl bg-card/45 backdrop-blur-xl border-border/80 shadow-2xl">
+      <Card className="w-full max-w-2xl bg-card/90 border-border/80 shadow-2xl">
         <CardHeader className="space-y-3.5 text-center flex flex-col items-center">
           <div className="mx-auto h-12 w-full max-w-[240px] overflow-hidden bg-white rounded-lg p-1.5 flex items-center justify-center">
             <img src={logo} alt="Association Logo" className="h-full w-full object-contain" />

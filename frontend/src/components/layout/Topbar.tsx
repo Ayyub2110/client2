@@ -16,27 +16,14 @@ export default function Topbar({
   shopName = 'GK Repair Shop Main',
   onLogout
 }: TopbarProps) {
-  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
-    return (localStorage.getItem('theme') as 'dark' | 'light') || 'dark';
-  });
-
   useEffect(() => {
-    if (theme === 'light') {
-      document.documentElement.classList.remove('dark');
-      document.documentElement.classList.add('light');
-    } else {
-      document.documentElement.classList.remove('light');
-      document.documentElement.classList.add('dark');
-    }
-    localStorage.setItem('theme', theme);
-  }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
-  };
+    document.documentElement.classList.remove('light');
+    document.documentElement.classList.add('dark');
+    localStorage.setItem('theme', 'dark');
+  }, []);
 
   return (
-    <header className="flex h-16 w-full items-center justify-between border-b border-border bg-card/40 backdrop-blur-md px-6 z-30">
+    <header className="flex h-16 w-full items-center justify-between border-b border-border bg-card/95 px-6 z-30">
       {/* Mobile Toggle Button & Shop Name */}
       <div className="flex items-center gap-4">
         <button
@@ -54,14 +41,7 @@ export default function Topbar({
 
       {/* Action items & Profile Dropdown */}
       <div className="flex items-center gap-4">
-        {/* Theme Toggle Switch */}
-        <button
-          onClick={toggleTheme}
-          title={theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
-          className="rounded-lg p-2 text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-all duration-200"
-        >
-          {theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-        </button>
+
 
         {/* Notifications */}
         <button className="relative rounded-lg p-2 text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-all duration-200">

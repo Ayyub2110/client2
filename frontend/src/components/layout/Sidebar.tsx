@@ -58,14 +58,14 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
       {/* Mobile overlay backdrop */}
       {isOpen && (
         <div 
-          className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-40 bg-black/35 lg:hidden"
           onClick={() => setIsOpen(false)}
         />
       )}
 
       {/* Sidebar container */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-border bg-card/60 backdrop-blur-xl transition-all duration-300 ease-in-out lg:static lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-border bg-card/95 transition-all duration-300 ease-in-out lg:static lg:translate-x-0 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -115,7 +115,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
 
         {/* Footer info */}
         <div className="p-4 border-t border-border bg-secondary/10">
-          <div className="rounded-lg bg-card/40 border border-border/40 p-3.5 text-center">
+          <div className="rounded-lg bg-card/90 border border-border/40 p-3.5 text-center">
             <p className="text-[11px] font-medium text-muted-foreground">Association Repair System v1.0</p>
             <p className="text-[9px] text-muted-foreground/60 mt-0.5">Free Tier Cloud Hosting</p>
           </div>
@@ -123,7 +123,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
       </aside>
 
       {/* Mobile Bottom Tab Bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 flex h-16 border-t border-border bg-card/85 backdrop-blur-lg lg:hidden justify-around items-center px-1 pb-safe shadow-lg">
+      <div className="fixed bottom-0 left-0 right-0 z-40 flex h-16 border-t border-border bg-card/95 lg:hidden justify-around items-center px-1 pb-safe shadow-lg">
         {filteredNavigation
           .filter((item) => ['/', '/repairs', '/customers', '/settings'].includes(item.to))
           .map((item) => (

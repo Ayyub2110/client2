@@ -118,7 +118,7 @@ export default function OwnerIdCard() {
 
         {/* ── PREVIEW COLUMN ── */}
         <div className="lg:col-span-7">
-          <Card className="bg-card/45 backdrop-blur-xl border-border/80">
+          <Card className="bg-card/90 border-border/80">
             <CardHeader className="pb-3 border-b border-border/40">
               <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
                 Live Card Preview (86 × 54 mm)
@@ -271,7 +271,7 @@ export default function OwnerIdCard() {
 
         {/* ── FORM COLUMN ── */}
         <div className="lg:col-span-5">
-          <Card className="bg-card/45 backdrop-blur-xl border-border/80">
+          <Card className="bg-card/90 border-border/80">
             <CardHeader className="pb-3 border-b border-border/40">
               <CardTitle className="text-lg font-bold">Customize Card Profile</CardTitle>
               <CardDescription className="text-xs">

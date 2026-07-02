@@ -461,7 +461,7 @@ export default function SettingsPage({ defaultTab }: SettingsPageProps = {}) {
       </div>
 
       {/* Profile Banner Card */}
-      <Card className="relative bg-card/45 backdrop-blur-xl border border-border/85 p-6 flex items-center justify-center">
+      <Card className="relative bg-card/90 border border-border/85 p-6 flex items-center justify-center">
         {isOwner && (
           <button
             onClick={() => setIsEditShopOpen(true)}
@@ -492,7 +492,7 @@ export default function SettingsPage({ defaultTab }: SettingsPageProps = {}) {
       </Card>
 
       {/* Settings Options List Menu */}
-      <div className="bg-card/35 backdrop-blur-md border border-border/80 rounded-2xl overflow-hidden divide-y divide-border/60 shadow-lg">
+      <div className="bg-card/90 border border-border/80 rounded-2xl overflow-hidden divide-y divide-border/60 shadow-lg">
         {[
           { id: 'community', title: 'Community', desc: 'Connect with other Technicians for help or support', icon: Users, color: 'text-orange-500', bg: 'bg-orange-500/10 border-orange-500/20' },
           { id: 'deleted', title: 'Deleted Orders', desc: 'Track and recover deleted order history', icon: Trash2, color: 'text-red-500', bg: 'bg-red-500/10 border-red-500/20' },
@@ -871,9 +871,9 @@ export default function SettingsPage({ defaultTab }: SettingsPageProps = {}) {
         }}
         title="Service Rate Cards & Invoice Config"
         description="Configure standard repair labor costs and invoicing terms."
-        className="max-w-4xl w-full"
+        className="max-w-3xl w-full"
       >
-        <div className="space-y-4 max-w-4xl overflow-y-auto max-h-[70vh] pr-1">
+        <div className="space-y-4 overflow-y-auto max-h-[70vh] pr-1">
           <p className="text-xs text-muted-foreground leading-relaxed">
             Define labor rates per model and service action. These rate cards are queried by the terminal order system to auto-fill ticket estimates.
           </p>
@@ -892,9 +892,9 @@ export default function SettingsPage({ defaultTab }: SettingsPageProps = {}) {
         }}
         title="WhatsApp Notification Hub"
         description="Review automated notification templates, sync configurations, and transmission audit logs."
-        className="max-w-4xl w-full"
+        className="max-w-3xl w-full"
       >
-        <div className="space-y-6 max-w-4xl overflow-y-auto max-h-[70vh] pr-1 select-none text-white">
+        <div className="space-y-6 overflow-y-auto max-h-[70vh] pr-1 select-none text-white">
           {/* Config card */}
           <div className="grid gap-4 md:grid-cols-3">
             <div className="md:col-span-2 bg-secondary/15 border border-border/60 rounded-xl p-4 space-y-2">

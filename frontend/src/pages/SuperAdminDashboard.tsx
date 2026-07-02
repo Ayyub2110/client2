@@ -275,7 +275,7 @@ export default function SuperAdminDashboard() {
 
       {/* Tab Contents */}
       {activeTab === 'shops' ? (
-        <Card className="bg-card/45 backdrop-blur-xl border-border/80">
+        <Card className="bg-card/90 border-border/80">
           <CardHeader className="pb-3 border-b border-border/40 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <CardTitle className="text-lg font-bold">Registered Shops</CardTitle>
@@ -408,7 +408,7 @@ export default function SuperAdminDashboard() {
       ) : (
         <div className="grid gap-6 md:grid-cols-3">
           {/* Add Slide Panel */}
-          <Card className="bg-card/45 backdrop-blur-xl border-border/85 h-fit md:col-span-1">
+          <Card className="bg-card/90 border-border/85 h-fit md:col-span-1">
             <CardHeader className="pb-3 border-b border-border/40">
               <CardTitle className="text-lg font-bold">Add Carousel Slide</CardTitle>
               <CardDescription className="text-xs">Publish custom banners, training instructions, or news cards to all shop dashboards.</CardDescription>
@@ -492,7 +492,7 @@ export default function SuperAdminDashboard() {
           </Card>
 
           {/* Current Slides Panel */}
-          <Card className="bg-card/45 backdrop-blur-xl border-border/85 md:col-span-2">
+          <Card className="bg-card/90 border-border/85 md:col-span-2">
             <CardHeader className="pb-3 border-b border-border/40">
               <CardTitle className="text-lg font-bold">Current Active Slides</CardTitle>
               <CardDescription className="text-xs">Banners rotation order is based on published dates. Built-in announcements will fallback if empty.</CardDescription>

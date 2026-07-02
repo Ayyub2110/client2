@@ -31,14 +31,14 @@ import SignatureCanvas from 'react-signature-canvas';
 const ReactSignatureCanvas = (SignatureCanvas as any).default || SignatureCanvas;
 
 const DEVICE_BRANDS: Record<string, string[]> = {
-  'Apple': ['iPhone 11', 'iPhone 12', 'iPhone 13', 'iPhone 14', 'iPhone 15', 'iPhone 15 Pro', 'iPhone 15 Pro Max', 'iPad Air', 'iPad Pro'],
-  'Samsung': ['Galaxy S21', 'Galaxy S22', 'Galaxy S23', 'Galaxy S24', 'Galaxy A54', 'Galaxy M34', 'Galaxy Z Fold 5', 'Galaxy Z Flip 5'],
-  'OnePlus': ['OnePlus 10 Pro', 'OnePlus 11', 'OnePlus 12', 'OnePlus Nord 3', 'OnePlus Nord CE 3 Lite'],
-  'Google': ['Pixel 6', 'Pixel 7', 'Pixel 7a', 'Pixel 8', 'Pixel 8 Pro'],
-  'Xiaomi': ['Redmi Note 12', 'Redmi Note 13', 'Xiaomi 13 Pro', 'Poco F5', 'Poco X6 Pro'],
-  'Oppo': ['Reno 10', 'Reno 11', 'Oppo F23', 'Oppo A78'],
-  'Vivo': ['Vivo V29', 'Vivo V30', 'Vivo T2x', 'Vivo Y200'],
-  'Realme': ['Realme 11 Pro+', 'Realme 12 Pro', 'Realme C53', 'Realme Narzo 60']
+  'APPLE': ['IPHONE 11', 'IPHONE 12', 'IPHONE 13', 'IPHONE 14', 'IPHONE 15', 'IPHONE 15 PRO', 'IPHONE 15 PRO MAX', 'IPAD AIR', 'IPAD PRO'],
+  'SAMSUNG': ['GALAXY S21', 'GALAXY S22', 'GALAXY S23', 'GALAXY S24', 'GALAXY A54', 'GALAXY M34', 'GALAXY Z FOLD 5', 'GALAXY Z FLIP 5'],
+  'ONEPLUS': ['ONEPLUS 10 PRO', 'ONEPLUS 11', 'ONEPLUS 12', 'ONEPLUS NORD 3', 'ONEPLUS NORD CE 3 LITE'],
+  'GOOGLE': ['PIXEL 6', 'PIXEL 7', 'PIXEL 7A', 'PIXEL 8', 'PIXEL 8 PRO'],
+  'XIAOMI': ['REDMI NOTE 12', 'REDMI NOTE 13', 'XIAOMI 13 PRO', 'POCO F5', 'POCO X6 PRO'],
+  'OPPO': ['RENO 10', 'RENO 11', 'OPPO F23', 'OPPO A78'],
+  'VIVO': ['VIVO V29', 'VIVO V30', 'VIVO T2X', 'VIVO Y200'],
+  'REALME': ['REALME 11 PRO+', 'REALME 12 PRO', 'REALME C53', 'REALME NARZO 60']
 };
 
 // ----------------------------------------------------
@@ -104,6 +104,7 @@ export default function NewRepair() {
   const [patternLockOpen, setPatternLockOpen] = useState(false);
   const [kycModalOpen, setKycModalOpen] = useState(false);
   const [signatureOpen, setSignatureOpen] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
 
   // Core Data States
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
@@ -299,12 +300,32 @@ export default function NewRepair() {
       if (key === 'mobileBack') setMobileBackFile(file);
     }
 
+    setUploadProgress(prev => ({ ...prev, [key]: 10 }));
+
     const reader = new FileReader();
     reader.onloadend = () => {
-      setKycData(prev => ({
-        ...prev,
-        [key]: reader.result as string
-      }));
+      let progress = 10;
+      const interval = setInterval(() => {
+        progress += 30;
+        if (progress >= 100) {
+          clearInterval(interval);
+          setUploadProgress(prev => ({ ...prev, [key]: 100 }));
+          setKycData(prev => ({
+            ...prev,
+            [key]: reader.result as string
+          }));
+          toast.success(`${key} captured successfully!`);
+          setTimeout(() => {
+            setUploadProgress(prev => {
+              const updated = { ...prev };
+              delete updated[key];
+              return updated;
+            });
+          }, 800);
+        } else {
+          setUploadProgress(prev => ({ ...prev, [key]: progress }));
+        }
+      }, 100);
     };
     reader.readAsDataURL(file);
   };
@@ -417,6 +438,7 @@ export default function NewRepair() {
     onSuccess: (data) => {
       toast.success(`Repair Order Job #${data.repair.job_number} created successfully!`);
       queryClient.invalidateQueries({ queryKey: ['repairs-list'] });
+      queryClient.invalidateQueries({ queryKey: ['next-job-number'] });
       navigate(`/repairs/${data.repair.id}`);
     },
     onError: (err: any) => {
@@ -456,6 +478,9 @@ export default function NewRepair() {
     if (values.notes) formData.append('notes', values.notes);
     formData.append('sendWhatsapp', String(values.sendWhatsapp));
     formData.append('sendEmail', String(values.sendEmail));
+    if (nextJobNumber) {
+      formData.append('jobNumber', nextJobNumber);
+    }
     
     // Store KYC JSON
     const finalKyc = {
@@ -473,6 +498,108 @@ export default function NewRepair() {
     }
 
     createRepairMutation.mutate(formData);
+  };
+
+  const renderUploadCard = (
+    label: string,
+    key: keyof typeof kycData,
+    icon: React.ReactNode,
+    fileInputProps: { accept: string; capture?: 'environment' | 'user' }
+  ) => {
+    const value = kycData[key];
+    const progress = uploadProgress[key];
+    const isUploading = progress !== undefined;
+
+    return (
+      <div className="flex flex-col h-56 bg-card/60 border border-border/80 rounded-2xl overflow-hidden group hover:border-primary/50 transition-all duration-300 relative shadow-md">
+        {/* Header Label */}
+        <div className="bg-secondary/20 border-b border-border/60 py-2.5 px-4 flex items-center justify-between">
+          <span className="text-[10px] font-black text-muted-foreground uppercase tracking-wider">{label}</span>
+          {value && (
+            <span className="flex items-center gap-1 text-[10px] font-extrabold text-emerald-400 uppercase bg-emerald-500/10 border border-emerald-500/25 px-2 py-0.5 rounded-full">
+              <CheckCircle className="h-3.5 w-3.5" /> Ready
+            </span>
+          )}
+        </div>
+
+        {/* Content Body */}
+        <div className="flex-1 flex flex-col justify-center items-center relative p-4">
+          {isUploading ? (
+            <div className="flex flex-col items-center justify-center space-y-3">
+              <div className="relative flex items-center justify-center">
+                <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                <span className="absolute text-[10px] font-black text-white">{progress}%</span>
+              </div>
+              <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider animate-pulse">Uploading file...</span>
+            </div>
+          ) : value ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center group/preview">
+              {key === 'video' ? (
+                <video src={value} className="h-full w-full object-cover" autoPlay loop muted playsInline />
+              ) : (
+                <img src={value} className="h-full w-full object-cover" alt={label} />
+              )}
+              {/* Overlay Actions */}
+              <div className="absolute inset-0 bg-black/80 opacity-0 group-hover/preview:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-3">
+                {key === 'signature' ? (
+                  <button
+                    type="button"
+                    onClick={() => setSignatureOpen(true)}
+                    className="px-4 py-2 rounded-xl bg-primary hover:bg-primary/95 text-white font-extrabold text-[10px] uppercase tracking-wider flex items-center gap-1 shadow-md transition-all active:scale-[0.98]"
+                  >
+                    Replace
+                  </button>
+                ) : (
+                  <label className="px-4 py-2 rounded-xl bg-primary hover:bg-primary/95 text-white font-extrabold text-[10px] uppercase tracking-wider flex items-center gap-1 shadow-md transition-all active:scale-[0.98] cursor-pointer">
+                    Replace
+                    <input
+                      type="file"
+                      {...fileInputProps}
+                      onChange={(e) => handleFileUpload(e, key, key === 'mobileFront' || key === 'mobileBack')}
+                      className="hidden"
+                    />
+                  </label>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setKycData(prev => ({ ...prev, [key]: null }));
+                    if (key === 'mobileFront') setMobileFrontFile(null);
+                    if (key === 'mobileBack') setMobileBackFile(null);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white font-extrabold text-[10px] uppercase tracking-wider flex items-center gap-1 shadow-md transition-all active:scale-[0.98]"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="h-full w-full flex flex-col justify-center items-center">
+              {key === 'signature' ? (
+                <div
+                  onClick={() => setSignatureOpen(true)}
+                  className="w-full h-full border border-dashed border-border/80 rounded-xl flex flex-col justify-center items-center cursor-pointer hover:border-primary/50 hover:bg-secondary/10 transition-colors"
+                >
+                  {icon}
+                  <span className="text-[10px] text-white font-black uppercase tracking-wider mt-2">Sign Canvas</span>
+                </div>
+              ) : (
+                <label className="w-full h-full border border-dashed border-border/80 rounded-xl flex flex-col justify-center items-center cursor-pointer hover:border-primary/50 hover:bg-secondary/10 transition-colors">
+                  {icon}
+                  <span className="text-[10px] text-white font-black uppercase tracking-wider mt-2">Upload Photo</span>
+                  <input
+                    type="file"
+                    {...fileInputProps}
+                    onChange={(e) => handleFileUpload(e, key, key === 'mobileFront' || key === 'mobileBack')}
+                    className="hidden"
+                  />
+                </label>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -625,10 +752,10 @@ export default function NewRepair() {
                   className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary font-semibold text-white select-custom"
                 >
                   <option value="" className="bg-neutral-900 text-white">Select Brand</option>
+                  <option value="Other" className="bg-neutral-900 text-white">Other (Custom Brand)</option>
                   {Object.keys(DEVICE_BRANDS).map((b) => (
                     <option key={b} value={b} className="bg-neutral-900 text-white">{b}</option>
                   ))}
-                  <option value="Other" className="bg-neutral-900 text-white">Other (Custom Brand)</option>
                 </select>
                 {errors.brand && (
                   <p className="text-[11px] text-red-500 mt-1 font-semibold">{errors.brand.message}</p>
@@ -645,10 +772,10 @@ export default function NewRepair() {
                     className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary font-semibold text-white select-custom"
                   >
                     <option value="" className="bg-neutral-900 text-white">Select Model</option>
+                    <option value="Other" className="bg-neutral-900 text-white">Other (Custom Model)</option>
                     {DEVICE_BRANDS[selectedBrand]?.map((m) => (
                       <option key={m} value={m} className="bg-neutral-900 text-white">{m}</option>
                     ))}
-                    <option value="Other" className="bg-neutral-900 text-white">Other (Custom Model)</option>
                   </select>
                   {errors.model && (
                     <p className="text-[11px] text-red-500 mt-1 font-semibold">{errors.model.message}</p>
@@ -663,10 +790,10 @@ export default function NewRepair() {
                 <label className="text-xs font-semibold text-muted-foreground">Enter Custom Brand</label>
                 <input
                   type="text"
-                  placeholder="e.g. Motorola"
+                  placeholder="e.g. MOTOROLA"
                   value={customBrand}
                   onChange={(e) => handleCustomBrandChange(e.target.value)}
-                  className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold text-white"
+                  className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold text-white uppercase"
                 />
                 {errors.brand && (
                   <p className="text-[11px] text-red-500 mt-1 font-semibold">{errors.brand.message}</p>
@@ -680,10 +807,10 @@ export default function NewRepair() {
                 <label className="text-xs font-semibold text-muted-foreground">Enter Custom Model</label>
                 <input
                   type="text"
-                  placeholder="e.g. Moto G54"
+                  placeholder="e.g. MOTO G54"
                   value={customModel}
                   onChange={(e) => handleCustomModelChange(e.target.value)}
-                  className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold text-white"
+                  className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold text-white uppercase"
                 />
                 {errors.model && (
                   <p className="text-[11px] text-red-500 mt-1 font-semibold">{errors.model.message}</p>
@@ -725,10 +852,8 @@ export default function NewRepair() {
               <div className="space-y-3">
                 {rateCardData.rateCard.services.map((svc: any) => {
                   const ogName = `${svc.service_name} (OG)`;
-                  const dittoName = `${svc.service_name} (Ditto)`;
                   const copyName = `${svc.service_name} (Copy)`;
                   const isOgSelected = selectedServices.some(s => s.service_name === ogName);
-                  const isDittoSelected = selectedServices.some(s => s.service_name === dittoName);
                   const isCopySelected = selectedServices.some(s => s.service_name === copyName);
 
                   return (
@@ -745,17 +870,6 @@ export default function NewRepair() {
                           }`}
                         >
                           <span>OG: ₹{svc.og_cost ?? 0}</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => toggleService({ service_name: dittoName, labor_cost: svc.ditto_cost ?? 0 })}
-                          className={`px-3 py-1.5 rounded-lg border text-[11px] font-extrabold transition-all flex items-center gap-1.5 ${
-                            isDittoSelected
-                              ? 'bg-emerald-600 text-white border-transparent shadow-[0_0_10px_rgba(16,185,129,0.3)]'
-                              : 'bg-secondary/40 border-border/80 text-muted-foreground hover:text-foreground hover:border-emerald-500/50'
-                          }`}
-                        >
-                          <span>Ditto: ₹{svc.ditto_cost ?? 0}</span>
                         </button>
                         <button
                           type="button"
@@ -1170,221 +1284,78 @@ export default function NewRepair() {
 
       </form>
 
-      {/* ----------------------------------------------------
-          CUSTOMER KYC FULL OVERLAY MODAL
-         ---------------------------------------------------- */}
       {kycModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-background border border-border/80 w-full max-w-lg rounded-3xl p-6 space-y-6 relative max-h-[90vh] overflow-y-auto shadow-2xl">
-            <div className="flex items-center justify-between border-b border-border/60 pb-3">
+        <div className="fixed inset-0 z-50 bg-black/35 flex items-center justify-center p-3 overflow-y-auto">
+          <div className="bg-background border border-border/80 w-[92%] sm:w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl relative max-h-[85vh] flex flex-col">
+            {/* Sticky Header */}
+            <div className="bg-neutral-950/90 border-b border-border/60 p-4 flex items-center justify-between shrink-0">
               <button
                 type="button"
                 onClick={() => setKycModalOpen(false)}
-                className="p-2 rounded-full bg-secondary/35 hover:bg-secondary/50 transition-colors"
+                className="p-2 rounded-full bg-secondary/35 hover:bg-secondary/50 transition-colors text-white"
                 title="Back"
               >
-                <ArrowLeft className="h-5 w-5 text-white" />
+                <ArrowLeft className="h-4.5 w-4.5" />
               </button>
-              <h2 className="text-xl font-extrabold text-primary tracking-tight uppercase">
+              <h2 className="text-sm font-extrabold text-primary tracking-tight uppercase">
                 Customer KYC Terminal
               </h2>
-              <div className="w-9" /> {/* Spacer to center the title */}
-            </div>
-            
-            {/* Grid of KYC Capture points */}
-            <div className="grid grid-cols-2 gap-4">
-              
-              {/* ID Card Front */}
-              <div className="space-y-1.5 text-center">
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">ID Card Front</span>
-                <label className="border border-border/80 rounded-xl p-3.5 bg-secondary/15 relative h-28 flex flex-col justify-center items-center cursor-pointer hover:border-primary/50 overflow-hidden">
-                  {kycData.idCardFront ? (
-                    <img src={kycData.idCardFront} className="h-full w-full object-cover rounded-lg" alt="ID Front" />
-                  ) : (
-                    <>
-                      <Camera className="h-5 w-5 text-primary" />
-                      <span className="text-[10px] text-white font-semibold mt-1">Take Photo</span>
-                    </>
-                  )}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    onChange={(e) => handleFileUpload(e, 'idCardFront')}
-                    className="hidden"
-                  />
-                </label>
-              </div>
-
-              {/* ID Card Back */}
-              <div className="space-y-1.5 text-center">
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">ID Card Back</span>
-                <label className="border border-border/80 rounded-xl p-3.5 bg-secondary/15 relative h-28 flex flex-col justify-center items-center cursor-pointer hover:border-primary/50 overflow-hidden">
-                  {kycData.idCardBack ? (
-                    <img src={kycData.idCardBack} className="h-full w-full object-cover rounded-lg" alt="ID Back" />
-                  ) : (
-                    <>
-                      <Camera className="h-5 w-5 text-primary" />
-                      <span className="text-[10px] text-white font-semibold mt-1">Take Photo</span>
-                    </>
-                  )}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    onChange={(e) => handleFileUpload(e, 'idCardBack')}
-                    className="hidden"
-                  />
-                </label>
-              </div>
-
-              {/* Mobile Device Front */}
-              <div className="space-y-1.5 text-center">
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Mobile Front</span>
-                <label className="border border-border/80 rounded-xl p-3.5 bg-secondary/15 relative h-28 flex flex-col justify-center items-center cursor-pointer hover:border-primary/50 overflow-hidden">
-                  {kycData.mobileFront ? (
-                    <img src={kycData.mobileFront} className="h-full w-full object-cover rounded-lg" alt="Mobile Front" />
-                  ) : (
-                    <>
-                      <Smartphone className="h-5 w-5 text-primary" />
-                      <span className="text-[10px] text-white font-semibold mt-1">Take Photo</span>
-                    </>
-                  )}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    onChange={(e) => handleFileUpload(e, 'mobileFront', true)}
-                    className="hidden"
-                  />
-                </label>
-              </div>
-
-              {/* Mobile Device Back */}
-              <div className="space-y-1.5 text-center">
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Mobile Back</span>
-                <label className="border border-border/80 rounded-xl p-3.5 bg-secondary/15 relative h-28 flex flex-col justify-center items-center cursor-pointer hover:border-primary/50 overflow-hidden">
-                  {kycData.mobileBack ? (
-                    <img src={kycData.mobileBack} className="h-full w-full object-cover rounded-lg" alt="Mobile Back" />
-                  ) : (
-                    <>
-                      <Smartphone className="h-5 w-5 text-primary" />
-                      <span className="text-[10px] text-white font-semibold mt-1">Take Photo</span>
-                    </>
-                  )}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    onChange={(e) => handleFileUpload(e, 'mobileBack', true)}
-                    className="hidden"
-                  />
-                </label>
-              </div>
-
-              {/* Customer Photo */}
-              <div className="space-y-1.5 text-center">
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Customer Image</span>
-                <label className="border border-border/80 rounded-xl p-3.5 bg-secondary/15 relative h-28 flex flex-col justify-center items-center cursor-pointer hover:border-primary/50 overflow-hidden">
-                  {kycData.customerPhoto ? (
-                    <img src={kycData.customerPhoto} className="h-full w-full object-cover rounded-lg" alt="Customer Profile" />
-                  ) : (
-                    <>
-                      <Camera className="h-5 w-5 text-primary" />
-                      <span className="text-[10px] text-white font-semibold mt-1">Take Photo</span>
-                    </>
-                  )}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    capture="user"
-                    onChange={(e) => handleFileUpload(e, 'customerPhoto')}
-                    className="hidden"
-                  />
-                </label>
-              </div>
-
-              {/* Take Video */}
-              <div className="space-y-1.5 text-center">
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Take Video</span>
-                <label className="border border-border/80 rounded-xl p-3.5 bg-secondary/15 relative h-28 flex flex-col justify-center items-center cursor-pointer hover:border-primary/50 overflow-hidden">
-                  {kycData.video ? (
-                    <video src={kycData.video} className="h-full w-full object-cover rounded-lg" autoPlay loop muted playsInline />
-                  ) : (
-                    <>
-                      <Video className="h-5 w-5 text-primary" />
-                      <span className="text-[10px] text-white font-semibold mt-1">Upload Video</span>
-                    </>
-                  )}
-                  <input
-                    type="file"
-                    accept="video/*"
-                    onChange={(e) => handleFileUpload(e, 'video')}
-                    className="hidden"
-                  />
-                </label>
-              </div>
-
-              {/* Sign Terms & Conditions */}
-              <div className="space-y-1.5 text-center">
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Sign Terms</span>
-                <div
-                  onClick={() => setSignatureOpen(true)}
-                  className="border border-border/80 rounded-xl p-3.5 bg-secondary/15 h-28 flex flex-col justify-center items-center cursor-pointer hover:border-primary/55 overflow-hidden"
-                >
-                  {kycData.signature ? (
-                    <img src={kycData.signature} className="h-full w-full object-contain rounded-lg bg-white" alt="Signature" />
-                  ) : (
-                    <>
-                      <Clipboard className="h-5 w-5 text-primary" />
-                      <span className="text-[10px] text-white font-semibold mt-1">Sign Canvas</span>
-                    </>
-                  )}
-                </div>
-              </div>
-
+              <div className="w-8" />
             </div>
 
-            {/* Document / KYC ID Number Input */}
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Document ID / Card Number</label>
-              <input
-                type="text"
-                placeholder="Enter Passport / National ID card Number"
-                value={kycData.documentNumber}
-                onChange={(e) => setKycData(prev => ({ ...prev, documentNumber: e.target.value }))}
-                className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold text-white"
-              />
+            {/* Scrollable Content Body */}
+            <div className="flex-1 p-5 sm:p-6 space-y-6 overflow-y-auto scrollbar-thin">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                {renderUploadCard('ID Card Front', 'idCardFront', <Camera className="h-6 w-6 text-primary" />, { accept: 'image/*', capture: 'environment' })}
+                {renderUploadCard('ID Card Back', 'idCardBack', <Camera className="h-6 w-6 text-primary" />, { accept: 'image/*', capture: 'environment' })}
+                {renderUploadCard('Mobile Device Front', 'mobileFront', <Smartphone className="h-6 w-6 text-primary" />, { accept: 'image/*', capture: 'environment' })}
+                {renderUploadCard('Mobile Device Back', 'mobileBack', <Smartphone className="h-6 w-6 text-primary" />, { accept: 'image/*', capture: 'environment' })}
+                {renderUploadCard('Customer Face Photo', 'customerPhoto', <Camera className="h-6 w-6 text-primary" />, { accept: 'image/*', capture: 'user' })}
+                {renderUploadCard('Device Test Video', 'video', <Video className="h-6 w-6 text-primary" />, { accept: 'video/*' })}
+                {renderUploadCard('Client Signature', 'signature', <Clipboard className="h-6 w-6 text-primary" />, { accept: '' })}
+              </div>
+
+              {/* Document Number */}
+              <div className="space-y-1.5 max-w-md border-t border-border/40 pt-4">
+                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Document ID / Card Number</label>
+                <input
+                  type="text"
+                  placeholder="Enter Passport / National ID card Number"
+                  value={kycData.documentNumber}
+                  onChange={(e) => setKycData(prev => ({ ...prev, documentNumber: e.target.value }))}
+                  className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold text-white uppercase"
+                />
+              </div>
             </div>
 
-            {/* Done & Cancel buttons */}
-            <div className="space-y-2 pt-2">
-              <button
+            {/* Sticky Footer */}
+            <div className="bg-neutral-950/90 border-t border-border/60 p-4 flex gap-3 items-center justify-end shrink-0">
+              <Button
+                type="button"
+                onClick={() => {
+                  setValue('kycDetails', JSON.stringify(kycData));
+                  toast.success('KYC details saved as draft!');
+                }}
+                variant="outline"
+                className="px-5 py-2 text-xs font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground h-10 border-border/80 bg-secondary/15 hover:bg-secondary/40"
+              >
+                Save Draft
+              </Button>
+              <Button
                 type="button"
                 onClick={handleSaveKyc}
-                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-3 rounded-xl font-bold uppercase tracking-wider text-xs shadow-lg"
+                className="px-5 py-2 text-xs font-bold uppercase tracking-wider bg-primary text-primary-foreground hover:bg-primary/90 h-10"
               >
-                Done
-              </button>
-              <button
-                type="button"
-                onClick={() => setKycModalOpen(false)}
-                className="w-full bg-secondary/40 hover:bg-secondary/60 text-white py-3 rounded-xl font-bold uppercase tracking-wider text-xs"
-              >
-                Cancel
-              </button>
+                Submit KYC
+              </Button>
             </div>
-
           </div>
         </div>
       )}
 
-      {/* ----------------------------------------------------
-          SIGNATURE CANVAS SHEET MODAL
-         ---------------------------------------------------- */}
       {signatureOpen && (
-        <div className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4">
-          <div className="bg-background border border-border/80 w-full max-w-sm rounded-3xl p-6 space-y-4 shadow-2xl">
+        <div className="fixed inset-0 z-50 bg-black/35 flex items-center justify-center p-3">
+          <div className="bg-background border border-border/80 w-[92%] sm:w-full max-w-sm rounded-2xl p-4 sm:p-6 space-y-4 shadow-2xl">
             <h3 className="text-sm font-bold text-primary uppercase tracking-widest text-center border-b border-border/60 pb-2">
               Draw Signature on Screen
             </h3>
@@ -1434,8 +1405,8 @@ export default function NewRepair() {
           PATTERN LOCK DRAWING GRID MODAL
          ---------------------------------------------------- */}
       {patternLockOpen && (
-        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-background border border-border/80 w-full max-w-xs rounded-3xl p-6 space-y-5 shadow-2xl relative text-center">
+        <div className="fixed inset-0 z-50 bg-black/35 flex items-center justify-center p-3">
+          <div className="bg-background border border-border/80 w-[92%] sm:w-full max-w-xs rounded-2xl p-4 sm:p-5 space-y-5 shadow-2xl relative text-center">
             <h3 className="text-sm font-bold text-primary uppercase tracking-widest border-b border-border/60 pb-2">
               Draw Pattern Lock
             </h3>
@@ -1536,8 +1507,8 @@ export default function NewRepair() {
           INLINE REGISTER NEW CUSTOMER MODAL
          ---------------------------------------------------- */}
       {newCustomerOpen && (
-        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-background border border-border/80 w-full max-w-sm rounded-3xl p-6 space-y-4 shadow-2xl">
+        <div className="fixed inset-0 z-50 bg-black/35 flex items-center justify-center p-3">
+          <div className="bg-background border border-border/80 w-[92%] sm:w-full max-w-sm rounded-2xl p-4 sm:p-6 space-y-4 shadow-2xl">
             <h3 className="text-sm font-extrabold text-primary uppercase tracking-widest text-center border-b border-border/60 pb-2">
               Register New Customer
             </h3>

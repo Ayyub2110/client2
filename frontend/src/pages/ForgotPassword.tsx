@@ -43,7 +43,7 @@ export default function ForgotPassword() {
       <div className="absolute top-1/4 left-1/4 h-72 w-72 rounded-full bg-primary/10 blur-[100px] pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 h-72 w-72 rounded-full bg-purple-500/10 blur-[100px] pointer-events-none" />
 
-      <Card className="w-full max-w-md bg-card/45 backdrop-blur-xl border-border/80">
+      <Card className="w-full max-w-md bg-card/90 border-border/80">
         <CardHeader className="space-y-3.5 text-center flex flex-col items-center">
           <div className="space-y-1">
             <CardTitle className="text-xl font-bold tracking-tight">Forgot Password</CardTitle>

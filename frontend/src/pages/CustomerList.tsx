@@ -152,54 +152,58 @@ export default function CustomerList() {
         </div>
       ) : data?.customers && data.customers.length > 0 ? (
         <div className="space-y-6">
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-2 grid-cols-1">
             {data.customers.map((cust) => (
               <Card
                 key={cust.id}
                 onClick={() => navigate(`/customers/${cust.id}`)}
-                className="cursor-pointer hover:border-primary/45 transition-colors group"
+                className="cursor-pointer hover:border-primary/45 transition-colors group bg-card/35 border-border/60 hover:bg-secondary/15"
               >
-                <CardContent className="p-6 flex items-start gap-4">
-                  {/* Photo Profile */}
-                  <div className="h-14 w-14 rounded-full overflow-hidden bg-secondary/60 flex-shrink-0 flex items-center justify-center border border-border group-hover:border-primary/20">
-                    {cust.photo_url ? (
-                      <img src={cust.photo_url} alt={cust.name} className="h-full w-full object-cover" />
-                    ) : (
-                      <Users className="h-6 w-6 text-muted-foreground" />
-                    )}
-                  </div>
-
-                  <div className="space-y-1.5 flex-1 min-w-0">
-                    <h3 className="font-bold text-base text-foreground truncate group-hover:text-primary transition-colors">
-                      {cust.name}
-                    </h3>
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Phone className="h-3 w-3" /> {cust.phone}
-                      </span>
-                      {cust.address && (
-                        <span className="flex items-center gap-1 truncate max-w-[200px]">
-                          <MapPin className="h-3 w-3" /> {cust.address}
-                        </span>
+                <CardContent className="py-2.5 px-4 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    {/* Photo Profile */}
+                    <div className="h-9 w-9 rounded-full overflow-hidden bg-secondary/60 flex-shrink-0 flex items-center justify-center border border-border group-hover:border-primary/30">
+                      {cust.photo_url ? (
+                        <img src={cust.photo_url} alt={cust.name} className="h-full w-full object-cover" />
+                      ) : (
+                        <Users className="h-4 w-4 text-muted-foreground" />
                       )}
                     </div>
 
-                    {cust.lastRepairDate && (
-                      <div className="flex items-center gap-1 text-[10px] text-muted-foreground/80 mt-1">
-                        <Calendar className="h-3 w-3 text-primary/75" />
-                        <span>Last ticket: {new Date(cust.lastRepairDate).toLocaleDateString()}</span>
+                    <div className="space-y-0.5 flex-1 min-w-0">
+                      <h3 className="font-extrabold text-sm text-foreground truncate group-hover:text-primary transition-colors">
+                        {cust.name}
+                      </h3>
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-0.5 text-[11px] text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Phone className="h-3 w-3 text-primary/75" /> {cust.phone}
+                        </span>
+                        {cust.address && (
+                          <span className="flex items-center gap-1 truncate max-w-xs md:max-w-md">
+                            <MapPin className="h-3 w-3 text-primary/75" /> {cust.address}
+                          </span>
+                        )}
+                        {cust.lastRepairDate && (
+                          <span className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3 text-primary/75" />
+                            <span>Last Ticket: {new Date(cust.lastRepairDate).toLocaleDateString()}</span>
+                          </span>
+                        )}
                       </div>
-                    )}
+                    </div>
                   </div>
 
                   {/* Frequency Indicator */}
-                  <div className="bg-secondary/40 border border-border/50 rounded-xl px-3 py-1.5 text-center min-w-[60px]">
-                    <span className="block text-base font-bold text-foreground leading-none">
-                      {cust.repairsCount}
-                    </span>
-                    <span className="text-[9px] text-muted-foreground uppercase font-bold tracking-wider mt-0.5 block">
-                      Orders
-                    </span>
+                  <div className="flex items-center gap-2.5 flex-shrink-0">
+                    <div className="bg-secondary/40 border border-border/50 rounded-lg px-2.5 py-1 text-center min-w-[55px]">
+                      <span className="block text-sm font-black text-foreground leading-none">
+                        {cust.repairsCount}
+                      </span>
+                      <span className="text-[8px] text-muted-foreground uppercase font-black tracking-wider mt-0.5 block">
+                        Orders
+                      </span>
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
                   </div>
                 </CardContent>
               </Card>
