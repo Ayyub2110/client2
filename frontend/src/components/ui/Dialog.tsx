@@ -22,7 +22,7 @@ export const Dialog: React.FC<DialogProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 light text-foreground">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/35 transition-opacity duration-300"
@@ -39,7 +39,7 @@ export const Dialog: React.FC<DialogProps> = ({
         {/* Header */}
         <div className="flex items-start justify-between mb-4">
           <div className="space-y-1">
-            <h2 className="text-lg font-bold text-white leading-none tracking-tight">{title}</h2>
+            <h2 className="text-lg font-bold text-foreground leading-none tracking-tight">{title}</h2>
             {description && (
               <p className="text-sm text-muted-foreground">{description}</p>
             )}

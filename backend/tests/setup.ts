@@ -154,8 +154,21 @@ jest.mock('../src/utils/supabase', () => {
           
           if (this.table === 'repairs' && !newRec.job_number) {
             const todayStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-            const count = DB.repairs.filter(r => r.job_number && r.job_number.includes(todayStr)).length + 1;
-            newRec.job_number = `GK-${todayStr}-${String(count).padStart(3, '0')}`;
+            const jobNumbers = DB.repairs
+              .filter((r: any) => r.shop_id === newRec.shop_id)
+              .map((r: any) => r.job_number)
+              .filter((num: string) => num && /^GK-\d{8}-\d+$/.test(num));
+            
+            let maxSeq = 0;
+            for (const num of jobNumbers) {
+              const parts = num.split('-');
+              const seq = parseInt(parts[2], 10);
+              if (!isNaN(seq) && seq > maxSeq) {
+                maxSeq = seq;
+              }
+            }
+            const nextSeq = maxSeq + 1;
+            newRec.job_number = `GK-${todayStr}-${String(nextSeq).padStart(3, '0')}`;
           }
 
           DB[this.table].push(newRec);
@@ -386,11 +399,25 @@ jest.mock('../src/utils/supabase', () => {
         admin: mockAdminAuth
       },
       from: (table: string) => new MockQueryBuilder(table),
-      rpc: (fnName: string) => {
+      rpc: (fnName: string, params?: any) => {
         if (fnName === 'generate_job_number') {
+          const shopId = params?.p_shop_id;
           const todayStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-          const count = DB.repairs.filter(r => r.job_number && r.job_number.includes(todayStr)).length + 1;
-          const num = `GK-${todayStr}-${String(count).padStart(3, '0')}`;
+          const jobNumbers = DB.repairs
+            .filter((r: any) => !shopId || r.shop_id === shopId)
+            .map((r: any) => r.job_number)
+            .filter((num: string) => num && /^GK-\d{8}-\d+$/.test(num));
+          
+          let maxSeq = 0;
+          for (const num of jobNumbers) {
+            const parts = num.split('-');
+            const seq = parseInt(parts[2], 10);
+            if (!isNaN(seq) && seq > maxSeq) {
+              maxSeq = seq;
+            }
+          }
+          const nextSeq = maxSeq + 1;
+          const num = `GK-${todayStr}-${String(nextSeq).padStart(3, '0')}`;
           return Promise.resolve({ data: num, error: null });
         }
         if (fnName === 'generate_token_number') {

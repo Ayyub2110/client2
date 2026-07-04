@@ -769,7 +769,7 @@ export default function SettingsPage({ defaultTab }: SettingsPageProps = {}) {
                         {emp.staff_id || 'N/A'}
                       </TableCell>
                       <TableCell>
-                        <div className="font-semibold text-white text-xs">{emp.name}</div>
+                        <div className="font-semibold text-foreground text-xs">{emp.name}</div>
                       </TableCell>
                       <TableCell className="capitalize text-xs text-muted-foreground">
                         {emp.role}
@@ -786,7 +786,7 @@ export default function SettingsPage({ defaultTab }: SettingsPageProps = {}) {
                           <button
                             onClick={() => handleResetStaffPassword(emp.id)}
                             title="Send Reset Password recovery"
-                            className="p-1.5 border border-border hover:bg-secondary/40 rounded-lg text-muted-foreground hover:text-white"
+                            className="p-1.5 border border-border hover:bg-secondary/40 rounded-lg text-muted-foreground hover:text-foreground"
                           >
                             <KeyRound className="h-3.5 w-3.5" />
                           </button>
@@ -894,15 +894,15 @@ export default function SettingsPage({ defaultTab }: SettingsPageProps = {}) {
         description="Review automated notification templates, sync configurations, and transmission audit logs."
         className="max-w-3xl w-full"
       >
-        <div className="space-y-6 overflow-y-auto max-h-[70vh] pr-1 select-none text-white">
+        <div className="space-y-6 overflow-y-auto max-h-[70vh] pr-1 select-none text-foreground">
           {/* Config card */}
           <div className="grid gap-4 md:grid-cols-3">
             <div className="md:col-span-2 bg-secondary/15 border border-border/60 rounded-xl p-4 space-y-2">
-              <h4 className="text-xs font-extrabold text-white uppercase tracking-wider">Sync Engine Setup</h4>
+              <h4 className="text-xs font-extrabold text-foreground uppercase tracking-wider">Sync Engine Setup</h4>
               <p className="text-[11px] text-muted-foreground leading-relaxed">
                 Automated status updates are dispatched on ticket creation, technician state transitions, and delivery closures. To switch providers, configure your <code className="font-mono text-primary bg-secondary/40 px-1 py-0.5 rounded text-[10px]">backend/.env</code>:
               </p>
-              <div className="grid grid-cols-2 gap-2 font-mono text-[9px] text-white/90 bg-secondary/20 p-2.5 rounded-lg border border-border/40">
+              <div className="grid grid-cols-2 gap-2 font-mono text-[9px] text-foreground/90 bg-secondary/20 p-2.5 rounded-lg border border-border/40">
                 <div>
                   <span className="text-muted-foreground block text-[8px] uppercase font-bold mb-0.5">Twilio SMS Gateway</span>
                   WHATSAPP_PROVIDER=twilio<br />
@@ -971,11 +971,11 @@ export default function SettingsPage({ defaultTab }: SettingsPageProps = {}) {
                           {log.jobNumber}
                         </TableCell>
                         <TableCell>
-                          <div className="font-semibold text-white text-xs">{log.recipientName}</div>
+                          <div className="font-semibold text-foreground text-xs">{log.recipientName}</div>
                           <div className="text-[10px] text-muted-foreground">{log.recipientPhone}</div>
                         </TableCell>
                         <TableCell className="capitalize text-xs">
-                          <span className="font-bold text-white uppercase bg-secondary/80 border border-border/60 rounded px-1.5 py-0.5">
+                          <span className="font-bold text-foreground uppercase bg-secondary/80 border border-border/60 rounded px-1.5 py-0.5">
                             {log.stage}
                           </span>
                         </TableCell>

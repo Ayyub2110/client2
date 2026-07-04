@@ -83,7 +83,8 @@ app.use(sanitizeMiddleware);
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  max: process.env.NODE_ENV === 'production' ? 1000 : 10000, // Much higher limits to avoid throttling
+  skip: (req) => req.method === 'OPTIONS', // Skip preflight options requests
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many requests, please try again later.' }
@@ -91,7 +92,8 @@ const limiter = rateLimit({
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === 'production' ? 10 : 1000, // Unlimited in dev
+  max: process.env.NODE_ENV === 'production' ? 10 : 1000,
+  skip: (req) => req.method === 'OPTIONS', // Skip preflight options requests
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many login or registration attempts. Please try again after 15 minutes.' }

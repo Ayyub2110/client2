@@ -369,7 +369,10 @@ export default function Repairs() {
                     Invoice
                   </button>
                   <button
-                    onClick={() => navigate(`/repairs/${r.id}`)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/repairs/${r.id}`);
+                    }}
                     className="py-3 text-xs font-bold uppercase tracking-wider text-center text-primary-foreground bg-primary hover:bg-primary/95 transition-colors border-r border-border"
                   >
                     Edit

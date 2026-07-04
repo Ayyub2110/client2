@@ -528,7 +528,7 @@ export default function NewRepair() {
             <div className="flex flex-col items-center justify-center space-y-3">
               <div className="relative flex items-center justify-center">
                 <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                <span className="absolute text-[10px] font-black text-white">{progress}%</span>
+                <span className="absolute text-[10px] font-black text-foreground">{progress}%</span>
               </div>
               <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider animate-pulse">Uploading file...</span>
             </div>
@@ -603,7 +603,7 @@ export default function NewRepair() {
   };
 
   return (
-    <div className="space-y-6 max-w-2xl mx-auto pb-16 bg-background rounded-3xl overflow-hidden shadow-2xl border border-border/85">
+    <div className="space-y-6 max-w-2xl mx-auto pb-16 bg-background rounded-3xl overflow-hidden shadow-2xl border border-border/85 light text-foreground">
       {/* Theme Matched Purple/Indigo Top Header */}
       <div className="bg-gradient-to-r from-primary to-primary/80 p-6 relative">
         <div className="flex items-center gap-3">
@@ -621,7 +621,7 @@ export default function NewRepair() {
           {nextJobNumber && (
             <div className="bg-white/10 border border-white/20 px-3.5 py-1.5 rounded-xl text-right shrink-0">
               <span className="text-[10px] text-white/70 block uppercase font-bold tracking-wider">Billing ID (Generated)</span>
-              <span className="font-mono text-sm font-black text-white">{nextJobNumber}</span>
+              <span className="font-mono text-sm font-black text-foreground">{nextJobNumber}</span>
             </div>
           )}
         </div>
@@ -702,7 +702,7 @@ export default function NewRepair() {
                     className="p-3 hover:bg-primary/10 cursor-pointer flex justify-between items-center"
                   >
                     <div>
-                      <div className="text-sm font-semibold text-white">{cust.name}</div>
+                      <div className="text-sm font-semibold text-foreground">{cust.name}</div>
                       <div className="text-xs text-muted-foreground">{cust.phone}</div>
                     </div>
                     <span className="text-[10px] uppercase font-bold text-primary">Pick</span>
@@ -721,7 +721,7 @@ export default function NewRepair() {
             <div className="flex items-center justify-between p-3 rounded-xl bg-primary/15 border border-primary/30">
               <div>
                 <span className="text-[9px] uppercase tracking-widest text-primary/95 font-bold block">Selected Client</span>
-                <span className="text-sm font-bold text-white block">{selectedCustomer.name}</span>
+                <span className="text-sm font-bold text-foreground block">{selectedCustomer.name}</span>
                 <span className="text-xs text-muted-foreground">{selectedCustomer.phone}</span>
               </div>
               <button
@@ -730,7 +730,7 @@ export default function NewRepair() {
                   setSelectedCustomer(null);
                   setValue('customerId', '');
                 }}
-                className="p-1 rounded-lg hover:bg-secondary text-muted-foreground hover:text-white"
+                className="p-1 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground"
               >
                 <X className="h-4.5 w-4.5" />
               </button>
@@ -749,7 +749,7 @@ export default function NewRepair() {
                 <select
                   value={selectedBrand}
                   onChange={(e) => handleBrandChange(e.target.value)}
-                  className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary font-semibold text-white select-custom"
+                  className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary font-semibold text-foreground select-custom"
                 >
                   <option value="" className="bg-neutral-900 text-white">Select Brand</option>
                   <option value="Other" className="bg-neutral-900 text-white">Other (Custom Brand)</option>
@@ -769,7 +769,7 @@ export default function NewRepair() {
                   <select
                     value={selectedModel}
                     onChange={(e) => handleModelChange(e.target.value)}
-                    className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary font-semibold text-white select-custom"
+                    className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary font-semibold text-foreground select-custom"
                   >
                     <option value="" className="bg-neutral-900 text-white">Select Model</option>
                     <option value="Other" className="bg-neutral-900 text-white">Other (Custom Model)</option>
@@ -793,7 +793,7 @@ export default function NewRepair() {
                   placeholder="e.g. MOTOROLA"
                   value={customBrand}
                   onChange={(e) => handleCustomBrandChange(e.target.value)}
-                  className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold text-white uppercase"
+                  className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold uppercase"
                 />
                 {errors.brand && (
                   <p className="text-[11px] text-red-500 mt-1 font-semibold">{errors.brand.message}</p>
@@ -810,7 +810,7 @@ export default function NewRepair() {
                   placeholder="e.g. MOTO G54"
                   value={customModel}
                   onChange={(e) => handleCustomModelChange(e.target.value)}
-                  className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold text-white uppercase"
+                  className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold uppercase"
                 />
                 {errors.model && (
                   <p className="text-[11px] text-red-500 mt-1 font-semibold">{errors.model.message}</p>
@@ -829,7 +829,7 @@ export default function NewRepair() {
               placeholder="Write Problem Description..."
               value={customProblem}
               onChange={(e) => setCustomProblem(e.target.value)}
-              className="flex-1 bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold text-white"
+              className="flex-1 bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold"
             />
             <Button
               type="button"
@@ -892,7 +892,7 @@ export default function NewRepair() {
 
           {/* Problem display text */}
           {watch('problem') && (
-            <div className="p-3 bg-secondary/30 rounded-xl text-xs text-white/90 italic border border-border/60">
+            <div className="p-3 bg-secondary/30 rounded-xl text-xs text-foreground/90 italic border border-border/60">
               <span className="font-bold text-primary/95 not-italic block mb-1">Diagnostic Log:</span>
               "{watch('problem')}"
             </div>
@@ -956,7 +956,7 @@ export default function NewRepair() {
         <div className="p-4 bg-secondary/20 border border-border/80 rounded-2xl flex items-center justify-between">
           <div>
             <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Remaining Balance</span>
-            <div className="text-2xl font-black text-white mt-0.5">₹{outstandingBalance.toFixed(2)}</div>
+            <div className="text-2xl font-black text-foreground mt-0.5">₹{outstandingBalance.toFixed(2)}</div>
           </div>
           <span className="text-xs text-muted-foreground italic">Balance = Estimate - Paid</span>
         </div>
@@ -982,7 +982,7 @@ export default function NewRepair() {
         </div>
         {watch('patternLock') && (
           <div className="p-2.5 bg-primary/15 rounded-lg text-xs font-mono text-primary/95 border border-primary/20 text-center">
-            Selected Pattern Lock Sequence: <span className="font-black text-white">{watch('patternLock')}</span>
+            Selected Pattern Lock Sequence: <span className="font-black text-foreground">{watch('patternLock')}</span>
           </div>
         )}
 
@@ -990,7 +990,7 @@ export default function NewRepair() {
         <div className="grid grid-cols-2 gap-4 items-center p-4 bg-secondary/15 rounded-2xl border border-border/60">
           <div className="space-y-1">
             <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block">Current repair date</span>
-            <div className="text-sm font-bold text-white">{repairDateDisplay || 'Loading...'}</div>
+            <div className="text-sm font-bold text-foreground">{repairDateDisplay || 'Loading...'}</div>
             <Button
               type="button"
               onClick={() => {
@@ -1006,7 +1006,7 @@ export default function NewRepair() {
 
           <div className="space-y-1">
             <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block">Current repair time</span>
-            <div className="text-sm font-bold text-white">{repairTimeDisplay || 'Loading...'}</div>
+            <div className="text-sm font-bold text-foreground">{repairTimeDisplay || 'Loading...'}</div>
             <Button
               type="button"
               onClick={() => {
@@ -1021,7 +1021,7 @@ export default function NewRepair() {
           </div>
 
           <div className="col-span-2 pt-3 border-t border-border/40 flex items-center justify-between">
-            <span className="text-xs text-white font-semibold">Reminder Enable?</span>
+            <span className="text-xs text-foreground font-semibold">Reminder Enable?</span>
             <label className="relative inline-flex items-center cursor-pointer select-none">
               <input
                 type="checkbox"
@@ -1039,9 +1039,9 @@ export default function NewRepair() {
           
           {/* Power Adapter */}
           <div className="flex items-center justify-between">
-            <span className="text-xs text-white/95 font-bold">Power Adapter</span>
+            <span className="text-xs text-foreground/95 font-bold">Power Adapter</span>
             <div className="flex gap-4">
-              <label className="flex items-center gap-1.5 cursor-pointer text-xs text-white font-bold">
+              <label className="flex items-center gap-1.5 cursor-pointer text-xs text-foreground font-bold">
                 <input
                   type="radio"
                   name="accessoryAdapter"
@@ -1052,7 +1052,7 @@ export default function NewRepair() {
                 />
                 <span>Yes</span>
               </label>
-              <label className="flex items-center gap-1.5 cursor-pointer text-xs text-white font-bold">
+              <label className="flex items-center gap-1.5 cursor-pointer text-xs text-foreground font-bold">
                 <input
                   type="radio"
                   name="accessoryAdapter"
@@ -1068,9 +1068,9 @@ export default function NewRepair() {
 
           {/* Keyboard / Mouse */}
           <div className="flex items-center justify-between">
-            <span className="text-xs text-white/95 font-bold">KeyBoard / Mouse</span>
+            <span className="text-xs text-foreground/95 font-bold">KeyBoard / Mouse</span>
             <div className="flex gap-4">
-              <label className="flex items-center gap-1.5 cursor-pointer text-xs text-white font-bold">
+              <label className="flex items-center gap-1.5 cursor-pointer text-xs text-foreground font-bold">
                 <input
                   type="radio"
                   name="accessoryKeyboardMouse"
@@ -1081,7 +1081,7 @@ export default function NewRepair() {
                 />
                 <span>Yes</span>
               </label>
-              <label className="flex items-center gap-1.5 cursor-pointer text-xs text-white font-bold">
+              <label className="flex items-center gap-1.5 cursor-pointer text-xs text-foreground font-bold">
                 <input
                   type="radio"
                   name="accessoryKeyboardMouse"
@@ -1097,9 +1097,9 @@ export default function NewRepair() {
 
           {/* Other Device */}
           <div className="flex items-center justify-between">
-            <span className="text-xs text-white/95 font-bold">Other Device</span>
+            <span className="text-xs text-foreground/95 font-bold">Other Device</span>
             <div className="flex gap-4">
-              <label className="flex items-center gap-1.5 cursor-pointer text-xs text-white font-bold">
+              <label className="flex items-center gap-1.5 cursor-pointer text-xs text-foreground font-bold">
                 <input
                   type="radio"
                   name="accessoryOther"
@@ -1110,7 +1110,7 @@ export default function NewRepair() {
                 />
                 <span>Yes</span>
               </label>
-              <label className="flex items-center gap-1.5 cursor-pointer text-xs text-white font-bold">
+              <label className="flex items-center gap-1.5 cursor-pointer text-xs text-foreground font-bold">
                 <input
                   type="radio"
                   name="accessoryOther"
@@ -1133,7 +1133,7 @@ export default function NewRepair() {
                 type="text"
                 placeholder="Serial numbers (OPTIONAL)"
                 {...register('serialNumber')}
-                className="flex-1 bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold text-white"
+                className="flex-1 bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold"
               />
               <Button
                 type="button"
@@ -1148,7 +1148,7 @@ export default function NewRepair() {
               type="text"
               placeholder="IMEI number (OPTIONAL)"
               {...register('imei')}
-              className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold text-white"
+              className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold"
             />
           </div>
 
@@ -1168,7 +1168,7 @@ export default function NewRepair() {
           ) : (
             <div className="p-3 bg-secondary/25 border border-border/80 rounded-xl">
               <span className="text-[10px] text-muted-foreground uppercase block font-semibold">Assigned Staff</span>
-              <span className="text-xs font-semibold text-white">{authUser?.name} (You)</span>
+              <span className="text-xs font-semibold text-foreground">{authUser?.name} (You)</span>
             </div>
           )}
         </div>
@@ -1179,7 +1179,7 @@ export default function NewRepair() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <MessageSquare className="h-4.5 w-4.5 text-emerald-400" />
-              <span className="text-xs text-white/95 font-semibold">Send Whatsapp Message ?</span>
+              <span className="text-xs text-foreground/95 font-semibold">Send Whatsapp Message ?</span>
             </div>
             <label className="relative inline-flex inline-flex items-center cursor-pointer select-none">
               <input
@@ -1195,7 +1195,7 @@ export default function NewRepair() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <MessageSquare className="h-4.5 w-4.5 text-blue-400" />
-              <span className="text-xs text-white/95 font-semibold">Send Email To Customer ?</span>
+              <span className="text-xs text-foreground/95 font-semibold">Send Email To Customer ?</span>
             </div>
             <label className="relative inline-flex inline-flex items-center cursor-pointer select-none">
               <input
@@ -1211,7 +1211,7 @@ export default function NewRepair() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Sparkles className="h-4.5 w-4.5 text-amber-400" />
-              <span className="text-xs text-white/95 font-semibold">Allow 10% cashback for this order ?</span>
+              <span className="text-xs text-foreground/95 font-semibold">Allow 10% cashback for this order ?</span>
             </div>
             <label className="relative inline-flex inline-flex items-center cursor-pointer select-none">
               <input
@@ -1230,7 +1230,7 @@ export default function NewRepair() {
           className="border-2 border-dashed border-border/80 hover:border-primary/80 transition-colors rounded-2xl p-6 text-center cursor-pointer bg-secondary/5 space-y-1.5"
         >
           <Camera className="h-6 w-6 text-muted-foreground mx-auto" />
-          <span className="text-xs font-bold text-white block">Add ID Proof / Device Photo (Optional)</span>
+          <span className="text-xs font-bold text-foreground block">Add ID Proof / Device Photo (Optional)</span>
           <span className="text-[10px] text-muted-foreground block">Capture front/back documentation in KYC file</span>
         </div>
 
@@ -1240,7 +1240,7 @@ export default function NewRepair() {
             placeholder="Additional details (Optional)"
             {...register('notes')}
             rows={3}
-            className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold text-white"
+            className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold"
           />
         </div>
 
@@ -1259,7 +1259,7 @@ export default function NewRepair() {
             placeholder="Device Warranty (Optional)"
             {...register('warranty')}
             rows={2}
-            className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold text-white"
+            className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold"
           />
         </div>
 
@@ -1285,10 +1285,10 @@ export default function NewRepair() {
       </form>
 
       {kycModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/35 flex items-center justify-center p-3 overflow-y-auto">
-          <div className="bg-background border border-border/80 w-[92%] sm:w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl relative max-h-[85vh] flex flex-col">
+        <div className="fixed inset-0 z-50 bg-black/35 flex items-center justify-center p-3 light text-foreground overflow-y-auto light text-foreground">
+          <div className="bg-card border border-border w-[92%] sm:w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl relative max-h-[85vh] flex flex-col">
             {/* Sticky Header */}
-            <div className="bg-neutral-950/90 border-b border-border/60 p-4 flex items-center justify-between shrink-0">
+            <div className="bg-secondary/10 border-b border-border/60 p-4 flex items-center justify-between shrink-0">
               <button
                 type="button"
                 onClick={() => setKycModalOpen(false)}
@@ -1323,13 +1323,13 @@ export default function NewRepair() {
                   placeholder="Enter Passport / National ID card Number"
                   value={kycData.documentNumber}
                   onChange={(e) => setKycData(prev => ({ ...prev, documentNumber: e.target.value }))}
-                  className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold text-white uppercase"
+                  className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold uppercase"
                 />
               </div>
             </div>
 
             {/* Sticky Footer */}
-            <div className="bg-neutral-950/90 border-t border-border/60 p-4 flex gap-3 items-center justify-end shrink-0">
+            <div className="bg-secondary/10 border-t border-border/60 p-4 flex gap-3 items-center justify-end shrink-0">
               <Button
                 type="button"
                 onClick={() => {
@@ -1354,9 +1354,9 @@ export default function NewRepair() {
       )}
 
       {signatureOpen && (
-        <div className="fixed inset-0 z-50 bg-black/35 flex items-center justify-center p-3">
-          <div className="bg-background border border-border/80 w-[92%] sm:w-full max-w-sm rounded-2xl p-4 sm:p-6 space-y-4 shadow-2xl">
-            <h3 className="text-sm font-bold text-primary uppercase tracking-widest text-center border-b border-border/60 pb-2">
+        <div className="fixed inset-0 z-50 bg-black/35 flex items-center justify-center p-3 light text-foreground">
+          <div className="bg-card border border-border w-[92%] sm:w-full max-w-sm rounded-2xl p-4 sm:p-6 space-y-4 shadow-2xl">
+            <h3 className="text-sm font-bold text-foreground uppercase tracking-widest text-center border-b border-border/60 pb-2">
               Draw Signature on Screen
             </h3>
             
@@ -1405,15 +1405,15 @@ export default function NewRepair() {
           PATTERN LOCK DRAWING GRID MODAL
          ---------------------------------------------------- */}
       {patternLockOpen && (
-        <div className="fixed inset-0 z-50 bg-black/35 flex items-center justify-center p-3">
-          <div className="bg-background border border-border/80 w-[92%] sm:w-full max-w-xs rounded-2xl p-4 sm:p-5 space-y-5 shadow-2xl relative text-center">
+        <div className="fixed inset-0 z-50 bg-black/35 flex items-center justify-center p-3 light text-foreground">
+          <div className="bg-card border border-border w-[92%] sm:w-full max-w-xs rounded-2xl p-4 sm:p-5 space-y-5 shadow-2xl relative text-center">
             <h3 className="text-sm font-bold text-primary uppercase tracking-widest border-b border-border/60 pb-2">
               Draw Pattern Lock
             </h3>
             <p className="text-[10px] text-muted-foreground italic">Tap nodes sequentially to record pattern lock</p>
 
             {/* Visual SVG connecting lines */}
-            <div className="relative w-60 h-60 mx-auto bg-[#1a1f2c]/50 rounded-2xl p-4 border border-border">
+            <div className="relative w-60 h-60 mx-auto bg-secondary/10 rounded-2xl p-4 border border-border">
               <svg className="absolute inset-0 w-full h-full pointer-events-none">
                 {patternNodes.map((node, index) => {
                   if (index === 0) return null;
@@ -1459,7 +1459,7 @@ export default function NewRepair() {
                       className={`flex items-center justify-center rounded-full w-12 h-12 text-sm font-black transition-all ${
                         isSelected
                           ? 'bg-primary text-white scale-110 shadow-lg shadow-primary/35 border-2 border-white/20'
-                          : 'bg-secondary hover:bg-secondary/80 text-muted-foreground hover:text-white border border-border/40'
+                          : 'bg-secondary hover:bg-secondary/80 text-muted-foreground hover:text-foreground border border-border/40'
                       }`}
                     >
                       {isSelected ? selectedIndex + 1 : n}
@@ -1507,9 +1507,9 @@ export default function NewRepair() {
           INLINE REGISTER NEW CUSTOMER MODAL
          ---------------------------------------------------- */}
       {newCustomerOpen && (
-        <div className="fixed inset-0 z-50 bg-black/35 flex items-center justify-center p-3">
-          <div className="bg-background border border-border/80 w-[92%] sm:w-full max-w-sm rounded-2xl p-4 sm:p-6 space-y-4 shadow-2xl">
-            <h3 className="text-sm font-extrabold text-primary uppercase tracking-widest text-center border-b border-border/60 pb-2">
+        <div className="fixed inset-0 z-50 bg-black/35 flex items-center justify-center p-3 light text-foreground">
+          <div className="bg-card border border-border w-[92%] sm:w-full max-w-sm rounded-2xl p-4 sm:p-6 space-y-4 shadow-2xl">
+            <h3 className="text-sm font-extrabold text-foreground uppercase tracking-widest text-center border-b border-border/60 pb-2">
               Register New Customer
             </h3>
 
@@ -1521,7 +1521,7 @@ export default function NewRepair() {
                   placeholder="e.g. Jane Doe"
                   value={newCustName}
                   onChange={(e) => setNewCustName(e.target.value)}
-                  className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold text-white"
+                  className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold"
                 />
               </div>
 
@@ -1532,7 +1532,7 @@ export default function NewRepair() {
                   placeholder="e.g. +91 99999 88888"
                   value={newCustPhone}
                   onChange={(e) => setNewCustPhone(e.target.value)}
-                  className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold text-white"
+                  className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold"
                 />
               </div>
 
@@ -1543,7 +1543,7 @@ export default function NewRepair() {
                   placeholder="e.g. New Delhi, India"
                   value={newCustAddr}
                   onChange={(e) => setNewCustAddr(e.target.value)}
-                  className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold text-white"
+                  className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold"
                 />
               </div>
             </div>

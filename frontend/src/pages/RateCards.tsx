@@ -26,6 +26,17 @@ interface RateCard {
   services: RateCardService[];
 }
 
+const DEVICE_BRANDS: Record<string, string[]> = {
+  'APPLE': ['IPHONE 11', 'IPHONE 12', 'IPHONE 13', 'IPHONE 14', 'IPHONE 15', 'IPHONE 15 PRO', 'IPHONE 15 PRO MAX', 'IPAD AIR', 'IPAD PRO'],
+  'SAMSUNG': ['GALAXY S21', 'GALAXY S22', 'GALAXY S23', 'GALAXY S24', 'GALAXY A54', 'GALAXY M34', 'GALAXY Z FOLD 5', 'GALAXY Z FLIP 5'],
+  'ONEPLUS': ['ONEPLUS 10 PRO', 'ONEPLUS 11', 'ONEPLUS 12', 'ONEPLUS NORD 3', 'ONEPLUS NORD CE 3 LITE'],
+  'GOOGLE': ['PIXEL 6', 'PIXEL 7', 'PIXEL 7A', 'PIXEL 8', 'PIXEL 8 PRO'],
+  'XIAOMI': ['REDMI NOTE 12', 'REDMI NOTE 13', 'XIAOMI 13 PRO', 'POCO F5', 'POCO X6 PRO'],
+  'OPPO': ['RENO 10', 'RENO 11', 'OPPO F23', 'OPPO A78'],
+  'VIVO': ['VIVO V29', 'VIVO V30', 'VIVO T2X', 'VIVO Y200'],
+  'REALME': ['REALME 11 PRO+', 'REALME 12 PRO', 'REALME C53', 'REALME NARZO 60']
+};
+
 const DEFAULT_SERVICES: RateCardService[] = [
   { service_name: 'Display Replacement', og_cost: 0, ditto_cost: 0, copy_cost: 0, sort_order: 0 },
   { service_name: 'Battery Replacement', og_cost: 0, ditto_cost: 0, copy_cost: 0, sort_order: 1 },
@@ -60,6 +71,10 @@ export default function RateCards() {
   const [isCreating, setIsCreating] = useState(false);
   const [newBrand, setNewBrand] = useState('');
   const [newModel, setNewModel] = useState('');
+  const [selectedBrand, setSelectedBrand] = useState('');
+  const [selectedModel, setSelectedModel] = useState('');
+  const [customBrand, setCustomBrand] = useState('');
+  const [customModel, setCustomModel] = useState('');
   const [newImageFile, setNewImageFile] = useState<File | null>(null);
   const [editServices, setEditServices] = useState<RateCardService[]>([]);
   const [editImageFile, setEditImageFile] = useState<File | null>(null);
@@ -70,13 +85,22 @@ export default function RateCards() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (formData: FormData) => apiClient.post('/ratecards', formData),
-    onSuccess: () => {
+    mutationFn: (formData: FormData) => apiClient.post<{ message: string, rateCard: RateCard }>('/ratecards', formData),
+    onSuccess: (resData) => {
       toast.success('Rate card created!');
       setIsCreating(false);
       setNewBrand('');
       setNewModel('');
+      setSelectedBrand('');
+      setSelectedModel('');
+      setCustomBrand('');
+      setCustomModel('');
       setNewImageFile(null);
+      
+      if (resData?.rateCard) {
+        handleSelectCard(resData.rateCard);
+      }
+      
       queryClient.invalidateQueries({ queryKey: ['rate-cards'] });
     },
     onError: (err: any) => toast.error(err.message || 'Failed to create rate card'),
@@ -131,13 +155,16 @@ export default function RateCards() {
   };
 
   const handleCreateCard = () => {
-    if (!newBrand.trim() || !newModel.trim()) {
+    const finalBrand = selectedBrand === 'Other' ? customBrand.trim() : selectedBrand.trim();
+    const finalModel = (selectedBrand === 'Other' || selectedModel === 'Other') ? customModel.trim() : selectedModel.trim();
+
+    if (!finalBrand || !finalModel) {
       toast.error('Brand and model are required');
       return;
     }
     const fd = new FormData();
-    fd.append('brand', newBrand.trim());
-    fd.append('model', newModel.trim());
+    fd.append('brand', finalBrand);
+    fd.append('model', finalModel);
     if (newImageFile) fd.append('modelImage', newImageFile);
     createMutation.mutate(fd);
   };
@@ -191,16 +218,61 @@ export default function RateCards() {
           <Card className="border-primary/40 bg-primary/5">
             <CardContent className="p-4 space-y-3">
               <p className="text-xs font-bold text-primary uppercase tracking-wider">New Rate Card</p>
-              <Input
-                placeholder="Brand (e.g. Apple)"
-                value={newBrand}
-                onChange={(e) => setNewBrand(e.target.value)}
-              />
-              <Input
-                placeholder="Model (e.g. iPhone 16)"
-                value={newModel}
-                onChange={(e) => setNewModel(e.target.value)}
-              />
+              <div className="space-y-1">
+                <select
+                  value={selectedBrand}
+                  onChange={(e) => {
+                    setSelectedBrand(e.target.value);
+                    setSelectedModel('');
+                    setCustomBrand('');
+                    setCustomModel('');
+                  }}
+                  className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary font-semibold text-foreground select-custom cursor-pointer"
+                >
+                  <option value="" className="bg-neutral-900 text-white">Select Brand</option>
+                  <option value="Other" className="bg-neutral-900 text-white">Other (Custom Brand)</option>
+                  {Object.keys(DEVICE_BRANDS).map((b) => (
+                    <option key={b} value={b} className="bg-neutral-900 text-white">{b}</option>
+                  ))}
+                </select>
+              </div>
+
+              {selectedBrand === 'Other' && (
+                <Input
+                  placeholder="Brand (e.g. Motorola)"
+                  value={customBrand}
+                  onChange={(e) => setCustomBrand(e.target.value)}
+                  className="uppercase font-semibold text-foreground"
+                />
+              )}
+
+              {selectedBrand && selectedBrand !== 'Other' && (
+                <div className="space-y-1">
+                  <select
+                    value={selectedModel}
+                    onChange={(e) => {
+                      setSelectedModel(e.target.value);
+                      setCustomModel('');
+                    }}
+                    className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary font-semibold text-foreground select-custom cursor-pointer"
+                  >
+                    <option value="" className="bg-neutral-900 text-white">Select Model</option>
+                    <option value="Other" className="bg-neutral-900 text-white">Other (Custom Model)</option>
+                    {DEVICE_BRANDS[selectedBrand]?.map((m) => (
+                      <option key={m} value={m} className="bg-neutral-900 text-white">{m}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {(selectedBrand === 'Other' || selectedModel === 'Other') && (
+                <Input
+                  placeholder="Model (e.g. G54)"
+                  value={customModel}
+                  onChange={(e) => setCustomModel(e.target.value)}
+                  className="uppercase font-semibold text-foreground"
+                />
+              )}
               <div className="space-y-1">
                 <label className="text-[10px] text-muted-foreground font-semibold uppercase">Device Image (optional)</label>
                 <input
@@ -223,7 +295,16 @@ export default function RateCards() {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => { setIsCreating(false); setNewBrand(''); setNewModel(''); setNewImageFile(null); }}
+                  onClick={() => {
+                    setIsCreating(false);
+                    setNewBrand('');
+                    setNewModel('');
+                    setSelectedBrand('');
+                    setSelectedModel('');
+                    setCustomBrand('');
+                    setCustomModel('');
+                    setNewImageFile(null);
+                  }}
                   className="h-8"
                 >
                   <X className="h-3 w-3" />
