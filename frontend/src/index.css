@@ -98,11 +98,14 @@ option {
   color: #ffffff !important;
 }
 
-/* Force high-contrast dark text for headings and labels in light-themed dialogs/modals */
+/* Force high-contrast dark text for headings, labels, and input typing in light-themed dialogs/modals */
 .light label,
 .light .text-muted-foreground,
 .light h2,
 .light h3,
-.light span.text-muted-foreground {
+.light span.text-muted-foreground,
+.light input,
+.light select,
+.light textarea {
   color: #0f172a !important; /* slate-900 (dark charcoal) */
 }
