@@ -52,7 +52,7 @@
     --secondary-foreground: 240 5.9% 10%;
 
     --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
+    --muted-foreground: 240 5% 20%;
 
     --accent: 240 4.8% 95.9%;
     --accent-foreground: 240 5.9% 10%;
@@ -96,4 +96,13 @@
 option {
   background-color: #12131a !important;
   color: #ffffff !important;
+}
+
+/* Force high-contrast dark text for headings and labels in light-themed dialogs/modals */
+.light label,
+.light .text-muted-foreground,
+.light h2,
+.light h3,
+.light span.text-muted-foreground {
+  color: #0f172a !important; /* slate-900 (dark charcoal) */
 }
