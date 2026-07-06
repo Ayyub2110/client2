@@ -20,6 +20,19 @@ interface RateCard {
   services: RateCardService[];
 }
 
+const DEFAULT_SERVICES: RateCardService[] = [
+  { service_name: 'Display Replacement', og_cost: 0, copy_cost: 0, sort_order: 0 },
+  { service_name: 'Battery Replacement', og_cost: 0, copy_cost: 0, sort_order: 1 },
+  { service_name: 'Charging Port Repair', og_cost: 0, copy_cost: 0, sort_order: 2 },
+  { service_name: 'Speaker Replacement', og_cost: 0, copy_cost: 0, sort_order: 3 },
+  { service_name: 'Microphone Repair', og_cost: 0, copy_cost: 0, sort_order: 4 },
+  { service_name: 'Back Cover Replacement', og_cost: 0, copy_cost: 0, sort_order: 5 },
+  { service_name: 'Camera Repair', og_cost: 0, copy_cost: 0, sort_order: 6 },
+  { service_name: 'Button / Switch Repair', og_cost: 0, copy_cost: 0, sort_order: 7 },
+  { service_name: 'Software / Flash', og_cost: 0, copy_cost: 0, sort_order: 8 },
+  { service_name: 'Water Damage Treatment', og_cost: 0, copy_cost: 0, sort_order: 9 },
+];
+
 export default function RepairPriceList() {
   const [selectedBrand, setSelectedBrand] = useState<string>('');
   const [selectedModelId, setSelectedModelId] = useState<string>('');
@@ -51,6 +64,14 @@ export default function RepairPriceList() {
     if (!selectedModelId) return null;
     return rateCards.find((rc) => rc.id === selectedModelId) || null;
   }, [selectedModelId, rateCards]);
+
+  // Fallback to DEFAULT_SERVICES when no services are configured in database
+  const activeServices = useMemo(() => {
+    if (!selectedRateCard) return [];
+    return selectedRateCard.services && selectedRateCard.services.length > 0
+      ? selectedRateCard.services
+      : DEFAULT_SERVICES;
+  }, [selectedRateCard]);
 
   const handleBrandChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedBrand(e.target.value);
@@ -181,11 +202,13 @@ export default function RepairPriceList() {
                     <CardDescription>Official repair service price schedule.</CardDescription>
                   </div>
                   <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-primary/20 text-primary border border-primary/30 tracking-wider">
-                    {selectedRateCard.services.length} Services
+                    {selectedRateCard.services.length > 0 
+                      ? `${selectedRateCard.services.length} Configured` 
+                      : 'Default Template'}
                   </span>
                 </CardHeader>
                 <CardContent className="pt-6">
-                  {selectedRateCard.services.length > 0 ? (
+                  {activeServices.length > 0 ? (
                     <div className="overflow-x-auto rounded-xl border border-border/60">
                       <table className="min-w-full divide-y divide-border/40">
                         <thead className="bg-secondary/15">
@@ -202,7 +225,7 @@ export default function RepairPriceList() {
                           </tr>
                         </thead>
                         <tbody className="bg-transparent divide-y divide-border/30">
-                          {selectedRateCard.services
+                          {[...activeServices]
                             .sort((a, b) => a.sort_order - b.sort_order)
                             .map((service, idx) => (
                               <tr key={service.id || idx} className="hover:bg-secondary/10 transition-colors">
