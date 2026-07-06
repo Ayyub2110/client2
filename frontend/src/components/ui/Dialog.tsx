@@ -1,7 +1,7 @@
 import React from 'react';
-import { X } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { cn } from '../../lib/utils';
-
+ 
 interface DialogProps {
   isOpen: boolean;
   onClose: () => void;
@@ -10,7 +10,7 @@ interface DialogProps {
   children: React.ReactNode;
   className?: string;
 }
-
+ 
 export const Dialog: React.FC<DialogProps> = ({
   isOpen,
   onClose,
@@ -20,7 +20,7 @@ export const Dialog: React.FC<DialogProps> = ({
   className
 }) => {
   if (!isOpen) return null;
-
+ 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 light text-foreground">
       {/* Backdrop */}
@@ -28,7 +28,7 @@ export const Dialog: React.FC<DialogProps> = ({
         className="absolute inset-0 bg-transparent transition-opacity duration-300"
         onClick={onClose}
       />
-
+ 
       {/* Dialog Content */}
       <div
         className={cn(
@@ -37,19 +37,21 @@ export const Dialog: React.FC<DialogProps> = ({
         )}
       >
         {/* Header */}
-        <div className="flex items-start justify-between mb-4">
-          <div className="space-y-1">
-            <h2 className="text-lg font-bold text-foreground leading-none tracking-tight">{title}</h2>
+        <div className="flex items-center gap-3 mb-4 pb-2 border-b border-border/40">
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-2 rounded-full bg-secondary/35 hover:bg-secondary/50 text-foreground transition-colors shrink-0"
+            title="Back"
+          >
+            <ArrowLeft className="h-4.5 w-4.5" />
+          </button>
+          <div className="flex-1 space-y-0.5">
+            <h2 className="text-sm font-black tracking-tight text-primary uppercase">{title}</h2>
             {description && (
-              <p className="text-sm text-muted-foreground">{description}</p>
+              <p className="text-[11px] text-muted-foreground font-semibold">{description}</p>
             )}
           </div>
-          <button
-            onClick={onClose}
-            className="rounded-lg p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground transition-all"
-          >
-            <X className="h-4 w-4" />
-          </button>
         </div>
 
         {/* Body */}
