@@ -962,7 +962,7 @@ export default function NewRepair() {
         </div>
 
         {/* ESTIMATED PRICE & PAID SIDE BY SIDE */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1">
             <label className="text-xs font-bold text-primary uppercase tracking-wider block">Estimated Price ($)</label>
             <Input
@@ -1000,7 +1000,7 @@ export default function NewRepair() {
         </div>
 
         {/* LOCK CODE & PATTERN LOCK */}
-        <div className="grid grid-cols-2 gap-4 items-end">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
           <div className="space-y-1">
             <label className="text-xs font-bold text-primary uppercase tracking-wider block">Lock Code (optional)</label>
             <div className="relative">
@@ -1103,7 +1103,7 @@ export default function NewRepair() {
         )}
 
         {/* REPAIR DATE & TIME SETTERS */}
-        <div className="grid grid-cols-2 gap-4 items-center p-4 bg-secondary/15 rounded-2xl border border-border/60">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center p-4 bg-secondary/15 rounded-2xl border border-border/60">
           <div className="space-y-1">
             <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block">Current repair date</span>
             <div className="text-sm font-bold text-foreground">{repairDateDisplay || 'Loading...'}</div>
