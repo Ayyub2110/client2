@@ -386,7 +386,7 @@ export default function Dashboard() {
           backgroundSize: 'cover',
           backgroundPosition: 'center'
         } : undefined}
-        className={`relative overflow-hidden p-6 rounded-2xl border transition-all duration-500 shadow-md flex items-center gap-4 min-h-[140px] ${
+        className={`relative overflow-hidden p-6 sm:p-8 rounded-2xl border transition-all duration-500 shadow-md flex items-center gap-4 min-h-[200px] sm:min-h-[260px] md:min-h-[300px] ${
           !activeSlides[currentSlide]?.image_url 
             ? ('bg-gradient-to-r ' + (activeSlides[currentSlide].color || 'from-primary/25 to-secondary/15 border-primary/30')) 
             : 'border-border/85'
