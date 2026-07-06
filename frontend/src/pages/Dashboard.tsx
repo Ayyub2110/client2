@@ -400,16 +400,21 @@ export default function Dashboard() {
             Edit Slides
           </Link>
         )}
-        <div className="p-3 rounded-xl bg-secondary/50 border border-border/40 shrink-0 shadow-sm relative z-10">
-          {activeSlides[currentSlide].icon || <Smartphone className="h-6 w-6 text-primary" />}
-        </div>
-        <div className="space-y-1.5 flex-1 min-w-0 pr-12 relative z-10">
-          <h4 className="text-sm font-black tracking-tight text-white uppercase">
-            {activeSlides[currentSlide].title}
-          </h4>
-          <p className="text-xs text-neutral-200 dark:text-muted-foreground leading-relaxed max-w-2xl">
-            {activeSlides[currentSlide].description}
-          </p>
+        <div className="relative z-10 max-w-sm sm:max-w-lg md:max-w-xl bg-slate-950/50 backdrop-blur-md border border-white/10 p-4 sm:p-5 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.5)] flex gap-4 items-center transition-all duration-300 hover:scale-[1.01]">
+          <div className="p-3 rounded-xl bg-primary/20 border border-primary/30 shrink-0 shadow-[0_0_15px_rgba(168,85,247,0.2)] text-primary">
+            {activeSlides[currentSlide].icon || <Smartphone className="h-5 w-5" />}
+          </div>
+          <div className="space-y-1 flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <h4 className="text-sm sm:text-base font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white to-pink-400 uppercase font-sans">
+                {activeSlides[currentSlide].title}
+              </h4>
+              <span className="px-1.5 py-0.5 rounded text-[8px] font-extrabold uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 tracking-wider">Live</span>
+            </div>
+            <p className="text-[11px] sm:text-xs text-neutral-300 font-medium leading-relaxed">
+              {activeSlides[currentSlide].description}
+            </p>
+          </div>
         </div>
         
         {/* Carousel controls */}
