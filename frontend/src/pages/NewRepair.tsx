@@ -1408,7 +1408,7 @@ export default function NewRepair() {
               <button
                 type="button"
                 onClick={() => setKycModalOpen(false)}
-                className="p-2 rounded-full bg-secondary/35 hover:bg-secondary/50 transition-colors text-white"
+                className="p-2 rounded-full bg-secondary/35 hover:bg-secondary/50 transition-colors text-foreground"
                 title="Back"
               >
                 <ArrowLeft className="h-4.5 w-4.5" />
@@ -1509,7 +1509,7 @@ export default function NewRepair() {
             <button
               type="button"
               onClick={() => setSignatureOpen(false)}
-              className="w-full text-center text-xs text-muted-foreground uppercase font-bold tracking-wider hover:text-white mt-1"
+              className="w-full text-center text-xs text-muted-foreground uppercase font-bold tracking-wider hover:text-primary mt-1"
             >
               Cancel
             </button>
@@ -1642,7 +1642,7 @@ export default function NewRepair() {
                 setPatternNodes([]);
                 setPatternLockOpen(false);
               }}
-              className="text-xs text-muted-foreground uppercase font-black tracking-widest hover:text-white pt-2 border-t border-border/40 block w-full text-center"
+              className="text-xs text-muted-foreground uppercase font-black tracking-widest hover:text-primary pt-2 border-t border-border/40 block w-full text-center"
             >
               Cancel
             </button>
@@ -1706,7 +1706,7 @@ export default function NewRepair() {
               <button
                 type="button"
                 onClick={() => setNewCustomerOpen(false)}
-                className="w-full bg-secondary/40 hover:bg-secondary/60 text-white py-3 rounded-xl font-bold uppercase tracking-wider text-xs"
+                className="w-full bg-secondary/50 hover:bg-secondary/70 text-foreground py-3 rounded-xl font-bold uppercase tracking-wider text-xs"
               >
                 Cancel
               </button>
