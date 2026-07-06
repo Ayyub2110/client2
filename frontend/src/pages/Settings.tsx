@@ -35,7 +35,8 @@ import {
   Phone,
   ChevronRight,
   ShieldCheck,
-  MessageSquare
+  MessageSquare,
+  ClipboardList
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -496,15 +497,16 @@ export default function SettingsPage({ defaultTab }: SettingsPageProps = {}) {
         {[
           { id: 'community', title: 'Community', desc: 'Connect with other Technicians for help or support', icon: Users, color: 'text-orange-500', bg: 'bg-orange-500/10 border-orange-500/20' },
           { id: 'deleted', title: 'Deleted Orders', desc: 'Track and recover deleted order history', icon: Trash2, color: 'text-red-500', bg: 'bg-red-500/10 border-red-500/20' },
-          { id: 'whatsapp', title: 'WhatsApp Notifications', desc: 'Monitor automated updates status and system log audits', icon: MessageSquare, color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20' },
+          { id: 'whatsapp', title: 'WhatsApp Notifications', desc: 'Monitor automated updates status and system log audits', icon: MessageSquare, color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20', ownerOnly: true },
           { id: 'email', title: 'Update email', desc: 'Update Display Name and Account Email ID', icon: Mail, color: 'text-blue-500', bg: 'bg-blue-500/10 border-blue-500/20' },
           { id: 'password', title: 'Update password', desc: 'Verify current credentials and change password', icon: Lock, color: 'text-purple-500', bg: 'bg-purple-500/10 border-purple-500/20' },
           { id: 'terms', title: 'Update Terms & Conditions', desc: 'Review solution usage and software licensing terms', icon: FileText, color: 'text-zinc-500', bg: 'bg-zinc-500/10 border-zinc-500/20' },
           { id: 'privacy', title: 'Privacy Policy', desc: 'App terms of collection and data privacy policies', icon: Shield, color: 'text-emerald-500', bg: 'bg-emerald-500/10 border-emerald-500/20' },
           { id: 'about', title: 'About', desc: 'Software terminal version details and developer info', icon: Info, color: 'text-sky-500', bg: 'bg-sky-500/10 border-sky-500/20' },
           { id: 'contact', title: 'Contacts Us', desc: 'Reach our terminal network administration support desk', icon: Phone, color: 'text-pink-500', bg: 'bg-pink-500/10 border-pink-500/20' },
-          { id: 'staff', title: 'Add Staff Members', desc: 'Recruit terminal assistants, set status, and manage logins', icon: UserPlus, color: 'text-green-500', bg: 'bg-green-500/10 border-green-500/20' }
-        ].map((item) => (
+          { id: 'staff', title: 'Add Staff Members', desc: 'Recruit terminal assistants, set status, and manage logins', icon: UserPlus, color: 'text-green-500', bg: 'bg-green-500/10 border-green-500/20', ownerOnly: true },
+          { id: 'ratecards', title: 'Create Repair Price', desc: 'Configure standard repair labor costs and invoicing terms', icon: ClipboardList, color: 'text-primary', bg: 'bg-primary/10 border-primary/20', ownerOnly: true }
+        ].filter(item => !item.ownerOnly || isOwner).map((item) => (
           <div
             key={item.id}
             onClick={() => handleMenuClick(item.id)}
