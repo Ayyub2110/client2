@@ -155,7 +155,7 @@ export default function OwnerIdCard() {
 
                   {/* ── Dynamic name next to "பெயர் :" ── */}
                   <div style={{
-                    position: 'absolute', top: 82, left: 148,
+                    position: 'absolute', top: 82, left: 150,
                     zIndex: 4,
                   }}>
                     <span style={{ fontSize: 12, color: 'white', fontWeight: 500 }}>{ownerName || ''}</span>
@@ -163,7 +163,7 @@ export default function OwnerIdCard() {
  
                   {/* ── Dynamic shop next to "கடை :" ── */}
                   <div style={{
-                    position: 'absolute', top: 111, left: 148,
+                    position: 'absolute', top: 111, left: 138,
                     zIndex: 4,
                   }}>
                     <span style={{ fontSize: 11, color: 'white', fontWeight: 500 }}>{shopName || ''}</span>
@@ -209,6 +209,9 @@ export default function OwnerIdCard() {
                     <div style={{
                       fontSize: 10, color: '#1E469C', fontWeight: 500,
                       lineHeight: 1.4,
+                      wordBreak: 'break-all',
+                      overflowWrap: 'break-word',
+                      whiteSpace: 'normal',
                     }}>
                       {homeAddress || ''}
                     </div>
