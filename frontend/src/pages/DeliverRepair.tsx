@@ -245,6 +245,28 @@ export default function DeliverRepair() {
     });
   };
 
+  // Preview PDF file securely with token headers
+  const previewReceipt = async () => {
+    try {
+      const token = localStorage.getItem('gk_access_token');
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/repairs/${id}/receipt`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+      if (!response.ok) throw new Error('Receipt load failed');
+      const blob = await response.blob();
+      const fileURL = URL.createObjectURL(blob);
+      window.open(fileURL, '_blank');
+      toast.success('Receipt preview opened');
+    } catch (err: any) {
+      toast.error(err.message || 'Could not preview receipt');
+    }
+  };
+
   // Download PDF file securely with token headers
   const downloadReceipt = async () => {
     try {
@@ -658,6 +680,14 @@ export default function DeliverRepair() {
                 <div className="flex justify-between items-center bg-secondary/20 p-2.5 border border-border/40 rounded-xl">
                   <span className="font-bold text-white text-xs">Amount to Collect:</span>
                   <span className="font-extrabold text-amber-400 text-sm">₹ {Number(repair.balance).toFixed(2)}</span>
+                </div>
+                <div className="grid gap-2 pt-2">
+                  <Button type="button" variant="outline" onClick={previewReceipt} className="w-full">
+                    Preview Bill
+                  </Button>
+                  <Button type="button" variant="outline" onClick={downloadReceipt} className="w-full">
+                    Download Bill
+                  </Button>
                 </div>
               </div>
             </CardContent>

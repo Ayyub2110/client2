@@ -43,6 +43,37 @@ const DEVICE_BRANDS: Record<string, string[]> = {
   'REALME': ['REALME 11 PRO+', 'REALME 12 PRO', 'REALME C53', 'REALME NARZO 60']
 };
 
+export interface DeviceOptionEntry {
+  brand: string;
+  model: string;
+}
+
+export function buildDeviceOptions(rateCards: DeviceOptionEntry[]) {
+  const mergedBrands: Record<string, Set<string>> = {};
+
+  Object.entries(DEVICE_BRANDS).forEach(([brand, models]) => {
+    mergedBrands[brand] = new Set(models);
+  });
+
+  rateCards.forEach(({ brand, model }) => {
+    const normalizedBrand = brand.trim();
+    const normalizedModel = model.trim();
+    if (!normalizedBrand || !normalizedModel) return;
+
+    if (!mergedBrands[normalizedBrand]) {
+      mergedBrands[normalizedBrand] = new Set<string>();
+    }
+    mergedBrands[normalizedBrand].add(normalizedModel);
+  });
+
+  const brandOptions = Object.keys(mergedBrands).sort((a, b) => a.localeCompare(b));
+  const modelsByBrand = Object.fromEntries(
+    brandOptions.map((brand) => [brand, Array.from(mergedBrands[brand]).sort((a, b) => a.localeCompare(b))])
+  );
+
+  return { brandOptions, modelsByBrand };
+}
+
 // ----------------------------------------------------
 // Zod Schema for the complete Unified Form
 // ----------------------------------------------------
@@ -184,8 +215,8 @@ export default function NewRepair() {
       deliveryDate: '',
       staffId: '',
       notes: '',
-      sendWhatsapp: false,
-      sendEmail: false,
+      sendWhatsapp: true,
+      sendEmail: true,
       kycDetails: '',
       reminderEnable: false
     }
@@ -212,6 +243,13 @@ export default function NewRepair() {
     queryFn: () => apiClient.get('/auth/staff'),
     enabled: authRole === 'owner'
   });
+
+  const { data: rateCardOptionsData } = useQuery<{ rateCards: DeviceOptionEntry[] }>({
+    queryKey: ['rate-card-options'],
+    queryFn: () => apiClient.get('/ratecards'),
+    staleTime: 5 * 60 * 1000
+  });
+  const { brandOptions, modelsByBrand } = buildDeviceOptions(rateCardOptionsData?.rateCards || []);
 
   // Autocomplete customer search
   const { data: customersSearchData } = useQuery<{ customers: Customer[] }>({
@@ -709,14 +747,6 @@ export default function NewRepair() {
             
             <Button
               type="button"
-              onClick={() => setCustomerSearchOpen(true)}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground font-extrabold uppercase text-xs px-4"
-            >
-              SELECT
-            </Button>
-            
-            <Button
-              type="button"
               onClick={() => setNewCustomerOpen(true)}
               className="bg-primary hover:bg-primary/90 text-primary-foreground font-extrabold uppercase text-xs px-4"
             >
@@ -724,12 +754,13 @@ export default function NewRepair() {
             </Button>
           </div>
 
-          {/* Autocomplete Search Dropdown */}
+          {/* Inline Customer List */}
           {customerSearchOpen && phoneSearch.length >= 2 && (
             <div className="bg-secondary/95 border border-border rounded-xl divide-y divide-border/60 overflow-hidden">
               {customersSearchData?.customers && customersSearchData.customers.length > 0 ? (
                 customersSearchData.customers.map((cust) => (
-                  <div
+                  <button
+                    type="button"
                     key={cust.id}
                     onClick={() => {
                       setSelectedCustomer(cust);
@@ -737,14 +768,14 @@ export default function NewRepair() {
                       setPhoneSearch('');
                       setCustomerSearchOpen(false);
                     }}
-                    className="p-3 hover:bg-primary/10 cursor-pointer flex justify-between items-center"
+                    className="w-full p-3 text-left hover:bg-primary/10 cursor-pointer flex justify-between items-center gap-3"
                   >
                     <div>
                       <div className="text-sm font-semibold text-foreground">{cust.name}</div>
                       <div className="text-xs text-muted-foreground">{cust.phone}</div>
                     </div>
-                    <span className="text-[10px] uppercase font-bold text-primary">Pick</span>
-                  </div>
+                    <span className="text-[10px] uppercase font-bold text-primary whitespace-nowrap">Select</span>
+                  </button>
                 ))
               ) : (
                 <div className="p-3 text-center text-xs text-muted-foreground">
@@ -791,7 +822,7 @@ export default function NewRepair() {
                 >
                   <option value="" className="bg-neutral-900 text-white">Select Brand</option>
                   <option value="Other" className="bg-neutral-900 text-white">Other (Custom Brand)</option>
-                  {Object.keys(DEVICE_BRANDS).map((b) => (
+                  {brandOptions.map((b) => (
                     <option key={b} value={b} className="bg-neutral-900 text-white">{b}</option>
                   ))}
                 </select>
@@ -811,7 +842,7 @@ export default function NewRepair() {
                   >
                     <option value="" className="bg-neutral-900 text-white">Select Model</option>
                     <option value="Other" className="bg-neutral-900 text-white">Other (Custom Model)</option>
-                    {DEVICE_BRANDS[selectedBrand]?.map((m) => (
+                    {(modelsByBrand[selectedBrand] || []).map((m) => (
                       <option key={m} value={m} className="bg-neutral-900 text-white">{m}</option>
                     ))}
                   </select>

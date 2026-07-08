@@ -278,115 +278,59 @@ export default function Repairs() {
           </span>
         </div>
       ) : data?.repairs && data.repairs.length > 0 ? (
-        <div className="space-y-6">
-          <div className="grid gap-6 md:grid-cols-2">
-            {data.repairs.map((r) => (
-              <Card
-                key={r.id}
-                onClick={() => navigate(`/repairs/${r.id}`)}
-                className="relative bg-card/90 border border-border/80 rounded-xl hover:border-primary/45 transition-colors group flex flex-col pt-5 cursor-pointer mt-4"
-              >
-                {/* Pill header with Date */}
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-primary text-primary-foreground text-[10px] font-bold px-3.5 py-1 rounded-full shadow-md tracking-wider">
-                  {new Date(r.created_at).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric'
-                  })} {new Date(r.created_at).toLocaleTimeString('en-US', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: false
-                  })}
-                </div>
-
-                <div className="p-5 flex gap-5 items-start">
-                  {/* Left Column: Device Photo */}
-                  <div className="w-24 h-24 rounded-xl border border-border/60 bg-secondary/35 flex-shrink-0 overflow-hidden flex items-center justify-center">
+        <div className="space-y-3">
+          {data.repairs.map((r) => (
+            <Card
+              key={r.id}
+              onClick={() => navigate(`/repairs/${r.id}`)}
+              className="relative bg-card/90 border border-border/70 rounded-xl hover:border-primary/45 transition-colors cursor-pointer"
+            >
+              <div className="flex items-center justify-between gap-3 p-3 sm:p-4">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div className="w-12 h-12 rounded-lg border border-border/60 bg-secondary/35 flex-shrink-0 overflow-hidden flex items-center justify-center">
                     {r.device?.front_photo_url ? (
-                      <img 
-                        src={r.device.front_photo_url} 
-                        alt="device front" 
-                        className="w-full h-full object-cover"
-                      />
+                      <img src={r.device.front_photo_url} alt="device front" className="w-full h-full object-cover" />
                     ) : r.device?.back_photo_url ? (
-                      <img 
-                        src={r.device.back_photo_url} 
-                        alt="device back" 
-                        className="w-full h-full object-cover"
-                      />
+                      <img src={r.device.back_photo_url} alt="device back" className="w-full h-full object-cover" />
                     ) : (
-                      <div className="h-full w-full bg-secondary/20 flex items-center justify-center">
-                        <Wrench className="h-8 w-8 text-muted-foreground/60" />
-                      </div>
+                      <Wrench className="h-5 w-5 text-muted-foreground/60" />
                     )}
                   </div>
-
-                  {/* Right Column: Diagnostics details */}
-                  <div className="flex-1 space-y-2.5">
-                    {/* Job Number header */}
-                    <div className="flex items-center justify-between border-b border-border/30 pb-1.5">
-                      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Diagnostics</span>
-                      <span className="font-mono text-xs font-extrabold text-primary">{r.job_number}</span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-semibold text-sm text-foreground truncate">{r.device?.customer?.name || 'Walk-In'}</span>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider border ${statusColors[r.status] || 'bg-secondary/20 text-muted-foreground border-border'}`}>
+                        {r.status}
+                      </span>
                     </div>
-
-                    {/* Table-like aligned grid */}
-                    <div className="grid grid-cols-[105px_1fr] gap-y-2 text-xs">
-                      <span className="font-bold text-white">Model:</span>
-                      <span className="text-foreground/90 font-semibold">{r.device ? `${r.device.brand} ${r.device.model}` : 'Unknown Device'}</span>
-
-                      <span className="font-bold text-white self-start">Problem:</span>
-                      <div className="text-muted-foreground font-semibold space-y-1">
-                        {r.device?.problem ? (
-                          r.device.problem.split(/[\n,;]+/).map((p: string, idx: number) => (
-                            <p key={idx}>{idx + 1}. {p.trim()}</p>
-                          ))
-                        ) : (
-                          <p>No problem description</p>
-                        )}
-                      </div>
-
-                      <span className="font-bold text-white">Estimated Price:</span>
-                      <span className="text-foreground/90 font-bold">₹{Number(r.estimate).toFixed(2)}</span>
-
-                      <span className="font-bold text-white">Cust Name:</span>
-                      <span className="text-foreground/90 font-semibold">{r.device?.customer?.name || 'Walk-In'}</span>
+                    <div className="text-xs text-muted-foreground mt-0.5 flex flex-wrap items-center gap-2">
+                      <span className="font-mono text-primary">{r.job_number}</span>
+                      <span>•</span>
+                      <span>{r.device ? `${r.device.brand} ${r.device.model}` : 'Unknown Device'}</span>
+                    </div>
+                    <div className="text-xs text-muted-foreground truncate mt-0.5">
+                      {r.device?.problem || 'No problem description'}
                     </div>
                   </div>
                 </div>
 
-                {/* Bottom button actions */}
-                <div className="grid grid-cols-4 border-t border-border mt-auto select-none rounded-b-xl overflow-hidden">
+                <div className="flex items-center gap-2 shrink-0">
+                  <div className="text-right">
+                    <div className="text-xs font-semibold text-foreground">₹{Number(r.estimate).toFixed(2)}</div>
+                    <div className="text-[10px] text-muted-foreground">{new Date(r.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
+                  </div>
                   <button
+                    type="button"
                     onClick={(e) => handleDelete(e, r.id, r.job_number)}
-                    className="py-3 text-xs font-bold uppercase tracking-wider text-center text-red-400 bg-secondary/15 hover:bg-red-500/10 transition-colors border-r border-border hover:text-red-300"
+                    className="p-2 rounded-lg text-red-400 hover:bg-red-500/10"
+                    aria-label={`Delete ${r.job_number}`}
                   >
-                    Delete
-                  </button>
-                  <button
-                    onClick={(e) => handleDownloadInvoice(e, r.id, r.job_number)}
-                    className="py-3 text-xs font-bold uppercase tracking-wider text-center text-primary-foreground bg-primary hover:bg-primary/95 transition-colors border-r border-border"
-                  >
-                    Invoice
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/repairs/${r.id}`);
-                    }}
-                    className="py-3 text-xs font-bold uppercase tracking-wider text-center text-primary-foreground bg-primary hover:bg-primary/95 transition-colors border-r border-border"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={(e) => handleCall(e, r.device?.customer?.phone || '')}
-                    className="py-3 text-xs font-bold uppercase tracking-wider text-center text-emerald-400 bg-secondary/15 hover:bg-emerald-500/10 transition-colors hover:text-emerald-300"
-                  >
-                    Call
+                    <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
-              </Card>
-            ))}
-          </div>
+              </div>
+            </Card>
+          ))}
 
           {/* Pagination */}
           {data.pagination.pages > 1 && (
