@@ -4,6 +4,8 @@ import { apiClient } from '../lib/api';
 import logo from '../logo.png';
 import cardFrontTemplate from '../card-front-template.png';
 import cardBackTemplate from '../card-back-template.png';
+import thalaivarSignature from '../thalaivar-signature.png';
+import secretarySignature from '../secretary-signature.png';
 import {
   User,
   Phone,
@@ -171,19 +173,60 @@ export default function OwnerIdCard() {
 
                   {/* ── Dynamic Email ── */}
                   <div style={{
-                    position: 'absolute', top: 135, left: 98,
+                    position: 'absolute', top: 128, left: 98,
                     width: 44, textAlign: 'right', whiteSpace: 'nowrap',
                     zIndex: 4,
                   }}>
                     <span style={{ fontSize: 11, color: 'white', fontWeight: 500 }}>Email :</span>
                   </div>
                   <div style={{
-                    position: 'absolute', top: 135, left: 148,
+                    position: 'absolute', top: 128, left: 148,
                     width: 165,
                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                     zIndex: 4,
                   }}>
                     <span style={{ fontSize: 11, color: 'white', fontWeight: 500 }}>{emailAddress || ''}</span>
+                  </div>
+
+                  {/* ── Thalaivar Signature ── */}
+                  <div style={{
+                    position: 'absolute',
+                    top: 151,
+                    left: 105,
+                    width: 60,
+                    zIndex: 4,
+                    mixBlendMode: 'multiply',
+                  }}>
+                    <img
+                      src={thalaivarSignature}
+                      alt="Thalaivar Signature"
+                      style={{
+                        width: '100%',
+                        height: 'auto',
+                        display: 'block',
+                        clipPath: 'inset(4px)',
+                      }}
+                    />
+                  </div>
+
+                  {/* ── Secretary Signature ── */}
+                  <div style={{
+                    position: 'absolute',
+                    top: 153,
+                    right: 15,
+                    width: 68,
+                    zIndex: 4,
+                    mixBlendMode: 'multiply',
+                  }}>
+                    <img
+                      src={secretarySignature}
+                      alt="Secretary Signature"
+                      style={{
+                        width: '100%',
+                        height: 'auto',
+                        display: 'block',
+                      }}
+                    />
                   </div>
                 </div>
 
@@ -222,7 +265,7 @@ export default function OwnerIdCard() {
                     position: 'absolute', top: 110, left: 50,
                     zIndex: 4,
                   }}>
-                    <span style={{ fontSize: 11, color: '#1E469C', fontWeight: 500 }}>ஆதார் :</span>
+                    <span style={{ fontSize: 11, color: '#1E469C', fontWeight: 700 }}>ஆதார் :</span>
                   </div>
                   <div style={{
                     position: 'absolute', top: 110, left: 135,
