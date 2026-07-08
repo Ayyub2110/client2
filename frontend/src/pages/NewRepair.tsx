@@ -169,7 +169,6 @@ export default function NewRepair() {
     mobileFront: string | null;
     mobileBack: string | null;
     customerPhoto: string | null;
-    video: string | null;
     signature: string | null;
     documentNumber: string;
   }>({
@@ -178,8 +177,7 @@ export default function NewRepair() {
     mobileFront: null,
     mobileBack: null,
     customerPhoto: null,
-    video: null,
-    signature: '',
+    signature: null,
     documentNumber: ''
   });
 
@@ -333,8 +331,7 @@ export default function NewRepair() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Check size limit: 50MB for video, 5MB for other files
-    const limit = key === 'video' ? 50 * 1024 * 1024 : 5 * 1024 * 1024;
+    const limit = 5 * 1024 * 1024;
     if (file.size > limit) {
       toast.error(`File size exceeds ${limit / (1024 * 1024)}MB limit`);
       return;
@@ -610,11 +607,7 @@ export default function NewRepair() {
             </div>
           ) : value ? (
             <div className="absolute inset-0 flex flex-col items-center justify-center group/preview">
-              {key === 'video' ? (
-                <video src={value} className="h-full w-full object-cover" autoPlay loop muted playsInline />
-              ) : (
-                <img src={value} className="h-full w-full object-cover" alt={label} />
-              )}
+              <img src={value} className="h-full w-full object-cover" alt={label} />
               {/* Overlay Actions */}
               <div className="absolute inset-0 bg-black/80 opacity-0 group-hover/preview:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-3">
                 {key === 'signature' ? (
@@ -747,7 +740,10 @@ export default function NewRepair() {
             
             <Button
               type="button"
-              onClick={() => setNewCustomerOpen(true)}
+              onClick={() => {
+                setNewCustomerOpen((open) => !open);
+                setCustomerSearchOpen(false);
+              }}
               className="bg-primary hover:bg-primary/90 text-primary-foreground font-extrabold uppercase text-xs px-4"
             >
               ADD
@@ -782,6 +778,60 @@ export default function NewRepair() {
                   No matching clients. Click ADD to register.
                 </div>
               )}
+            </div>
+          )}
+
+          {newCustomerOpen && (
+            <div className="bg-secondary/95 border border-border rounded-2xl p-4 space-y-4">
+              <div className="text-sm font-semibold text-foreground uppercase tracking-[0.24em]">Register New Customer</div>
+              <div className="grid gap-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Customer Name</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Jane Doe"
+                    value={newCustName}
+                    onChange={(e) => setNewCustName(e.target.value)}
+                    className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Contact Phone</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. +91 99999 88888"
+                    value={newCustPhone}
+                    onChange={(e) => setNewCustPhone(e.target.value)}
+                    className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Address</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. New Delhi, India"
+                    value={newCustAddr}
+                    onChange={(e) => setNewCustAddr(e.target.value)}
+                    className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold"
+                  />
+                </div>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={registerCustomerInline}
+                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-3 rounded-xl font-bold uppercase tracking-wider text-xs"
+                >
+                  Register & Select
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setNewCustomerOpen(false)}
+                  className="w-full bg-secondary/50 hover:bg-secondary/70 text-foreground py-3 rounded-xl font-bold uppercase tracking-wider text-xs"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           )}
 
@@ -986,7 +1036,6 @@ export default function NewRepair() {
               {kycData.idCardBack && <span>ID Back ✓</span>}
               {kycData.mobileFront && <span>Mobile Front ✓</span>}
               {kycData.mobileBack && <span>Mobile Back ✓</span>}
-              {kycData.video && <span>Video ✓</span>}
               {kycData.signature && <span>Signature Saved ✓</span>}
             </div>
           )}
@@ -1458,7 +1507,6 @@ export default function NewRepair() {
                 {renderUploadCard('Mobile Device Front', 'mobileFront', <Smartphone className="h-6 w-6 text-primary" />, { accept: 'image/*', capture: 'environment' })}
                 {renderUploadCard('Mobile Device Back', 'mobileBack', <Smartphone className="h-6 w-6 text-primary" />, { accept: 'image/*', capture: 'environment' })}
                 {renderUploadCard('Customer Face Photo', 'customerPhoto', <Camera className="h-6 w-6 text-primary" />, { accept: 'image/*', capture: 'user' })}
-                {renderUploadCard('Device Test Video', 'video', <Video className="h-6 w-6 text-primary" />, { accept: 'video/*' })}
                 {renderUploadCard('Client Signature', 'signature', <Clipboard className="h-6 w-6 text-primary" />, { accept: '' })}
               </div>
 
@@ -1677,71 +1725,6 @@ export default function NewRepair() {
             >
               Cancel
             </button>
-          </div>
-        </div>
-      )}
-
-      {/* ----------------------------------------------------
-          INLINE REGISTER NEW CUSTOMER MODAL
-         ---------------------------------------------------- */}
-      {newCustomerOpen && (
-        <div className="fixed inset-0 z-50 bg-transparent flex items-center justify-center p-3 light text-foreground">
-          <div className="bg-card border border-border w-[92%] sm:w-full max-w-sm rounded-2xl p-4 sm:p-6 space-y-4 shadow-2xl">
-            <h3 className="text-sm font-extrabold text-foreground uppercase tracking-widest text-center border-b border-border/60 pb-2">
-              Register New Customer
-            </h3>
-
-            <div className="space-y-3">
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Customer Name</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Jane Doe"
-                  value={newCustName}
-                  onChange={(e) => setNewCustName(e.target.value)}
-                  className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Contact Phone</label>
-                <input
-                  type="text"
-                  placeholder="e.g. +91 99999 88888"
-                  value={newCustPhone}
-                  onChange={(e) => setNewCustPhone(e.target.value)}
-                  className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Address</label>
-                <input
-                  type="text"
-                  placeholder="e.g. New Delhi, India"
-                  value={newCustAddr}
-                  onChange={(e) => setNewCustAddr(e.target.value)}
-                  className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2 pt-2">
-              <button
-                type="button"
-                onClick={registerCustomerInline}
-                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-3 rounded-xl font-bold uppercase tracking-wider text-xs shadow-lg"
-              >
-                Register & Select
-              </button>
-              <button
-                type="button"
-                onClick={() => setNewCustomerOpen(false)}
-                className="w-full bg-secondary/50 hover:bg-secondary/70 text-foreground py-3 rounded-xl font-bold uppercase tracking-wider text-xs"
-              >
-                Cancel
-              </button>
-            </div>
           </div>
         </div>
       )}
