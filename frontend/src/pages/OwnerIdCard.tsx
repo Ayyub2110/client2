@@ -222,7 +222,7 @@ export default function OwnerIdCard() {
                     position: 'absolute', top: 110, left: 50,
                     zIndex: 4,
                   }}>
-                    <span style={{ fontSize: 11, color: '#1E469C', fontWeight: 500 }}>Aadhar :</span>
+                    <span style={{ fontSize: 11, color: '#1E469C', fontWeight: 500 }}>ஆதார் :</span>
                   </div>
                   <div style={{
                     position: 'absolute', top: 110, left: 135,
