@@ -8,6 +8,7 @@ interface RateCardService {
   id?: string;
   service_name: string;
   og_cost: number;
+  ditto_cost: number;
   copy_cost: number;
   sort_order: number;
 }
@@ -21,16 +22,16 @@ interface RateCard {
 }
 
 const DEFAULT_SERVICES: RateCardService[] = [
-  { service_name: 'Display Replacement', og_cost: 0, copy_cost: 0, sort_order: 0 },
-  { service_name: 'Battery Replacement', og_cost: 0, copy_cost: 0, sort_order: 1 },
-  { service_name: 'Charging Port Repair', og_cost: 0, copy_cost: 0, sort_order: 2 },
-  { service_name: 'Speaker Replacement', og_cost: 0, copy_cost: 0, sort_order: 3 },
-  { service_name: 'Microphone Repair', og_cost: 0, copy_cost: 0, sort_order: 4 },
-  { service_name: 'Back Cover Replacement', og_cost: 0, copy_cost: 0, sort_order: 5 },
-  { service_name: 'Camera Repair', og_cost: 0, copy_cost: 0, sort_order: 6 },
-  { service_name: 'Button / Switch Repair', og_cost: 0, copy_cost: 0, sort_order: 7 },
-  { service_name: 'Software / Flash', og_cost: 0, copy_cost: 0, sort_order: 8 },
-  { service_name: 'Water Damage Treatment', og_cost: 0, copy_cost: 0, sort_order: 9 },
+  { service_name: 'Display Replacement', og_cost: 0, ditto_cost: 0, copy_cost: 0, sort_order: 0 },
+  { service_name: 'Battery Replacement', og_cost: 0, ditto_cost: 0, copy_cost: 0, sort_order: 1 },
+  { service_name: 'Charging Port Repair', og_cost: 0, ditto_cost: 0, copy_cost: 0, sort_order: 2 },
+  { service_name: 'Speaker Replacement', og_cost: 0, ditto_cost: 0, copy_cost: 0, sort_order: 3 },
+  { service_name: 'Microphone Repair', og_cost: 0, ditto_cost: 0, copy_cost: 0, sort_order: 4 },
+  { service_name: 'Back Cover Replacement', og_cost: 0, ditto_cost: 0, copy_cost: 0, sort_order: 5 },
+  { service_name: 'Camera Repair', og_cost: 0, ditto_cost: 0, copy_cost: 0, sort_order: 6 },
+  { service_name: 'Button / Switch Repair', og_cost: 0, ditto_cost: 0, copy_cost: 0, sort_order: 7 },
+  { service_name: 'Software / Flash', og_cost: 0, ditto_cost: 0, copy_cost: 0, sort_order: 8 },
+  { service_name: 'Water Damage Treatment', og_cost: 0, ditto_cost: 0, copy_cost: 0, sort_order: 9 },
 ];
 
 export default function RepairPriceList() {
@@ -233,10 +234,13 @@ export default function RepairPriceList() {
                                   {service.service_name}
                                 </td>
                                 <td className="px-4 py-3 text-xs font-mono font-bold text-emerald-400 text-right whitespace-nowrap">
-                                  ₹ {Number(service.og_cost).toFixed(2)}
+                                  ₹ {Number(service.og_cost ?? 0).toFixed(2)}
+                                </td>
+                                <td className="px-4 py-3 text-xs font-mono font-bold text-sky-400 text-right whitespace-nowrap">
+                                  ₹ {Number(service.ditto_cost ?? 0).toFixed(2)}
                                 </td>
                                 <td className="px-4 py-3 text-xs font-mono font-bold text-pink-400 text-right whitespace-nowrap">
-                                  ₹ {Number(service.copy_cost).toFixed(2)}
+                                  ₹ {Number(service.copy_cost ?? 0).toFixed(2)}
                                 </td>
                               </tr>
                             ))}

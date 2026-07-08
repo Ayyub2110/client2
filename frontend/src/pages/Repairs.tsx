@@ -311,6 +311,10 @@ export default function Repairs() {
                     <div className="text-xs text-muted-foreground truncate mt-0.5">
                       {r.device?.problem || 'No problem description'}
                     </div>
+                    <div className="mt-2 flex flex-wrap gap-2 text-[10px] font-semibold text-white">
+                      <span className="rounded-full bg-slate-800/70 px-2 py-1">Advance ₹{Number(r.advance ?? 0).toFixed(2)}</span>
+                      <span className="rounded-full bg-slate-800/70 px-2 py-1">Balance ₹{Number(r.balance ?? 0).toFixed(2)}</span>
+                    </div>
                   </div>
                 </div>
 

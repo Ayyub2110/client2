@@ -102,11 +102,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // 1. Initial check of session
     const checkInitialSession = async () => {
       setIsLoading(true);
+      const storedAccessToken = localStorage.getItem('gk_access_token');
+      const storedRefreshToken = localStorage.getItem('gk_refresh_token');
       const { data: { session } } = await supabase.auth.getSession();
-      
+
       if (session) {
         localStorage.setItem('gk_refresh_token', session.refresh_token);
         await loadProfile(session.access_token);
+      } else if (storedAccessToken) {
+        try {
+          await loadProfile(storedAccessToken);
+        } catch (error) {
+          console.warn('Stored access token did not restore the session:', error);
+          clearAuth();
+        }
+      } else if (storedRefreshToken) {
+        try {
+          await supabase.auth.setSession({
+            refresh_token: storedRefreshToken
+          } as any);
+          const { data: { session: newSession } } = await supabase.auth.getSession();
+          if (newSession?.access_token) {
+            localStorage.setItem('gk_refresh_token', newSession.refresh_token);
+            localStorage.setItem('gk_access_token', newSession.access_token);
+            await loadProfile(newSession.access_token);
+          } else {
+            clearAuth();
+          }
+        } catch (error) {
+          console.warn('Failed to restore session using stored refresh token:', error);
+          clearAuth();
+        }
       } else {
         clearAuth();
       }

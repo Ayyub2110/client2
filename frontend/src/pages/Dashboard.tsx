@@ -431,7 +431,7 @@ export default function Dashboard() {
                 </h4>
                 <span className="px-1.5 py-0.5 rounded text-[7px] font-extrabold uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 tracking-wider">Live</span>
               </div>
-              <p className="text-[10px] sm:text-[11px] text-neutral-300 font-medium leading-relaxed mt-1 line-clamp-2">
+              <p className="text-[9px] sm:text-[11px] text-neutral-300 font-medium leading-relaxed mt-1 line-clamp-2">
                 {activeSlides[currentSlide].description}
               </p>
             </div>
