@@ -972,8 +972,10 @@ export default function NewRepair() {
                 {rateCardData.rateCard.services.map((svc: any) => {
                   const ogName = `${svc.service_name} (OG)`;
                   const copyName = `${svc.service_name} (Copy)`;
+                  const dittoName = `${svc.service_name} (Ditto)`;
                   const isOgSelected = selectedServices.some(s => s.service_name === ogName);
                   const isCopySelected = selectedServices.some(s => s.service_name === copyName);
+                  const isDittoSelected = selectedServices.some(s => s.service_name === dittoName);
 
                   return (
                     <div key={svc.id} className="flex flex-col xl:flex-row xl:items-center justify-between gap-3 p-2.5 rounded-lg bg-secondary/20 border border-border/40">
@@ -1000,6 +1002,17 @@ export default function NewRepair() {
                           }`}
                         >
                           <span translate="no" className="notranslate">Copy: ₹{svc.copy_cost ?? 0}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => toggleService({ service_name: dittoName, labor_cost: svc.ditto_cost ?? 0 })}
+                          className={`px-3 py-1.5 rounded-lg border text-[11px] font-extrabold transition-all flex items-center gap-1.5 ${
+                            isDittoSelected
+                              ? 'bg-amber-600 text-white border-transparent shadow-[0_0_10px_rgba(245,158,11,0.3)]'
+                              : 'bg-secondary/40 border-border/80 text-muted-foreground hover:text-foreground hover:border-amber-500/50'
+                          }`}
+                        >
+                          <span translate="no" className="notranslate">Ditto: ₹{svc.ditto_cost ?? 0}</span>
                         </button>
                       </div>
                     </div>

@@ -223,6 +223,9 @@ export default function RepairPriceList() {
                             <th scope="col" translate="no" className="notranslate px-4 py-3 text-right text-xs font-bold text-muted-foreground uppercase tracking-wider">
                               Copy Cost (₹)
                             </th>
+                            <th scope="col" className="px-4 py-3 text-right text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                              Ditto Cost (₹)
+                            </th>
                           </tr>
                         </thead>
                         <tbody className="bg-transparent divide-y divide-border/30">
@@ -236,11 +239,11 @@ export default function RepairPriceList() {
                                 <td className="px-4 py-3 text-xs font-mono font-bold text-emerald-400 text-right whitespace-nowrap">
                                   ₹ {Number(service.og_cost ?? 0).toFixed(2)}
                                 </td>
-                                <td className="px-4 py-3 text-xs font-mono font-bold text-sky-400 text-right whitespace-nowrap">
-                                  ₹ {Number(service.ditto_cost ?? 0).toFixed(2)}
-                                </td>
                                 <td className="px-4 py-3 text-xs font-mono font-bold text-pink-400 text-right whitespace-nowrap">
                                   ₹ {Number(service.copy_cost ?? 0).toFixed(2)}
+                                </td>
+                                <td className="px-4 py-3 text-xs font-mono font-bold text-sky-400 text-right whitespace-nowrap">
+                                  ₹ {Number(service.ditto_cost ?? 0).toFixed(2)}
                                 </td>
                               </tr>
                             ))}

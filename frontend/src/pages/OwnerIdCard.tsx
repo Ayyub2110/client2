@@ -46,6 +46,9 @@ export default function OwnerIdCard() {
   const [aadharNumber, setAadharNumber] = useState('');
   const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoScale, setPhotoScale] = useState(1.0);
+  const [photoX, setPhotoX] = useState(0);
+  const [photoY, setPhotoY] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -150,7 +153,13 @@ export default function OwnerIdCard() {
                     zIndex: 4,
                   }}>
                     {photoPreview
-                      ? <img src={photoPreview} alt="Owner" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ? <img src={photoPreview} alt="Owner" style={{ 
+                          width: '100%', 
+                          height: '100%', 
+                          objectFit: 'cover',
+                          transform: `scale(${photoScale}) translate(${photoX}px, ${photoY}px)`,
+                          transition: 'transform 0.1s ease-out'
+                        }} />
                       : <User style={{ width: 28, height: 28, color: '#bbb' }} />
                     }
                   </div>
@@ -347,14 +356,28 @@ export default function OwnerIdCard() {
                 </div>
 
                 {/* Photo Upload */}
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <label className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
                     <Upload className="h-3.5 w-3.5" /> Owner Photo (Passport Size)
                   </label>
                   <div className="flex items-center gap-4">
                     <div className="w-14 h-16 rounded-lg bg-secondary/15 border border-border/60 overflow-hidden flex items-center justify-center shrink-0">
                       {photoPreview
-                        ? <img src={photoPreview} alt="Thumb" className="w-full h-full object-cover" />
+                        ? (
+                          <div className="w-full h-full overflow-hidden relative">
+                            <img
+                              src={photoPreview}
+                              alt="Thumb"
+                              style={{
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'cover',
+                                transform: `scale(${photoScale}) translate(${photoX}px, ${photoY}px)`,
+                                transition: 'transform 0.1s ease-out'
+                              }}
+                            />
+                          </div>
+                        )
                         : <User className="h-6 w-6 text-slate-500" />}
                     </div>
                     <div className="flex-1">

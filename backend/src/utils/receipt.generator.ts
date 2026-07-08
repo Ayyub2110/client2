@@ -382,7 +382,7 @@ export async function generateReceiptPdf(data: ReceiptData): Promise<Uint8Array>
     x: devCardX + 12,
     y: boxY + boxHeight - 62,
     size: 9,
-    font,
+    font: fontBold,
     color: primaryColor,
     maxWidth: colWidth - 24,
     lineHeight: 11,

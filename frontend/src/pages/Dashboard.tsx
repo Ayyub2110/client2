@@ -390,15 +390,19 @@ export default function Dashboard() {
             return (
               <div
                 key={idx}
-                style={{
-                  backgroundImage: `linear-gradient(to right, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.1) 100%), url(${slide.image_url})`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center'
-                }}
                 className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
                   isActive ? 'opacity-100 z-0' : 'opacity-0 pointer-events-none'
                 }`}
-              />
+              >
+                <img
+                  src={slide.image_url}
+                  alt={slide.title || 'Slide background'}
+                  className="w-full h-full object-cover object-center"
+                  loading="eager"
+                />
+                {/* Gradient overlay to make text readable */}
+                <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-transparent" />
+              </div>
             );
           } else {
             return (
