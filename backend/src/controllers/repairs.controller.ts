@@ -432,23 +432,21 @@ export async function createRepair(req: Request, res: Response): Promise<void> {
       await supabaseAdmin.from('repair_services').insert(servicePayload);
     }
 
-    // Trigger WhatsApp notification if send_whatsapp is true
-    if (validatedData.sendWhatsapp) {
-      (async () => {
-        try {
-          const { data: fullRepair } = await supabaseAdmin
-            .from('repairs')
-            .select('*, device:devices(*, customer:customers(*)), shop:shops(*)')
-            .eq('id', repairId)
-            .single();
-          if (fullRepair) {
-            await sendWhatsAppUpdate(fullRepair, 'pending', 'Repair order initialized');
-          }
-        } catch (e) {
-          console.error('[WhatsApp Trigger] Error in createRepair notification:', e);
+    // Trigger WhatsApp notification automatically after creating a repair order when customer data is present.
+    (async () => {
+      try {
+        const { data: fullRepair } = await supabaseAdmin
+          .from('repairs')
+          .select('*, device:devices(*, customer:customers(*)), shop:shops(*)')
+          .eq('id', repairId)
+          .single();
+        if (fullRepair) {
+          await sendWhatsAppUpdate(fullRepair, 'pending', 'Repair order initialized');
         }
-      })();
-    }
+      } catch (e) {
+        console.error('[WhatsApp Trigger] Error in createRepair notification:', e);
+      }
+    })();
 
     res.status(201).json({ message: 'Repair order created successfully', repair });
   } catch (err) {

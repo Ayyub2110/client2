@@ -261,7 +261,12 @@ export async function generateReceiptPdf(data: ReceiptData): Promise<Uint8Array>
     color: primaryColor,
   });
 
-  page.drawText(`Expected Delivery: ${formatDateOnly(repair.delivery_date)}`, {
+  const deliveryDateLabel = repair.delivered_at ? 'Delivery Date' : 'Expected Delivery';
+  const deliveryDateValue = repair.delivered_at
+    ? formatDateTime(repair.delivered_at)
+    : formatDateOnly(repair.delivery_date);
+
+  page.drawText(`${deliveryDateLabel}: ${deliveryDateValue}`, {
     x: marginX + 170,
     y: datesRowY,
     size: 9,
@@ -377,7 +382,7 @@ export async function generateReceiptPdf(data: ReceiptData): Promise<Uint8Array>
     x: devCardX + 12,
     y: boxY + boxHeight - 62,
     size: 9,
-    font,
+    font: fontBold,
     color: primaryColor,
     maxWidth: colWidth - 24,
     lineHeight: 11,

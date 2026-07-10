@@ -187,7 +187,7 @@ export default function Dashboard() {
     if (activeSlides.length === 0) return;
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % activeSlides.length);
-    }, 6000);
+    }, 4000);
     return () => clearInterval(timer);
   }, [activeSlides.length]);
 
@@ -381,17 +381,40 @@ export default function Dashboard() {
 
       {/* Slide Carousel Banner */}
       <div 
-        style={activeSlides[currentSlide]?.image_url ? { 
-          backgroundImage: `linear-gradient(to right, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.1) 100%), url(${activeSlides[currentSlide].image_url})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center'
-        } : undefined}
-        className={`relative overflow-hidden p-6 sm:p-8 rounded-2xl border transition-all duration-500 shadow-md flex items-center gap-4 min-h-[200px] sm:min-h-[260px] md:min-h-[300px] ${
-          !activeSlides[currentSlide]?.image_url 
-            ? ('bg-gradient-to-r ' + (activeSlides[currentSlide].color || 'from-primary/25 to-secondary/15 border-primary/30')) 
-            : 'border-border/85'
-        }`}
+        className="relative overflow-hidden p-6 sm:p-8 rounded-2xl border border-border/85 shadow-md flex items-center gap-4 min-h-[200px] sm:min-h-[260px] md:min-h-[300px]"
       >
+        {/* Preload and crossfade background layers */}
+        {activeSlides.map((slide: any, idx: number) => {
+          const isActive = currentSlide === idx;
+          if (slide.image_url) {
+            return (
+              <div
+                key={idx}
+                className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
+                  isActive ? 'opacity-100 z-0' : 'opacity-0 pointer-events-none'
+                }`}
+              >
+                <img
+                  src={slide.image_url}
+                  alt={slide.title || 'Slide background'}
+                  className="w-full h-full object-cover object-center"
+                  loading="eager"
+                />
+                {/* Gradient overlay to make text readable */}
+                <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-transparent" />
+              </div>
+            );
+          } else {
+            return (
+              <div
+                key={idx}
+                className={`absolute inset-0 bg-gradient-to-r ${slide.color || 'from-primary/25 to-secondary/15 border-primary/30'} transition-opacity duration-700 ease-in-out ${
+                  isActive ? 'opacity-100 z-0' : 'opacity-0 pointer-events-none'
+                }`}
+              />
+            );
+          }
+        })}
         {isSuperAdmin && (
           <Link 
             to="/superadmin?tab=carousel" 
@@ -400,20 +423,22 @@ export default function Dashboard() {
             Edit Slides
           </Link>
         )}
-        <div className="relative z-10 max-w-sm sm:max-w-lg md:max-w-xl bg-slate-950/50 backdrop-blur-md border border-white/10 p-4 sm:p-5 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.5)] flex gap-4 items-center transition-all duration-300 hover:scale-[1.01]">
-          <div className="p-3 rounded-xl bg-primary/20 border border-primary/30 shrink-0 shadow-[0_0_15px_rgba(168,85,247,0.2)] text-primary">
-            {activeSlides[currentSlide].icon || <Smartphone className="h-5 w-5" />}
-          </div>
-          <div className="space-y-1 flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <h4 className="text-sm sm:text-base font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white to-pink-400 uppercase font-sans">
-                {activeSlides[currentSlide].title}
-              </h4>
-              <span className="px-1.5 py-0.5 rounded text-[8px] font-extrabold uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 tracking-wider">Live</span>
+        <div className="absolute left-4 top-4 sm:left-6 sm:top-6 z-10 max-w-[70%] sm:max-w-sm bg-slate-950/60 backdrop-blur-md border border-white/10 p-3 sm:p-4 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.45)] transition-all duration-300 hover:scale-[1.01]">
+          <div className="flex items-center gap-2">
+            <div className="p-2 rounded-lg bg-primary/20 border border-primary/30 shrink-0 shadow-[0_0_12px_rgba(168,85,247,0.18)] text-primary">
+              {activeSlides[currentSlide].icon || <Smartphone className="h-4 w-4" />}
             </div>
-            <p className="text-[11px] sm:text-xs text-neutral-300 font-medium leading-relaxed">
-              {activeSlides[currentSlide].description}
-            </p>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h4 className="text-[10px] sm:text-xs font-semibold tracking-[0.2em] text-transparent bg-clip-text bg-gradient-to-r from-white to-pink-400 uppercase font-sans">
+                  {activeSlides[currentSlide].title}
+                </h4>
+                <span className="px-1.5 py-0.5 rounded text-[7px] font-extrabold uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 tracking-wider">Live</span>
+              </div>
+              <p className="text-[9px] sm:text-[11px] text-neutral-300 font-medium leading-relaxed mt-1 line-clamp-2">
+                {activeSlides[currentSlide].description}
+              </p>
+            </div>
           </div>
         </div>
         
@@ -440,7 +465,7 @@ export default function Dashboard() {
           <Card className="relative overflow-hidden bg-gradient-to-br from-card/30 to-secondary/30 border border-border/85 hover:border-amber-500/30 transition-all duration-300 group">
             <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-amber-500/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-none bg-clip-border text-current">
+              <CardTitle className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground bg-none bg-clip-border text-current">
                 Today&apos;s New Repairs
               </CardTitle>
               <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-550 border border-amber-500/20 transition-all duration-300 group-hover:scale-110 group-hover:shadow-[0_0_12px_rgba(245,158,11,0.25)]">
@@ -448,7 +473,7 @@ export default function Dashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-black text-foreground tracking-tight">
+              <div className="text-2xl font-black text-foreground tracking-tight">
                 {stats.newRepairs}
               </div>
               <p className="text-[10px] text-muted-foreground mt-2.5 flex items-center gap-1.5">
@@ -462,7 +487,7 @@ export default function Dashboard() {
           <Card className="relative overflow-hidden bg-gradient-to-br from-card/30 to-secondary/30 border border-border/85 hover:border-emerald-500/30 transition-all duration-300 group">
             <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-emerald-500/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-none bg-clip-border text-current">
+              <CardTitle className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground bg-none bg-clip-border text-current">
                 Ready for Pickup
               </CardTitle>
               <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 border border-emerald-500/20 transition-all duration-300 group-hover:scale-110 group-hover:shadow-[0_0_12px_rgba(16,185,129,0.25)]">
@@ -470,7 +495,7 @@ export default function Dashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-black text-foreground tracking-tight">
+              <div className="text-2xl font-black text-foreground tracking-tight">
                 {stats.pendingDeliveries}
               </div>
               <p className="text-[10px] text-muted-foreground mt-2.5 flex items-center gap-1.5">
@@ -484,7 +509,7 @@ export default function Dashboard() {
           <Card className="relative overflow-hidden bg-gradient-to-br from-card/30 to-secondary/30 border border-border/85 hover:border-primary/30 transition-all duration-300 group">
             <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-primary/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-none bg-clip-border text-current">
+              <CardTitle className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground bg-none bg-clip-border text-current">
                 Today&apos;s Advances
               </CardTitle>
               <div className="p-2 rounded-lg bg-primary/10 text-primary border border-primary/20 transition-all duration-300 group-hover:scale-110 group-hover:shadow-[0_0_12px_rgba(168,85,247,0.25)]">
@@ -492,7 +517,7 @@ export default function Dashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-black text-foreground tracking-tight">
+              <div className="text-2xl font-black text-foreground tracking-tight">
                 ₹{Number(stats.revenueCollected).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
               </div>
               <p className="text-[10px] text-muted-foreground mt-2.5 flex items-center gap-1.5">
@@ -506,7 +531,7 @@ export default function Dashboard() {
           <Card className="relative overflow-hidden bg-gradient-to-br from-card/30 to-secondary/30 border border-border/85 hover:border-red-500/30 transition-all duration-300 group">
             <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-red-500/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-none bg-clip-border text-current">
+              <CardTitle className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground bg-none bg-clip-border text-current">
                 Outstanding Balance
               </CardTitle>
               <div className="p-2 rounded-lg bg-red-500/10 text-red-650 dark:text-red-500 border border-red-500/20 transition-all duration-300 group-hover:scale-110 group-hover:shadow-[0_0_12px_rgba(239,68,68,0.25)]">
@@ -514,7 +539,7 @@ export default function Dashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-black text-foreground tracking-tight">
+              <div className="text-2xl font-black text-foreground tracking-tight">
                 ₹{Number(stats.totalOutstandingBalance).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
               </div>
               <p className="text-[10px] text-muted-foreground mt-2.5 flex items-center gap-1.5">

@@ -302,17 +302,6 @@ export default function RepairDetail() {
 
         {/* Deliver & Receipt Actions */}
         <div className="flex flex-wrap gap-2">
-          {authRole === 'owner' && (
-            <Button
-              onClick={() => setReceiptPreviewOpen(true)}
-              variant="outline"
-              className="gap-2 border-primary/40 text-primary hover:bg-primary/10"
-            >
-              <FileText className="h-4 w-4" />
-              <span>Preview Receipt</span>
-            </Button>
-          )}
-
           {repair.status === 'ready' && (
             <Button
               onClick={() => navigate(`/repairs/${repair.id}/deliver`)}

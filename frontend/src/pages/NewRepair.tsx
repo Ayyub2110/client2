@@ -43,6 +43,37 @@ const DEVICE_BRANDS: Record<string, string[]> = {
   'REALME': ['REALME 11 PRO+', 'REALME 12 PRO', 'REALME C53', 'REALME NARZO 60']
 };
 
+export interface DeviceOptionEntry {
+  brand: string;
+  model: string;
+}
+
+export function buildDeviceOptions(rateCards: DeviceOptionEntry[]) {
+  const mergedBrands: Record<string, Set<string>> = {};
+
+  Object.entries(DEVICE_BRANDS).forEach(([brand, models]) => {
+    mergedBrands[brand] = new Set(models);
+  });
+
+  rateCards.forEach(({ brand, model }) => {
+    const normalizedBrand = brand.trim();
+    const normalizedModel = model.trim();
+    if (!normalizedBrand || !normalizedModel) return;
+
+    if (!mergedBrands[normalizedBrand]) {
+      mergedBrands[normalizedBrand] = new Set<string>();
+    }
+    mergedBrands[normalizedBrand].add(normalizedModel);
+  });
+
+  const brandOptions = Object.keys(mergedBrands).sort((a, b) => a.localeCompare(b));
+  const modelsByBrand = Object.fromEntries(
+    brandOptions.map((brand) => [brand, Array.from(mergedBrands[brand]).sort((a, b) => a.localeCompare(b))])
+  );
+
+  return { brandOptions, modelsByBrand };
+}
+
 // ----------------------------------------------------
 // Zod Schema for the complete Unified Form
 // ----------------------------------------------------
@@ -138,7 +169,6 @@ export default function NewRepair() {
     mobileFront: string | null;
     mobileBack: string | null;
     customerPhoto: string | null;
-    video: string | null;
     signature: string | null;
     documentNumber: string;
   }>({
@@ -147,8 +177,7 @@ export default function NewRepair() {
     mobileFront: null,
     mobileBack: null,
     customerPhoto: null,
-    video: null,
-    signature: '',
+    signature: null,
     documentNumber: ''
   });
 
@@ -184,8 +213,8 @@ export default function NewRepair() {
       deliveryDate: '',
       staffId: '',
       notes: '',
-      sendWhatsapp: false,
-      sendEmail: false,
+      sendWhatsapp: true,
+      sendEmail: true,
       kycDetails: '',
       reminderEnable: false
     }
@@ -212,6 +241,13 @@ export default function NewRepair() {
     queryFn: () => apiClient.get('/auth/staff'),
     enabled: authRole === 'owner'
   });
+
+  const { data: rateCardOptionsData } = useQuery<{ rateCards: DeviceOptionEntry[] }>({
+    queryKey: ['rate-card-options'],
+    queryFn: () => apiClient.get('/ratecards'),
+    staleTime: 5 * 60 * 1000
+  });
+  const { brandOptions, modelsByBrand } = buildDeviceOptions(rateCardOptionsData?.rateCards || []);
 
   // Autocomplete customer search
   const { data: customersSearchData } = useQuery<{ customers: Customer[] }>({
@@ -295,8 +331,7 @@ export default function NewRepair() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Check size limit: 50MB for video, 5MB for other files
-    const limit = key === 'video' ? 50 * 1024 * 1024 : 5 * 1024 * 1024;
+    const limit = 5 * 1024 * 1024;
     if (file.size > limit) {
       toast.error(`File size exceeds ${limit / (1024 * 1024)}MB limit`);
       return;
@@ -572,11 +607,7 @@ export default function NewRepair() {
             </div>
           ) : value ? (
             <div className="absolute inset-0 flex flex-col items-center justify-center group/preview">
-              {key === 'video' ? (
-                <video src={value} className="h-full w-full object-cover" autoPlay loop muted playsInline />
-              ) : (
-                <img src={value} className="h-full w-full object-cover" alt={label} />
-              )}
+              <img src={value} className="h-full w-full object-cover" alt={label} />
               {/* Overlay Actions */}
               <div className="absolute inset-0 bg-black/80 opacity-0 group-hover/preview:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-3">
                 {key === 'signature' ? (
@@ -709,27 +740,23 @@ export default function NewRepair() {
             
             <Button
               type="button"
-              onClick={() => setCustomerSearchOpen(true)}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground font-extrabold uppercase text-xs px-4"
-            >
-              SELECT
-            </Button>
-            
-            <Button
-              type="button"
-              onClick={() => setNewCustomerOpen(true)}
+              onClick={() => {
+                setNewCustomerOpen((open) => !open);
+                setCustomerSearchOpen(false);
+              }}
               className="bg-primary hover:bg-primary/90 text-primary-foreground font-extrabold uppercase text-xs px-4"
             >
               ADD
             </Button>
           </div>
 
-          {/* Autocomplete Search Dropdown */}
+          {/* Inline Customer List */}
           {customerSearchOpen && phoneSearch.length >= 2 && (
             <div className="bg-secondary/95 border border-border rounded-xl divide-y divide-border/60 overflow-hidden">
               {customersSearchData?.customers && customersSearchData.customers.length > 0 ? (
                 customersSearchData.customers.map((cust) => (
-                  <div
+                  <button
+                    type="button"
                     key={cust.id}
                     onClick={() => {
                       setSelectedCustomer(cust);
@@ -737,20 +764,74 @@ export default function NewRepair() {
                       setPhoneSearch('');
                       setCustomerSearchOpen(false);
                     }}
-                    className="p-3 hover:bg-primary/10 cursor-pointer flex justify-between items-center"
+                    className="w-full p-3 text-left hover:bg-primary/10 cursor-pointer flex justify-between items-center gap-3"
                   >
                     <div>
                       <div className="text-sm font-semibold text-foreground">{cust.name}</div>
                       <div className="text-xs text-muted-foreground">{cust.phone}</div>
                     </div>
-                    <span className="text-[10px] uppercase font-bold text-primary">Pick</span>
-                  </div>
+                    <span className="text-[10px] uppercase font-bold text-primary whitespace-nowrap">Select</span>
+                  </button>
                 ))
               ) : (
                 <div className="p-3 text-center text-xs text-muted-foreground">
                   No matching clients. Click ADD to register.
                 </div>
               )}
+            </div>
+          )}
+
+          {newCustomerOpen && (
+            <div className="bg-secondary/95 border border-border rounded-2xl p-4 space-y-4">
+              <div className="text-sm font-semibold text-foreground uppercase tracking-[0.24em]">Register New Customer</div>
+              <div className="grid gap-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Customer Name</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Jane Doe"
+                    value={newCustName}
+                    onChange={(e) => setNewCustName(e.target.value)}
+                    className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Contact Phone</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. +91 99999 88888"
+                    value={newCustPhone}
+                    onChange={(e) => setNewCustPhone(e.target.value)}
+                    className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Address</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. New Delhi, India"
+                    value={newCustAddr}
+                    onChange={(e) => setNewCustAddr(e.target.value)}
+                    className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold"
+                  />
+                </div>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={registerCustomerInline}
+                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-3 rounded-xl font-bold uppercase tracking-wider text-xs"
+                >
+                  Register & Select
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setNewCustomerOpen(false)}
+                  className="w-full bg-secondary/50 hover:bg-secondary/70 text-foreground py-3 rounded-xl font-bold uppercase tracking-wider text-xs"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           )}
 
@@ -791,7 +872,7 @@ export default function NewRepair() {
                 >
                   <option value="" className="bg-neutral-900 text-white">Select Brand</option>
                   <option value="Other" className="bg-neutral-900 text-white">Other (Custom Brand)</option>
-                  {Object.keys(DEVICE_BRANDS).map((b) => (
+                  {brandOptions.map((b) => (
                     <option key={b} value={b} className="bg-neutral-900 text-white">{b}</option>
                   ))}
                 </select>
@@ -811,7 +892,7 @@ export default function NewRepair() {
                   >
                     <option value="" className="bg-neutral-900 text-white">Select Model</option>
                     <option value="Other" className="bg-neutral-900 text-white">Other (Custom Model)</option>
-                    {DEVICE_BRANDS[selectedBrand]?.map((m) => (
+                    {(modelsByBrand[selectedBrand] || []).map((m) => (
                       <option key={m} value={m} className="bg-neutral-900 text-white">{m}</option>
                     ))}
                   </select>
@@ -891,8 +972,10 @@ export default function NewRepair() {
                 {rateCardData.rateCard.services.map((svc: any) => {
                   const ogName = `${svc.service_name} (OG)`;
                   const copyName = `${svc.service_name} (Copy)`;
+                  const dittoName = `${svc.service_name} (Ditto)`;
                   const isOgSelected = selectedServices.some(s => s.service_name === ogName);
                   const isCopySelected = selectedServices.some(s => s.service_name === copyName);
+                  const isDittoSelected = selectedServices.some(s => s.service_name === dittoName);
 
                   return (
                     <div key={svc.id} className="flex flex-col xl:flex-row xl:items-center justify-between gap-3 p-2.5 rounded-lg bg-secondary/20 border border-border/40">
@@ -919,6 +1002,17 @@ export default function NewRepair() {
                           }`}
                         >
                           <span translate="no" className="notranslate">Copy: ₹{svc.copy_cost ?? 0}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => toggleService({ service_name: dittoName, labor_cost: svc.ditto_cost ?? 0 })}
+                          className={`px-3 py-1.5 rounded-lg border text-[11px] font-extrabold transition-all flex items-center gap-1.5 ${
+                            isDittoSelected
+                              ? 'bg-amber-600 text-white border-transparent shadow-[0_0_10px_rgba(245,158,11,0.3)]'
+                              : 'bg-secondary/40 border-border/80 text-muted-foreground hover:text-foreground hover:border-amber-500/50'
+                          }`}
+                        >
+                          <span translate="no" className="notranslate">Ditto: ₹{svc.ditto_cost ?? 0}</span>
                         </button>
                       </div>
                     </div>
@@ -955,7 +1049,6 @@ export default function NewRepair() {
               {kycData.idCardBack && <span>ID Back ✓</span>}
               {kycData.mobileFront && <span>Mobile Front ✓</span>}
               {kycData.mobileBack && <span>Mobile Back ✓</span>}
-              {kycData.video && <span>Video ✓</span>}
               {kycData.signature && <span>Signature Saved ✓</span>}
             </div>
           )}
@@ -1340,16 +1433,6 @@ export default function NewRepair() {
           </div>
         </div>
 
-        {/* ADD ID PROOF / DEVICE PHOTO TRIGGER */}
-        <div
-          onClick={() => setKycModalOpen(true)}
-          className="border-2 border-dashed border-border/80 hover:border-primary/80 transition-colors rounded-2xl p-6 text-center cursor-pointer bg-secondary/5 space-y-1.5"
-        >
-          <Camera className="h-6 w-6 text-muted-foreground mx-auto" />
-          <span className="text-xs font-bold text-foreground block">Add ID Proof / Device Photo (Optional)</span>
-          <span className="text-[10px] text-muted-foreground block">Capture front/back documentation in KYC file</span>
-        </div>
-
         {/* ADDITIONAL DETAILS OPTIONAL TEXTAREA */}
         <div className="space-y-1">
           <textarea
@@ -1427,7 +1510,6 @@ export default function NewRepair() {
                 {renderUploadCard('Mobile Device Front', 'mobileFront', <Smartphone className="h-6 w-6 text-primary" />, { accept: 'image/*', capture: 'environment' })}
                 {renderUploadCard('Mobile Device Back', 'mobileBack', <Smartphone className="h-6 w-6 text-primary" />, { accept: 'image/*', capture: 'environment' })}
                 {renderUploadCard('Customer Face Photo', 'customerPhoto', <Camera className="h-6 w-6 text-primary" />, { accept: 'image/*', capture: 'user' })}
-                {renderUploadCard('Device Test Video', 'video', <Video className="h-6 w-6 text-primary" />, { accept: 'video/*' })}
                 {renderUploadCard('Client Signature', 'signature', <Clipboard className="h-6 w-6 text-primary" />, { accept: '' })}
               </div>
 
@@ -1646,71 +1728,6 @@ export default function NewRepair() {
             >
               Cancel
             </button>
-          </div>
-        </div>
-      )}
-
-      {/* ----------------------------------------------------
-          INLINE REGISTER NEW CUSTOMER MODAL
-         ---------------------------------------------------- */}
-      {newCustomerOpen && (
-        <div className="fixed inset-0 z-50 bg-transparent flex items-center justify-center p-3 light text-foreground">
-          <div className="bg-card border border-border w-[92%] sm:w-full max-w-sm rounded-2xl p-4 sm:p-6 space-y-4 shadow-2xl">
-            <h3 className="text-sm font-extrabold text-foreground uppercase tracking-widest text-center border-b border-border/60 pb-2">
-              Register New Customer
-            </h3>
-
-            <div className="space-y-3">
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Customer Name</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Jane Doe"
-                  value={newCustName}
-                  onChange={(e) => setNewCustName(e.target.value)}
-                  className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Contact Phone</label>
-                <input
-                  type="text"
-                  placeholder="e.g. +91 99999 88888"
-                  value={newCustPhone}
-                  onChange={(e) => setNewCustPhone(e.target.value)}
-                  className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Address</label>
-                <input
-                  type="text"
-                  placeholder="e.g. New Delhi, India"
-                  value={newCustAddr}
-                  onChange={(e) => setNewCustAddr(e.target.value)}
-                  className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2 pt-2">
-              <button
-                type="button"
-                onClick={registerCustomerInline}
-                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-3 rounded-xl font-bold uppercase tracking-wider text-xs shadow-lg"
-              >
-                Register & Select
-              </button>
-              <button
-                type="button"
-                onClick={() => setNewCustomerOpen(false)}
-                className="w-full bg-secondary/50 hover:bg-secondary/70 text-foreground py-3 rounded-xl font-bold uppercase tracking-wider text-xs"
-              >
-                Cancel
-              </button>
-            </div>
           </div>
         </div>
       )}

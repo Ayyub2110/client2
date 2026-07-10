@@ -78,6 +78,8 @@ export default function RateCards() {
   const [newImageFile, setNewImageFile] = useState<File | null>(null);
   const [editServices, setEditServices] = useState<RateCardService[]>([]);
   const [editImageFile, setEditImageFile] = useState<File | null>(null);
+  const [editBrand, setEditBrand] = useState('');
+  const [editModel, setEditModel] = useState('');
 
   const { data, isLoading } = useQuery<{ rateCards: RateCard[] }>({
     queryKey: ['rate-cards'],
@@ -118,13 +120,16 @@ export default function RateCards() {
 
   const updateImageMutation = useMutation({
     mutationFn: ({ id, formData }: { id: string; formData: FormData }) =>
-      apiClient.put(`/ratecards/${id}`, formData),
-    onSuccess: () => {
-      toast.success('Image updated!');
+      apiClient.put<{ message: string; rateCard: RateCard }>(`/ratecards/${id}`, formData),
+    onSuccess: (resData) => {
+      toast.success('Rate card updated!');
       setEditImageFile(null);
+      if (resData?.rateCard) {
+        setSelectedCard((prev) => (prev ? { ...prev, ...resData.rateCard } : null));
+      }
       queryClient.invalidateQueries({ queryKey: ['rate-cards'] });
     },
-    onError: (err: any) => toast.error(err.message || 'Failed to update image'),
+    onError: (err: any) => toast.error(err.message || 'Failed to update rate card'),
   });
 
   const deleteMutation = useMutation({
@@ -139,6 +144,8 @@ export default function RateCards() {
 
   const handleSelectCard = (card: RateCard) => {
     setSelectedCard(card);
+    setEditBrand(card.brand);
+    setEditModel(card.model);
     // Populate services editor — use card's existing services or defaults
     if (card.services && card.services.length > 0) {
       setEditServices(card.services.map((s, i) => ({ 
@@ -174,9 +181,11 @@ export default function RateCards() {
     const validServices = editServices.filter((s) => s.service_name.trim());
     saveServicesMutation.mutate({ id: selectedCard.id, services: validServices });
 
-    if (editImageFile) {
+    if (editImageFile || editBrand !== selectedCard.brand || editModel !== selectedCard.model) {
       const fd = new FormData();
-      fd.append('modelImage', editImageFile);
+      if (editImageFile) fd.append('modelImage', editImageFile);
+      fd.append('brand', editBrand);
+      fd.append('model', editModel);
       updateImageMutation.mutate({ id: selectedCard.id, formData: fd });
     }
   };
@@ -399,9 +408,22 @@ export default function RateCards() {
                     </label>
                   </div>
 
-                  <div>
-                    <CardTitle className="text-base text-foreground bg-none bg-clip-border text-current font-bold">{selectedCard.brand} {selectedCard.model}</CardTitle>
-                    <CardDescription>Edit service names and their ₹ labor costs</CardDescription>
+                  <div className="space-y-1">
+                    <div className="flex gap-2 items-center flex-wrap">
+                      <Input
+                        placeholder="Brand"
+                        value={editBrand}
+                        onChange={(e) => setEditBrand(e.target.value.toUpperCase())}
+                        className="h-8 text-xs font-bold text-white w-24 bg-secondary/35 border-border/80"
+                      />
+                      <Input
+                        placeholder="Model"
+                        value={editModel}
+                        onChange={(e) => setEditModel(e.target.value.toUpperCase())}
+                        className="h-8 text-xs font-bold text-white w-32 bg-secondary/35 border-border/80"
+                      />
+                    </div>
+                    <CardDescription className="text-[10px]">Edit brand, model, and service rates</CardDescription>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -434,20 +456,21 @@ export default function RateCards() {
               <div className="overflow-x-auto -mx-4 px-4 pb-2 scrollbar-thin">
                 <div className="min-w-[600px] space-y-4">
                   {/* Table header */}
-                  <div className="grid grid-cols-[1fr_120px_120px_40px] gap-2 px-1">
+                  <div className="grid grid-cols-[1fr_100px_100px_100px_40px] gap-2 px-1">
                     <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Service Name</span>
                     <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">OG Cost (₹)</span>
                     <span translate="no" className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider notranslate">Copy Cost (₹)</span>
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Ditto Cost (₹)</span>
                     <span />
                   </div>
 
                   {/* Service Rows */}
                   <div className="space-y-2 max-h-[50vh] overflow-y-auto pr-1">
                     {editServices.map((svc, idx) => (
-                      <div key={idx} className="grid grid-cols-[1fr_120px_120px_40px] gap-2 items-center">
+                      <div key={idx} className="grid grid-cols-[1fr_100px_100px_100px_40px] gap-2 items-center">
                         <Input
                           placeholder={`Service ${idx + 1}`}
-                           value={svc.service_name}
+                          value={svc.service_name}
                           onChange={(e) => updateServiceRow(idx, 'service_name', e.target.value)}
                         />
                         <div className="relative">
@@ -470,6 +493,16 @@ export default function RateCards() {
                             className="pl-8 text-foreground font-semibold text-white"
                           />
                         </div>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-bold">₹</span>
+                          <Input
+                            type="number"
+                            placeholder="0"
+                            value={svc.ditto_cost || ''}
+                            onChange={(e) => updateServiceRow(idx, 'ditto_cost', parseFloat(e.target.value) || 0)}
+                            className="pl-8 text-foreground font-semibold text-white"
+                          />
+                        </div>
                         <button
                           onClick={() => removeServiceRow(idx)}
                           className="flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-colors"
@@ -489,7 +522,7 @@ export default function RateCards() {
                 </Button>
 
                 <div className="flex items-center gap-4">
-                  <div className="text-right flex items-center gap-4 border-r border-border/40 pr-4 mr-1">
+                  <div className="text-right flex items-center gap-4 border-r border-border/40 pr-4 mr-1 flex-wrap">
                     <div>
                       <p className="text-[9px] text-muted-foreground uppercase font-bold">Total OG</p>
                       <p className="text-sm font-black text-primary">₹{totalOgLabor.toFixed(2)}</p>
@@ -497,6 +530,10 @@ export default function RateCards() {
                     <div>
                       <p className="text-[9px] text-muted-foreground uppercase font-bold">Total Copy</p>
                       <p className="text-sm font-black text-rose-500">₹{totalCopyLabor.toFixed(2)}</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] text-muted-foreground uppercase font-bold">Total Ditto</p>
+                      <p className="text-sm font-black text-amber-500">₹{totalDittoLabor.toFixed(2)}</p>
                     </div>
                   </div>
                   <Button
