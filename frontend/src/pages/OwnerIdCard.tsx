@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import html2canvas from 'html2canvas';
 import { useAuth } from '../context/AuthContext';
 import { apiClient } from '../lib/api';
 import logo from '../logo.png';
@@ -12,7 +13,7 @@ import {
   MapPin,
   Calendar,
   Upload,
-  Printer,
+  Download,
   Loader2,
   Droplet,
   Fingerprint,
@@ -51,6 +52,8 @@ export default function OwnerIdCard() {
   const [photoY, setPhotoY] = useState(0);
   const [serialNumber, setSerialNumber] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // Initialize with blank values so admin enters everything manually
@@ -76,7 +79,31 @@ export default function OwnerIdCard() {
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success('ID Card preview updated! You can now print the card.');
+    toast.success('ID Card preview updated!');
+  };
+
+  const handleDownload = async () => {
+    const el = cardRef.current;
+    if (!el) return;
+    setIsDownloading(true);
+    try {
+      const canvas = await html2canvas(el, {
+        scale: 3,           // 3× scale for crisp high-res output
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: null,
+        logging: false,
+      });
+      const link = document.createElement('a');
+      const name = (ownerName || 'id-card').replace(/\s+/g, '_').toLowerCase();
+      link.download = `${name}_id_card.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch {
+      toast.error('Download failed. Please try again.');
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   const formatDob = (s: string) => {
@@ -120,9 +147,17 @@ export default function OwnerIdCard() {
           </h2>
           <p className="text-muted-foreground text-sm">Official association ID card — 86 × 54 mm format.</p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => window.print()}
-          className="gap-2 border-border/80 text-foreground bg-secondary/15 hover:bg-secondary/40 self-start sm:self-auto">
-          <Printer className="h-4 w-4" /> Print ID Card
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleDownload}
+          disabled={isDownloading}
+          className="gap-2 border-border/80 text-foreground bg-secondary/15 hover:bg-secondary/40 self-start sm:self-auto"
+        >
+          {isDownloading
+            ? <Loader2 className="h-4 w-4 animate-spin" />
+            : <Download className="h-4 w-4" />}
+          {isDownloading ? 'Downloading…' : 'Download ID Card'}
         </Button>
       </div>
 
@@ -137,7 +172,7 @@ export default function OwnerIdCard() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6 flex flex-col items-center gap-8">
-              <div id="printable-cards-wrapper" className="flex flex-col gap-8 items-center w-full">
+              <div id="printable-cards-wrapper" ref={cardRef} className="flex flex-col gap-8 items-center w-full">
 
                 {/* ═══════════════════════════════════════
                     FRONT CARD — exactly 325 × 204 px
