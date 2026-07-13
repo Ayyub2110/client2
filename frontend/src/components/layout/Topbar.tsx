@@ -71,16 +71,14 @@ export default function Topbar({
             <span className="text-sm font-semibold text-white leading-none mt-0.5">{shopName}</span>
           </div>
           {liveTime && (
-            <div className="flex items-center gap-2.5 bg-neutral-950/80 border border-border/80 px-4 py-2 rounded-2xl h-fit shadow-[inset_0_1px_3px_rgba(0,0,0,0.6)]">
-              <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <div className="flex items-baseline gap-2.5">
-                <span className="text-base font-extrabold tracking-widest text-emerald-400 font-mono drop-shadow-[0_0_8px_rgba(52,211,153,0.45)]">
-                  {liveTime}
-                </span>
-                <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest border-l border-border/40 pl-2.5">
-                  {liveDate}
-                </span>
-              </div>
+            <div className="flex flex-col items-center justify-center bg-neutral-950 border border-border/80 px-4 py-1.5 rounded-xl h-11 shadow-[inset_0_1px_3px_rgba(0,0,0,0.6)] min-w-[140px] select-none">
+              <span className="text-[13px] font-black tracking-widest text-white font-mono leading-none">
+                {liveTime}
+              </span>
+              <div className="w-full h-[1px] bg-neutral-800 my-1" />
+              <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider leading-none">
+                {liveDate}
+              </span>
             </div>
           )}
         </div>
