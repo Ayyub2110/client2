@@ -213,6 +213,13 @@ export default function Dashboard() {
     return () => clearInterval(timer);
   }, [activeSlides.length]);
 
+  // Prevent out of bounds error when activeSlides changes length (e.g. from 3 default to 1 DB slide)
+  useEffect(() => {
+    if (currentSlide >= activeSlides.length) {
+      setCurrentSlide(0);
+    }
+  }, [activeSlides.length, currentSlide]);
+
   // 1. Fetch dashboard stats with 5 min staleTime
   const { data, isLoading, refetch } = useQuery<DashboardData>({
     queryKey: ['dashboard-data'],
@@ -443,21 +450,21 @@ export default function Dashboard() {
             Edit Slides
           </Link>
         )}
-        {(activeSlides[currentSlide]?.title || activeSlides[currentSlide]?.description) && (
+        {activeSlides[currentSlide] && (activeSlides[currentSlide]?.title || activeSlides[currentSlide]?.description) && (
           <div className="absolute left-4 top-4 sm:left-6 sm:top-6 z-10 max-w-[70%] sm:max-w-sm bg-slate-950/60 backdrop-blur-md border border-white/10 p-3 sm:p-4 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.45)] transition-all duration-300 hover:scale-[1.01]">
             <div className="flex items-center gap-2">
               <div className="p-2 rounded-lg bg-primary/20 border border-primary/30 shrink-0 shadow-[0_0_12px_rgba(168,85,247,0.18)] text-primary">
-                {activeSlides[currentSlide].icon || <Smartphone className="h-4 w-4" />}
+                {activeSlides[currentSlide]?.icon || <Smartphone className="h-4 w-4" />}
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <h4 className="text-[10px] sm:text-xs font-semibold tracking-[0.2em] text-transparent bg-clip-text bg-gradient-to-r from-white to-pink-400 uppercase font-sans">
-                    {activeSlides[currentSlide].title}
+                    {activeSlides[currentSlide]?.title}
                   </h4>
                   <span className="px-1.5 py-0.5 rounded text-[7px] font-extrabold uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 tracking-wider">Live</span>
                 </div>
                 <p className="text-[9px] sm:text-[11px] text-neutral-300 font-medium leading-relaxed mt-1 line-clamp-2">
-                  {activeSlides[currentSlide].description}
+                  {activeSlides[currentSlide]?.description}
                 </p>
               </div>
             </div>
