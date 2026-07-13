@@ -24,6 +24,8 @@ export default function Layout({ children }: LayoutProps) {
           userRole={role || undefined}
           shopName={shop?.name || undefined}
           onLogout={logout}
+          user={user}
+          shop={shop}
         />
         <main className="flex-1 overflow-y-auto px-4 pt-6 pb-36 sm:px-6 sm:pt-8 lg:pb-8">
           <div className="mx-auto max-w-7xl">

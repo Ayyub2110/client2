@@ -58,6 +58,7 @@ export default function App() {
                 <Route path="/repairs/new" element={<NewRepair />} />
                 <Route path="/customers/:id/new-repair" element={<NewRepair />} />
                 <Route path="/repairs/:id" element={<RepairDetail />} />
+                <Route path="/repairs/:id/edit" element={<NewRepair />} />
                 <Route path="/repairs/:id/deliver" element={<DeliverRepair />} />
                 
                 <Route path="/price-list" element={<RepairPriceList />} />

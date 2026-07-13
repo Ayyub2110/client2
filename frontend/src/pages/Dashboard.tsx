@@ -96,6 +96,29 @@ export default function Dashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchingBilling, setSearchingBilling] = useState(false);
+  const [liveDateTime, setLiveDateTime] = useState('');
+
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      const dateStr = now.toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      const timeStr = now.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true
+      });
+      setLiveDateTime(`${dateStr} | ${timeStr}`);
+    };
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleSearchBilling = async () => {
     const queryStr = searchQuery.trim();
@@ -325,19 +348,14 @@ export default function Dashboard() {
     <div className="space-y-6">
       {/* Welcome & Toolbar */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <h2 className="text-3xl font-black text-foreground tracking-tight">
-              Shop Overview
-            </h2>
-            <span className="px-2.5 py-0.5 text-[10px] font-bold tracking-wider text-primary-foreground bg-primary rounded-full uppercase shadow-[0_0_15px_rgba(168,85,247,0.35)]">
-              {authRole}
-            </span>
-          </div>
-          <p className="text-muted-foreground text-xs flex items-center gap-1.5 mt-1.5">
-            <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>Real-time shop diagnostics &bull; {todayDate}</span>
-          </p>
+        <div className="space-y-2">
+          <Button 
+            onClick={() => navigate('/repairs/new')} 
+            className="gap-2 shadow-[0_0_15px_rgba(168,85,247,0.25)] hover:shadow-[0_0_20px_rgba(168,85,247,0.4)] h-11 px-5 rounded-xl text-sm font-extrabold uppercase bg-primary text-primary-foreground"
+          >
+            <Plus className="h-5 w-5" />
+            <span>New Repair Ticket</span>
+          </Button>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {/* Search Billing Input */}
@@ -372,10 +390,6 @@ export default function Dashboard() {
             <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
             <span>Refresh</span>
           </Button>
-          <Button onClick={() => navigate('/repairs/new')} className="gap-1.5 shadow-[0_0_15px_rgba(168,85,247,0.25)] hover:shadow-[0_0_20px_rgba(168,85,247,0.4)] h-8 rounded-lg">
-            <Plus className="h-4 w-4" />
-            <span>New Ticket</span>
-          </Button>
         </div>
       </div>
 
@@ -394,14 +408,20 @@ export default function Dashboard() {
                   isActive ? 'opacity-100 z-0' : 'opacity-0 pointer-events-none'
                 }`}
               >
+                {/* Blurred background matching image colors */}
+                <div 
+                  className="absolute inset-0 bg-cover bg-center blur-2xl opacity-40 scale-110 pointer-events-none select-none"
+                  style={{ backgroundImage: `url(${slide.image_url})` }}
+                />
+                {/* Sharp fit image */}
                 <img
                   src={slide.image_url}
                   alt={slide.title || 'Slide background'}
-                  className="w-full h-full object-cover object-center"
+                  className="absolute inset-0 w-full h-full object-contain object-center z-10"
                   loading="eager"
                 />
-                {/* Gradient overlay to make text readable */}
-                <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-transparent" />
+                {/* Dark overlay behind main image but on top of blur */}
+                <div className="absolute inset-0 bg-black/20 z-0 pointer-events-none" />
               </div>
             );
           } else {
@@ -423,24 +443,26 @@ export default function Dashboard() {
             Edit Slides
           </Link>
         )}
-        <div className="absolute left-4 top-4 sm:left-6 sm:top-6 z-10 max-w-[70%] sm:max-w-sm bg-slate-950/60 backdrop-blur-md border border-white/10 p-3 sm:p-4 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.45)] transition-all duration-300 hover:scale-[1.01]">
-          <div className="flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-primary/20 border border-primary/30 shrink-0 shadow-[0_0_12px_rgba(168,85,247,0.18)] text-primary">
-              {activeSlides[currentSlide].icon || <Smartphone className="h-4 w-4" />}
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <h4 className="text-[10px] sm:text-xs font-semibold tracking-[0.2em] text-transparent bg-clip-text bg-gradient-to-r from-white to-pink-400 uppercase font-sans">
-                  {activeSlides[currentSlide].title}
-                </h4>
-                <span className="px-1.5 py-0.5 rounded text-[7px] font-extrabold uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 tracking-wider">Live</span>
+        {(activeSlides[currentSlide]?.title || activeSlides[currentSlide]?.description) && (
+          <div className="absolute left-4 top-4 sm:left-6 sm:top-6 z-10 max-w-[70%] sm:max-w-sm bg-slate-950/60 backdrop-blur-md border border-white/10 p-3 sm:p-4 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.45)] transition-all duration-300 hover:scale-[1.01]">
+            <div className="flex items-center gap-2">
+              <div className="p-2 rounded-lg bg-primary/20 border border-primary/30 shrink-0 shadow-[0_0_12px_rgba(168,85,247,0.18)] text-primary">
+                {activeSlides[currentSlide].icon || <Smartphone className="h-4 w-4" />}
               </div>
-              <p className="text-[9px] sm:text-[11px] text-neutral-300 font-medium leading-relaxed mt-1 line-clamp-2">
-                {activeSlides[currentSlide].description}
-              </p>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <h4 className="text-[10px] sm:text-xs font-semibold tracking-[0.2em] text-transparent bg-clip-text bg-gradient-to-r from-white to-pink-400 uppercase font-sans">
+                    {activeSlides[currentSlide].title}
+                  </h4>
+                  <span className="px-1.5 py-0.5 rounded text-[7px] font-extrabold uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 tracking-wider">Live</span>
+                </div>
+                <p className="text-[9px] sm:text-[11px] text-neutral-300 font-medium leading-relaxed mt-1 line-clamp-2">
+                  {activeSlides[currentSlide].description}
+                </p>
+              </div>
             </div>
           </div>
-        </div>
+        )}
         
         {/* Carousel controls */}
         <div className="absolute right-4 bottom-4 flex items-center gap-1.5 z-10">

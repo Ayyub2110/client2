@@ -45,7 +45,14 @@ router.post('/:id/deliver', deliverRepair);
 router.get('/:id/receipt', getRepairReceipt);
 router.put('/:id/status', updateRepairStatus);
 router.post('/:id/whatsapp/trigger', triggerWhatsAppNotification);
-router.put('/:id', requireOwner, updateRepair);
+router.put(
+  '/:id',
+  upload.fields([
+    { name: 'frontPhoto', maxCount: 1 },
+    { name: 'backPhoto', maxCount: 1 }
+  ]),
+  updateRepair
+);
 router.delete('/:id', requireOwner, deleteRepair);
 
 export default router;

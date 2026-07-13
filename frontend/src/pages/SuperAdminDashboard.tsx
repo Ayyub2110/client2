@@ -12,6 +12,7 @@ import {
   RefreshCw,
   Plus,
   Trash2,
+  Edit3,
   Image as ImageIcon
 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
@@ -66,6 +67,8 @@ export default function SuperAdminDashboard() {
   const [slideTitle, setSlideTitle] = useState('');
   const [slideDescription, setSlideDescription] = useState('');
   const [slideFile, setSlideFile] = useState<File | null>(null);
+  const [editingSlideId, setEditingSlideId] = useState<string | null>(null);
+  const [editingImageUrl, setEditingImageUrl] = useState<string | null>(null);
 
   // Fetch Super Admin data
   const { data, isLoading, refetch, isFetching } = useQuery<SuperAdminDashboardResponse>({
@@ -116,6 +119,25 @@ export default function SuperAdminDashboard() {
     }
   });
 
+  // Mutation to update slide
+  const updateSlideMutation = useMutation({
+    mutationFn: ({ slideId, formData }: { slideId: string; formData: FormData }) => 
+      apiClient.put(`/carousel/${slideId}`, formData),
+    onSuccess: (res: any) => {
+      toast.success(res.message || 'Slide updated successfully');
+      setSlideFile(null);
+      setEditingSlideId(null);
+      setEditingImageUrl(null);
+      // Reset file input element
+      const fileInput = document.getElementById('slide-image') as HTMLInputElement;
+      if (fileInput) fileInput.value = '';
+      queryClient.invalidateQueries({ queryKey: ['carousel-slides'] });
+    },
+    onError: (err: any) => {
+      toast.error(err.message || 'Failed to update slide');
+    }
+  });
+
   // Mutation to delete slide
   const deleteSlideMutation = useMutation({
     mutationFn: (slideId: string) => apiClient.delete(`/carousel/${slideId}`),
@@ -137,23 +159,23 @@ export default function SuperAdminDashboard() {
 
   const handleCreateSlide = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!slideTitle.trim()) {
-      toast.error('Title is required');
-      return;
-    }
-    if (!slideDescription.trim()) {
-      toast.error('Description is required');
+    if (!slideFile && !editingSlideId) {
+      toast.error('Banner image is required');
       return;
     }
 
     const formData = new FormData();
-    formData.append('title', slideTitle.trim());
-    formData.append('description', slideDescription.trim());
+    formData.append('title', '');
+    formData.append('description', '');
     if (slideFile) {
       formData.append('image', slideFile);
     }
 
-    createSlideMutation.mutate(formData);
+    if (editingSlideId) {
+      updateSlideMutation.mutate({ slideId: editingSlideId, formData });
+    } else {
+      createSlideMutation.mutate(formData);
+    }
   };
 
   const handleDeleteSlide = (slideId: string, slideTitle: string) => {
@@ -407,37 +429,35 @@ export default function SuperAdminDashboard() {
         </Card>
       ) : (
         <div className="grid gap-6 md:grid-cols-3">
-          {/* Add Slide Panel */}
+          {/* Add/Edit Slide Panel */}
           <Card className="bg-card/90 border-border/85 h-fit md:col-span-1">
             <CardHeader className="pb-3 border-b border-border/40">
-              <CardTitle className="text-lg font-bold">Add Carousel Slide</CardTitle>
-              <CardDescription className="text-xs">Publish custom banners, training instructions, or news cards to all shop dashboards.</CardDescription>
+              <CardTitle className="text-lg font-bold">{editingSlideId ? 'Edit Carousel Slide' : 'Add Carousel Slide'}</CardTitle>
+              <CardDescription className="text-xs">
+                {editingSlideId 
+                  ? 'Update the banner image for this active slide. Choose a new image file below to replace the current one.' 
+                  : 'Publish custom banners, training instructions, or news cards to all shop dashboards.'
+                }
+              </CardDescription>
             </CardHeader>
             <CardContent className="p-5">
               <form onSubmit={handleCreateSlide} className="space-y-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-muted-foreground">Slide Title</label>
-                  <Input
-                    placeholder="e.g., Original vs Copy Part Rates"
-                    value={slideTitle}
-                    onChange={(e) => setSlideTitle(e.target.value)}
-                    className="bg-secondary/35 border-border/80 text-xs h-9.5"
-                  />
-                </div>
+                {editingImageUrl && !slideFile && (
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-muted-foreground">Current Banner Slide</label>
+                    <div className="relative rounded-lg overflow-hidden h-24 border border-border/40 bg-secondary/15">
+                      <img src={editingImageUrl} className="w-full h-full object-cover opacity-60" alt="Current banner" />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                        <span className="text-[10px] text-white font-extrabold uppercase tracking-widest">Active Slide Image</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-muted-foreground">Slide Description / Bio</label>
-                  <textarea
-                    rows={4}
-                    placeholder="Describe best practices, parts quality notices, or association announcements..."
-                    value={slideDescription}
-                    onChange={(e) => setSlideDescription(e.target.value)}
-                    className="flex w-full rounded-md border border-border/80 bg-secondary/35 px-3 py-2 text-xs shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary text-white resize-none"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-muted-foreground">Upload Custom Banner Image (Optional)</label>
+                  <label className="text-xs font-semibold text-muted-foreground">
+                    {editingSlideId ? 'Upload New Banner Image (To Replace)' : 'Upload Slide Banner Image'}
+                  </label>
                   <div className="flex items-center justify-center w-full">
                     <label className="flex flex-col items-center justify-center w-full h-32 border border-dashed rounded-lg cursor-pointer bg-secondary/15 hover:bg-secondary/25 border-border/60 transition-colors">
                       <div className="flex flex-col items-center justify-center pt-5 pb-6">
@@ -473,20 +493,39 @@ export default function SuperAdminDashboard() {
                   )}
                 </div>
 
-                <Button 
-                  type="submit" 
-                  className="w-full text-xs font-bold uppercase tracking-wider"
-                  disabled={createSlideMutation.isPending}
-                >
-                  {createSlideMutation.isPending ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Creating Slide...
-                    </>
-                  ) : (
-                    'Add Banner Slide'
+                <div className="space-y-2">
+                  <Button 
+                    type="submit" 
+                    className="w-full text-xs font-bold uppercase tracking-wider"
+                    disabled={createSlideMutation.isPending || updateSlideMutation.isPending}
+                  >
+                    {createSlideMutation.isPending || updateSlideMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        {editingSlideId ? 'Updating Slide...' : 'Creating Slide...'}
+                      </>
+                    ) : (
+                      editingSlideId ? 'Save Slide Changes' : 'Add Banner Slide'
+                    )}
+                  </Button>
+
+                  {editingSlideId && (
+                    <Button 
+                      type="button" 
+                      variant="outline"
+                      onClick={() => {
+                        setEditingSlideId(null);
+                        setEditingImageUrl(null);
+                        setSlideFile(null);
+                        const fileInput = document.getElementById('slide-image') as HTMLInputElement;
+                        if (fileInput) fileInput.value = '';
+                      }}
+                      className="w-full text-xs font-bold uppercase tracking-wider"
+                    >
+                      Cancel Edit
+                    </Button>
                   )}
-                </Button>
+                </div>
               </form>
             </CardContent>
           </Card>
@@ -523,14 +562,27 @@ export default function SuperAdminDashboard() {
                             <span className="text-[10px] font-semibold uppercase tracking-wider">No Custom Banner</span>
                           </div>
                         )}
-                        <button
-                          onClick={() => handleDeleteSlide(slide.id, slide.title)}
-                          disabled={deleteSlideMutation.isPending}
-                          className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/60 hover:bg-red-500 text-white hover:text-white transition-colors cursor-pointer"
-                          title="Delete Slide"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
+                        <div className="absolute top-2 right-2 flex gap-1">
+                          <button
+                            onClick={() => {
+                              setEditingSlideId(slide.id);
+                              setEditingImageUrl(slide.image_url);
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            className="p-1.5 rounded-lg bg-black/60 hover:bg-primary text-white hover:text-white transition-colors cursor-pointer"
+                            title="Edit Slide Banner"
+                          >
+                            <Edit3 className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteSlide(slide.id, slide.title || 'Untitled')}
+                            disabled={deleteSlideMutation.isPending}
+                            className="p-1.5 rounded-lg bg-black/60 hover:bg-red-500 text-white hover:text-white transition-colors cursor-pointer"
+                            title="Delete Slide"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
                       </div>
 
                       {/* Content display */}

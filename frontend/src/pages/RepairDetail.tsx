@@ -16,7 +16,8 @@ import {
   Download,
   ArrowLeft,
   MessageSquare,
-  RefreshCw
+  RefreshCw,
+  Edit3
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -302,6 +303,16 @@ export default function RepairDetail() {
 
         {/* Deliver & Receipt Actions */}
         <div className="flex flex-wrap gap-2">
+          {repair.status !== 'delivered' && (
+            <Button
+              onClick={() => navigate(`/repairs/${repair.id}/edit`)}
+              className="gap-2 bg-blue-600 hover:bg-blue-500 text-white"
+            >
+              <Edit3 className="h-4.5 w-4.5" />
+              <span>Edit Ticket Details</span>
+            </Button>
+          )}
+
           {repair.status === 'ready' && (
             <Button
               onClick={() => navigate(`/repairs/${repair.id}/deliver`)}

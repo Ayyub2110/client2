@@ -51,8 +51,8 @@ import toast from 'react-hot-toast';
 // Validation Schemas
 const addStaffSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
-  email: z.string().email('Please enter a valid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters')
+  email: z.string().optional(),
+  password: z.string().optional()
 });
 
 const accountProfileSchema = z.object({
@@ -295,7 +295,12 @@ export default function SettingsPage({ defaultTab }: SettingsPageProps = {}) {
   const onRecruitStaff = async (values: AddStaffFormValues) => {
     setRecruiting(true);
     try {
-      await apiClient.post('/auth/create-staff', values);
+      const payload = {
+        name: values.name.trim(),
+        email: `staff_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}@gkmobile.com`,
+        password: `Staff@${Math.random().toString(36).slice(-8)}${Math.floor(1000 + Math.random() * 9000)}`
+      };
+      await apiClient.post('/auth/create-staff', payload);
       toast.success('Staff assistant recruited successfully!');
       setRecruitOpen(false);
       resetStaff();
@@ -821,7 +826,7 @@ export default function SettingsPage({ defaultTab }: SettingsPageProps = {}) {
             isOpen={recruitOpen}
             onClose={() => setRecruitOpen(false)}
             title="Recruit Staff Member"
-            description="Register login credentials for a new terminal assistant."
+            description="Add a new terminal assistant by entering their full name."
           >
             <form onSubmit={handleSubmitStaff(onRecruitStaff)} className="space-y-4">
               <div className="space-y-1">
@@ -829,22 +834,6 @@ export default function SettingsPage({ defaultTab }: SettingsPageProps = {}) {
                 <Input placeholder="Employee Name" {...registerStaff('name')} />
                 {staffErrors.name && (
                   <p className="text-[11px] font-medium text-destructive">{staffErrors.name.message}</p>
-                )}
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-muted-foreground block">Email Address</label>
-                <Input type="email" placeholder="staff@gkrepair.com" {...registerStaff('email')} />
-                {staffErrors.email && (
-                  <p className="text-[11px] font-medium text-destructive">{staffErrors.email.message}</p>
-                )}
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-muted-foreground block">Temporary Password</label>
-                <Input type="password" placeholder="••••••••" {...registerStaff('password')} />
-                {staffErrors.password && (
-                  <p className="text-[11px] font-medium text-destructive">{staffErrors.password.message}</p>
                 )}
               </div>
 

@@ -67,7 +67,11 @@ const updateRepairSchema = z.object({
   sendEmail: z.boolean().optional(),
   allowCashback: z.boolean().optional(),
   expense: z.number().optional(),
-  kycDetails: z.string().optional().nullable()
+  kycDetails: z.string().optional().nullable(),
+  services: z.array(z.object({
+    service_name: z.string().min(1),
+    labor_cost: z.number().nonnegative()
+  })).optional()
 });
 
 export async function getAllRepairs(req: Request, res: Response): Promise<void> {
@@ -553,11 +557,6 @@ export async function updateRepair(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  if (user.role !== 'owner') {
-    res.status(403).json({ error: 'Forbidden: Only owners are permitted to perform full modifications' });
-    return;
-  }
-
   try {
     const rawBody = {
       brand: req.body.brand,
@@ -570,11 +569,25 @@ export async function updateRepair(req: Request, res: Response): Promise<void> {
       advance: req.body.advance ? parseFloat(req.body.advance) : undefined,
       deliveryDate: req.body.deliveryDate || null,
       staffId: req.body.staffId || null,
-      notes: req.body.notes || null
+      notes: req.body.notes || null,
+      lockCode: req.body.lockCode || null,
+      patternLock: req.body.patternLock || null,
+      accessoryAdapter: req.body.accessoryAdapter === 'true' || req.body.accessoryAdapter === true,
+      accessoryKeyboardMouse: req.body.accessoryKeyboardMouse === 'true' || req.body.accessoryKeyboardMouse === true,
+      accessoryOther: req.body.accessoryOther === 'true' || req.body.accessoryOther === true,
+      serialNumber: req.body.serialNumber || null,
+      warranty: req.body.warranty || null,
+      sendWhatsapp: req.body.sendWhatsapp === 'true' || req.body.sendWhatsapp === true,
+      sendEmail: req.body.sendEmail === 'true' || req.body.sendEmail === true,
+      allowCashback: req.body.allowCashback === 'true' || req.body.allowCashback === true,
+      expense: req.body.expense ? parseFloat(req.body.expense) : undefined,
+      kycDetails: req.body.kycDetails || null,
+      services: req.body.services ? (typeof req.body.services === 'string' ? JSON.parse(req.body.services) : req.body.services) : undefined
     };
 
     const validatedData = updateRepairSchema.parse(rawBody);
 
+    // Fetch existing repair to validate state & ownership
     const { data: existing, error: fetchError } = await supabaseAdmin
       .from('repairs')
       .select('*')
@@ -587,17 +600,47 @@ export async function updateRepair(req: Request, res: Response): Promise<void> {
       return;
     }
 
+    if (existing.status === 'delivered') {
+      res.status(400).json({ error: 'Cannot modify a delivered repair order' });
+      return;
+    }
+
+    // Upload hardware images if present in update files
+    const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
+    let frontPhotoUrl: string | undefined;
+    let backPhotoUrl: string | undefined;
+
+    if (files) {
+      if (files['frontPhoto'] && files['frontPhoto'][0]) {
+        frontPhotoUrl = await uploadPhoto(files['frontPhoto'][0], 'device-photos');
+      }
+      if (files['backPhoto'] && files['backPhoto'][0]) {
+        backPhotoUrl = await uploadPhoto(files['backPhoto'][0], 'device-photos');
+      }
+    }
+
     // 1. Update hardware Device attributes
+    const deviceUpdatePayload: Record<string, any> = {
+      brand: validatedData.brand,
+      model: validatedData.model,
+      imei: validatedData.imei,
+      problem: validatedData.problem,
+      quality: validatedData.quality,
+      physical_damage: validatedData.physicalDamage,
+      lock_code: validatedData.lockCode,
+      pattern_lock: validatedData.patternLock,
+      accessory_adapter: validatedData.accessoryAdapter,
+      accessory_keyboard_mouse: validatedData.accessoryKeyboardMouse,
+      accessory_other: validatedData.accessoryOther,
+      serial_number: validatedData.serialNumber,
+      warranty: validatedData.warranty
+    };
+    if (frontPhotoUrl !== undefined) deviceUpdatePayload.front_photo_url = frontPhotoUrl;
+    if (backPhotoUrl !== undefined) deviceUpdatePayload.back_photo_url = backPhotoUrl;
+
     const { error: deviceError } = await supabaseAdmin
       .from('devices')
-      .update({
-        brand: validatedData.brand,
-        model: validatedData.model,
-        imei: validatedData.imei,
-        problem: validatedData.problem,
-        quality: validatedData.quality,
-        physical_damage: validatedData.physicalDamage
-      })
+      .update(deviceUpdatePayload)
       .eq('id', existing.device_id);
 
     if (deviceError) {
@@ -614,6 +657,11 @@ export async function updateRepair(req: Request, res: Response): Promise<void> {
         delivery_date: validatedData.deliveryDate,
         staff_id: validatedData.staffId,
         notes: validatedData.notes,
+        send_whatsapp: validatedData.sendWhatsapp,
+        send_email: validatedData.sendEmail,
+        allow_cashback: validatedData.allowCashback,
+        expense: validatedData.expense,
+        kyc_details: validatedData.kycDetails,
         updated_by: user.id,
         updated_at: new Date().toISOString()
       })
@@ -626,12 +674,28 @@ export async function updateRepair(req: Request, res: Response): Promise<void> {
       return;
     }
 
+    // 3. Update Services if provided
+    if (validatedData.services) {
+      // Delete existing services linked to this repair
+      await supabaseAdmin.from('repair_services').delete().eq('repair_id', id);
+
+      if (validatedData.services.length > 0) {
+        const servicePayload = validatedData.services.map((svc) => ({
+          repair_id: id,
+          service_name: svc.service_name,
+          labor_cost: svc.labor_cost
+        }));
+        await supabaseAdmin.from('repair_services').insert(servicePayload);
+      }
+    }
+
     res.json({ message: 'Repair order modified successfully', repair });
   } catch (err) {
     if (err instanceof z.ZodError) {
       res.status(400).json({ error: 'Validation failed', details: err.errors });
       return;
     }
+    console.error('Failed to modify repair order:', err);
     res.status(500).json({ error: 'Failed to modify repair order' });
   }
 }
@@ -707,8 +771,8 @@ export async function deliverRepair(req: Request, res: Response): Promise<void> 
     receiverPhone: z.string().min(1, 'Receiver phone is required'),
     receivedBy: z.enum(['staff', 'customer']),
     notes: z.string().optional().nullable(),
-    receiverPhotoUrl: z.string().min(1, 'Receiver photo is required'),
-    signatureDataUrl: z.string().min(1, 'Signature is required'),
+    receiverPhotoUrl: z.string().optional().nullable(),
+    signatureDataUrl: z.string().optional().nullable(),
     deliveryDate: z.string().optional().nullable(),
     deliveryTime: z.string().optional().nullable()
   });
@@ -734,20 +798,23 @@ export async function deliverRepair(req: Request, res: Response): Promise<void> 
       return;
     }
 
-    // 2. Upload signature to Supabase Storage
-    const parsedSig = parseBase64DataUrl(validated.signatureDataUrl);
-    const fakeSigFile = {
-      fieldname: 'signature',
-      originalname: `signature_${id}${parsedSig.ext}`,
-      encoding: '7bit',
-      mimetype: parsedSig.mimetype,
-      size: parsedSig.buffer.length,
-      buffer: parsedSig.buffer,
-      destination: '',
-      filename: '',
-      path: ''
-    } as Express.Multer.File;
-    const signatureUrl = await uploadPhoto(fakeSigFile, 'delivery-photos');
+    // 2. Upload signature to Supabase Storage if present
+    let signatureUrl = null;
+    if (validated.signatureDataUrl) {
+      const parsedSig = parseBase64DataUrl(validated.signatureDataUrl);
+      const fakeSigFile = {
+        fieldname: 'signature',
+        originalname: `signature_${id}${parsedSig.ext}`,
+        encoding: '7bit',
+        mimetype: parsedSig.mimetype,
+        size: parsedSig.buffer.length,
+        buffer: parsedSig.buffer,
+        destination: '',
+        filename: '',
+        path: ''
+      } as Express.Multer.File;
+      signatureUrl = await uploadPhoto(fakeSigFile, 'delivery-photos');
+    }
 
     // 3. Upload receiver photo if present as base64
     let receiverPhotoUrl = validated.receiverPhotoUrl || null;

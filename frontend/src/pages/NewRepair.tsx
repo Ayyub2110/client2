@@ -101,7 +101,7 @@ export function buildDeviceOptions(rateCards: DeviceOptionEntry[]) {
 // ----------------------------------------------------
 const repairOrderSchema = z.object({
   status: z.enum(['pending', 'repairing', 'ready', 'delivered', 'cancelled']).default('pending'),
-  customerId: z.string().uuid('Please select or register a customer'),
+  customerId: z.string().optional().nullable(),
   brand: z.string().min(1, 'Brand is required'),
   model: z.string().min(1, 'Model is required'),
   problem: z.string().min(5, 'Problem description must be at least 5 characters'),
@@ -151,7 +151,10 @@ export default function NewRepair() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user: authUser, role: authRole } = useAuth();
-  const { id: routeCustomerId } = useParams<{ id: string }>();
+  const { id } = useParams<{ id?: string }>();
+  const isEditMode = window.location.pathname.includes('/edit') || window.location.pathname.endsWith('/edit');
+  const routeCustomerId = !isEditMode ? id : undefined;
+  const repairId = isEditMode ? id : undefined;
 
   // Modals & Popups States
   const [customerSearchOpen, setCustomerSearchOpen] = useState(false);
@@ -173,6 +176,10 @@ export default function NewRepair() {
   const [selectedModel, setSelectedModel] = useState('');
   const [customBrand, setCustomBrand] = useState('');
   const [customModel, setCustomModel] = useState('');
+  const [brandDropdownOpen, setBrandDropdownOpen] = useState(false);
+  const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
+  const [brandSearchQuery, setBrandSearchQuery] = useState('');
+  const [modelSearchQuery, setModelSearchQuery] = useState('');
 
   // Date and Time Fields Displays
   const [repairDateDisplay, setRepairDateDisplay] = useState('');
@@ -257,6 +264,48 @@ export default function NewRepair() {
     setValue('deliveryDate', deliveryString);
   }, [setValue]);
 
+  // Synchronize brand search query with selectedBrand / customBrand
+  useEffect(() => {
+    if (selectedBrand) {
+      if (selectedBrand === 'Other') {
+        setBrandSearchQuery(customBrand);
+      } else {
+        setBrandSearchQuery(selectedBrand);
+      }
+    } else {
+      setBrandSearchQuery('');
+    }
+  }, [selectedBrand, customBrand]);
+
+  // Synchronize model search query with selectedModel / customModel
+  useEffect(() => {
+    if (selectedModel) {
+      if (selectedModel === 'Other') {
+        setModelSearchQuery(customModel);
+      } else {
+        setModelSearchQuery(selectedModel);
+      }
+    } else {
+      setModelSearchQuery('');
+    }
+  }, [selectedModel, customModel]);
+
+  // Close brand/model dropdown lists when clicking outside of them
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const brandContainer = document.getElementById('brand-select-container');
+      const modelContainer = document.getElementById('model-select-container');
+      if (brandContainer && !brandContainer.contains(event.target as Node)) {
+        setBrandDropdownOpen(false);
+      }
+      if (modelContainer && !modelContainer.contains(event.target as Node)) {
+        setModelDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   // Fetch tech staff
   const { data: staffData } = useQuery<{ staff: Staff[] }>({
     queryKey: ['staff-list'],
@@ -293,6 +342,65 @@ export default function NewRepair() {
       fetchPreSelectedCustomer();
     }
   }, [routeCustomerId, setValue]);
+
+  // Fetch detailed customer profile to list their past problems and devices
+  const { data: customerProfileData } = useQuery<any>({
+    queryKey: ['selected-customer-profile', selectedCustomer?.id],
+    queryFn: () => apiClient.get(`/customers/${selectedCustomer?.id}`),
+    enabled: !!selectedCustomer?.id
+  });
+
+  // Fetch detailed repair for editing
+  const { data: editRepairData, isLoading: isLoadingEditRepair } = useQuery<any>({
+    queryKey: ['repair-edit-detail', repairId],
+    queryFn: () => apiClient.get(`/repairs/${repairId}`),
+    enabled: isEditMode && !!repairId
+  });
+
+  // Populate form with existing repair details if in edit mode
+  useEffect(() => {
+    if (isEditMode && editRepairData?.repair) {
+      const r = editRepairData.repair;
+      setSelectedCustomer(r.customer);
+      setValue('customerId', r.customer?.id || '');
+      setNewCustName(r.customer?.name || '');
+      setNewCustPhone(r.customer?.phone || '');
+      setNewCustAddr(r.customer?.address || '');
+
+      setSelectedBrand(r.device?.brand || '');
+      setSelectedModel(r.device?.model || '');
+      setValue('brand', r.device?.brand || '', { shouldValidate: true });
+      setValue('model', r.device?.model || '', { shouldValidate: true });
+      setValue('problem', r.device?.problem || '', { shouldValidate: true });
+      setValue('quality', r.device?.quality || 'good', { shouldValidate: true });
+      setValue('physicalDamage', r.device?.physical_damage || '');
+      setValue('lockCode', r.device?.lock_code || r.lock_code || '');
+      setValue('patternLock', r.device?.pattern_lock || r.pattern_lock || '');
+
+      setValue('serialNumber', r.device?.serial_number || r.serial_number || '');
+      setValue('imei', r.device?.imei || '');
+      setValue('warranty', r.device?.warranty || r.warranty || '');
+      setValue('estimate', r.estimate || 0, { shouldValidate: true });
+      setValue('advance', r.advance || 0, { shouldValidate: true });
+      setValue('allowCashback', r.allow_cashback || false);
+      setValue('expense', r.expense || 0);
+      setValue('deliveryDate', r.delivery_date || '');
+      setValue('staffId', r.staff_id || '');
+      setValue('notes', r.notes || '');
+
+      if (r.services) {
+        setSelectedServices(r.services);
+      }
+      if (r.kyc_details) {
+        try {
+          const parsed = typeof r.kyc_details === 'string' ? JSON.parse(r.kyc_details) : r.kyc_details;
+          setKycData(parsed);
+        } catch (e) {
+          console.error('Error parsing kyc_details:', e);
+        }
+      }
+    }
+  }, [isEditMode, editRepairData, setValue]);
 
   // Fetch Rate Cards based on Brand and Model
   const watchBrand = watch('brand');
@@ -541,9 +649,46 @@ export default function NewRepair() {
     }
   });
 
-  const onFormSubmit = (values: RepairOrderFormValues) => {
+  const updateRepairMutation = useMutation({
+    mutationFn: (formData: FormData) => apiClient.put<{ repair: { id: string; job_number: string } }>(`/repairs/${repairId}`, formData),
+    onSuccess: (data) => {
+      toast.success(`Repair Order Job #${data.repair.job_number} updated successfully!`);
+      queryClient.invalidateQueries({ queryKey: ['repairs-list'] });
+      queryClient.invalidateQueries({ queryKey: ['repair-detail', repairId] });
+      navigate(`/repairs/${data.repair.id}`);
+    },
+    onError: (err: any) => {
+      toast.error(err.message || 'Failed to update repair order ticket.');
+    }
+  });
+
+  const onFormSubmit = async (values: RepairOrderFormValues) => {
+    let finalCustomerId = values.customerId || selectedCustomer?.id;
+
+    // Auto register customer if name and phone are filled and no customerId is set
+    if (!finalCustomerId) {
+      if (!newCustName.trim() || !newCustPhone.trim()) {
+        toast.error('Please select an existing customer or enter Name & Phone for a new customer.');
+        return;
+      }
+
+      try {
+        const res = await apiClient.post<{ customer: Customer }>('/customers', {
+          name: newCustName.trim(),
+          phone: newCustPhone.trim(),
+          address: newCustAddr.trim()
+        });
+        setSelectedCustomer(res.customer);
+        finalCustomerId = res.customer.id;
+        toast.success('Customer registered successfully!');
+      } catch (err: any) {
+        toast.error(err.message || 'Failed to auto-register customer');
+        return;
+      }
+    }
+
     const formData = new FormData();
-    formData.append('customerId', values.customerId);
+    formData.append('customerId', finalCustomerId || '');
     formData.append('brand', values.brand);
     formData.append('model', values.model);
     formData.append('problem', values.problem);
@@ -592,7 +737,11 @@ export default function NewRepair() {
       formData.append('services', JSON.stringify(selectedServices));
     }
 
-    createRepairMutation.mutate(formData);
+    if (isEditMode) {
+      updateRepairMutation.mutate(formData);
+    } else {
+      createRepairMutation.mutate(formData);
+    }
   };
 
   const renderUploadCard = (
@@ -706,13 +855,21 @@ export default function NewRepair() {
             <ArrowLeft className="h-5 w-5 text-white" />
           </button>
           <div className="flex-1">
-            <h1 className="text-xl font-black tracking-tight text-white uppercase">Add New Customer Details</h1>
-            <p className="text-white/80 text-xs mt-0.5">Structured repair order logging terminal</p>
+            <h1 className="text-xl font-black tracking-tight text-white uppercase">
+              {isEditMode ? 'Modify Repair Ticket Details' : 'Add New Customer Details'}
+            </h1>
+            <p className="text-white/80 text-xs mt-0.5">
+              {isEditMode ? 'Update diagnostics and repair items' : 'Structured repair order logging terminal'}
+            </p>
           </div>
-          {nextJobNumber && (
+          {(isEditMode ? editRepairData?.repair?.job_number : nextJobNumber) && (
             <div className="bg-white/10 border border-white/20 px-3.5 py-1.5 rounded-xl text-right shrink-0">
-              <span className="text-[10px] text-white/70 block uppercase font-bold tracking-wider">Billing ID (Generated)</span>
-              <span className="font-mono text-sm font-black text-foreground">{nextJobNumber}</span>
+              <span className="text-[10px] text-white/70 block uppercase font-bold tracking-wider">
+                {isEditMode ? 'Billing ID' : 'Billing ID (Generated)'}
+              </span>
+              <span className="font-mono text-sm font-black text-foreground">
+                {isEditMode ? editRepairData.repair.job_number : nextJobNumber}
+              </span>
             </div>
           )}
         </div>
@@ -860,14 +1017,22 @@ export default function NewRepair() {
             </div>
           </div>
 
-          {!selectedCustomer && (
-            <button
-              type="button"
-              onClick={registerCustomerInline}
-              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-2.5 rounded-xl font-bold uppercase tracking-wider text-xs"
-            >
-              Register & Select
-            </button>
+          {/* Previous Repairs/Problems if existing customer */}
+          {selectedCustomer && customerProfileData?.devices && customerProfileData.devices.length > 0 && (
+            <div className="mt-3 p-3.5 bg-primary/5 border border-primary/20 rounded-2xl space-y-2">
+              <span className="text-[10px] font-black text-primary uppercase tracking-wider block">Past Problems & Devices</span>
+              <div className="space-y-2 max-h-32 overflow-y-auto pr-1">
+                {customerProfileData.devices.map((dev: any) => (
+                  <div key={dev.id} className="text-xs bg-card/60 p-2.5 rounded-xl border border-border/40 flex flex-col gap-1 shadow-sm">
+                    <div className="flex justify-between font-bold text-foreground">
+                      <span>{dev.brand} {dev.model}</span>
+                      {dev.imei && <span className="text-[10px] text-muted-foreground font-mono">IMEI: {dev.imei}</span>}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground"><strong className="text-foreground">Problem:</strong> {dev.problem}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
 
           {errors.customerId && (
@@ -875,86 +1040,200 @@ export default function NewRepair() {
           )}
 
           {/* Brand & Model Selectors */}
-          <div className="space-y-3">
-            <div className="grid gap-3 sm:grid-cols-2">
-              {/* Brand Select */}
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-muted-foreground">Device Brand</label>
-                <select
-                  value={selectedBrand}
-                  onChange={(e) => handleBrandChange(e.target.value)}
-                  className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary font-semibold text-foreground select-custom"
-                >
-                  <option value="" className="bg-neutral-900 text-white">Select Brand</option>
-                  <option value="Other" className="bg-neutral-900 text-white">Other (Custom Brand)</option>
-                  {brandOptions.map((b) => (
-                    <option key={b} value={b} className="bg-neutral-900 text-white">{b}</option>
-                  ))}
-                </select>
-                {errors.brand && (
-                  <p className="text-[11px] text-red-500 mt-1 font-semibold">{errors.brand.message}</p>
-                )}
-              </div>
+          {(() => {
+            const filteredBrands = brandOptions.filter(b => 
+              b.toLowerCase().includes(brandSearchQuery.toLowerCase())
+            );
 
-              {/* Model Select (only if pre-defined brand is selected) */}
-              {selectedBrand && selectedBrand !== 'Other' && (
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-muted-foreground">Device Model</label>
-                  <select
-                    value={selectedModel}
-                    onChange={(e) => handleModelChange(e.target.value)}
-                    className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary font-semibold text-foreground select-custom"
-                  >
-                    <option value="" className="bg-neutral-900 text-white">Select Model</option>
-                    <option value="Other" className="bg-neutral-900 text-white">Other (Custom Model)</option>
-                    {(modelsByBrand[selectedBrand] || []).map((m) => (
-                      <option key={m} value={m} className="bg-neutral-900 text-white">{m}</option>
-                    ))}
-                  </select>
-                  {errors.model && (
-                    <p className="text-[11px] text-red-500 mt-1 font-semibold">{errors.model.message}</p>
+            const availableModels = selectedBrand && selectedBrand !== 'Other' 
+              ? (modelsByBrand[selectedBrand] || []) 
+              : [];
+
+            const filteredModels = availableModels.filter(m => 
+              m.toLowerCase().includes(modelSearchQuery.toLowerCase())
+            );
+
+            return (
+              <div className="space-y-3">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {/* Brand Select */}
+                  <div className="space-y-1 relative" id="brand-select-container">
+                    <label className="text-xs font-semibold text-muted-foreground">Device Brand</label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder="Search or Select Brand..."
+                        value={brandSearchQuery}
+                        onChange={(e) => {
+                          setBrandSearchQuery(e.target.value);
+                          setBrandDropdownOpen(true);
+                          const typed = e.target.value;
+                          const exactMatch = brandOptions.find(b => b.toLowerCase() === typed.toLowerCase());
+                          if (exactMatch) {
+                            handleBrandChange(exactMatch);
+                          } else {
+                            handleBrandChange('Other');
+                            handleCustomBrandChange(typed);
+                          }
+                        }}
+                        onFocus={() => {
+                          setBrandDropdownOpen(true);
+                          setModelDropdownOpen(false);
+                        }}
+                        className="w-full bg-secondary/35 border border-border rounded-xl pl-4 pr-10 py-3 text-sm focus:outline-none focus:border-primary font-semibold text-foreground"
+                      />
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
+                        <Search className="h-4 w-4" />
+                      </div>
+                    </div>
+                    {brandDropdownOpen && (
+                      <div className="absolute z-50 w-full mt-1 max-h-60 overflow-y-auto bg-neutral-900 border border-border rounded-xl shadow-lg scrollbar-thin">
+                        <div 
+                          onClick={() => {
+                            handleBrandChange('Other');
+                            setBrandSearchQuery('Other');
+                            setBrandDropdownOpen(false);
+                          }}
+                          className="px-4 py-2 hover:bg-primary/25 hover:text-white cursor-pointer text-sm font-semibold text-white/90 border-b border-border/20"
+                        >
+                          Other (Custom Brand)
+                        </div>
+                        {filteredBrands.length > 0 ? (
+                          filteredBrands.map((b) => (
+                            <div
+                              key={b}
+                              onClick={() => {
+                                handleBrandChange(b);
+                                setBrandSearchQuery(b);
+                                setBrandDropdownOpen(false);
+                              }}
+                              className="px-4 py-2 hover:bg-primary/25 hover:text-white cursor-pointer text-sm font-semibold text-white/90"
+                            >
+                              {b}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="px-4 py-2 text-xs text-muted-foreground">
+                            No matching brand. Type to specify custom brand.
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {errors.brand && (
+                      <p className="text-[11px] text-red-500 mt-1 font-semibold">{errors.brand.message}</p>
+                    )}
+                  </div>
+
+                  {/* Model Select (only if pre-defined brand is selected) */}
+                  {selectedBrand && selectedBrand !== 'Other' && (
+                    <div className="space-y-1 relative" id="model-select-container">
+                      <label className="text-xs font-semibold text-muted-foreground">Device Model</label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          placeholder="Search or Select Model..."
+                          value={modelSearchQuery}
+                          onChange={(e) => {
+                            setModelSearchQuery(e.target.value);
+                            setModelDropdownOpen(true);
+                            const typed = e.target.value;
+                            const exactMatch = availableModels.find(m => m.toLowerCase() === typed.toLowerCase());
+                            if (exactMatch) {
+                              handleModelChange(exactMatch);
+                            } else {
+                              handleModelChange('Other');
+                              handleCustomModelChange(typed);
+                            }
+                          }}
+                          onFocus={() => {
+                            setModelDropdownOpen(true);
+                            setBrandDropdownOpen(false);
+                          }}
+                          className="w-full bg-secondary/35 border border-border rounded-xl pl-4 pr-10 py-3 text-sm focus:outline-none focus:border-primary font-semibold text-foreground"
+                        />
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
+                          <Search className="h-4 w-4" />
+                        </div>
+                      </div>
+                      {modelDropdownOpen && (
+                        <div className="absolute z-50 w-full mt-1 max-h-60 overflow-y-auto bg-neutral-900 border border-border rounded-xl shadow-lg scrollbar-thin">
+                          <div 
+                            onClick={() => {
+                              handleModelChange('Other');
+                              setModelSearchQuery('Other');
+                              setModelDropdownOpen(false);
+                            }}
+                            className="px-4 py-2 hover:bg-primary/25 hover:text-white cursor-pointer text-sm font-semibold text-white/90 border-b border-border/20"
+                          >
+                            Other (Custom Model)
+                          </div>
+                          {filteredModels.length > 0 ? (
+                            filteredModels.map((m) => (
+                              <div
+                                key={m}
+                                onClick={() => {
+                                  handleModelChange(m);
+                                  setModelSearchQuery(m);
+                                  setModelDropdownOpen(false);
+                                }}
+                                className="px-4 py-2 hover:bg-primary/25 hover:text-white cursor-pointer text-sm font-semibold text-white/90"
+                              >
+                                {m}
+                              </div>
+                            ))
+                          ) : (
+                            <div className="px-4 py-2 text-xs text-muted-foreground">
+                              No matching model. Type to specify custom model.
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {errors.model && (
+                        <p className="text-[11px] text-red-500 mt-1 font-semibold">{errors.model.message}</p>
+                      )}
+                    </div>
                   )}
                 </div>
-              )}
-            </div>
 
-            {/* Custom Brand Input (if Brand is "Other") */}
-            {selectedBrand === 'Other' && (
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-muted-foreground">Enter Custom Brand</label>
-                <input
-                  type="text"
-                  placeholder="e.g. MOTOROLA"
-                  value={customBrand}
-                  onChange={(e) => handleCustomBrandChange(e.target.value)}
-                  className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold uppercase"
-                />
-                {errors.brand && (
-                  <p className="text-[11px] text-red-500 mt-1 font-semibold">{errors.brand.message}</p>
+                {/* Custom Brand Input (if Brand is "Other") */}
+                {selectedBrand === 'Other' && (
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-muted-foreground">Enter Custom Brand</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. MOTOROLA"
+                      value={customBrand}
+                      onChange={(e) => handleCustomBrandChange(e.target.value)}
+                      className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold uppercase"
+                    />
+                    {errors.brand && (
+                      <p className="text-[11px] text-red-500 mt-1 font-semibold">{errors.brand.message}</p>
+                    )}
+                  </div>
                 )}
-              </div>
-            )}
 
-            {/* Custom Model Input (if Brand is "Other" or Model is "Other") */}
-            {(selectedBrand === 'Other' || selectedModel === 'Other') && (
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-muted-foreground">Enter Custom Model</label>
-                <input
-                  type="text"
-                  placeholder="e.g. MOTO G54"
-                  value={customModel}
-                  onChange={(e) => handleCustomModelChange(e.target.value)}
-                  className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold uppercase"
-                />
-                {errors.model && (
-                  <p className="text-[11px] text-red-500 mt-1 font-semibold">{errors.model.message}</p>
+                {/* Custom Model Input (if Brand is "Other" or Model is "Other") */}
+                {(selectedBrand === 'Other' || selectedModel === 'Other') && (
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-muted-foreground">Enter Custom Model</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. MOTO G54"
+                      value={customModel}
+                      onChange={(e) => handleCustomModelChange(e.target.value)}
+                      className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold uppercase"
+                    />
+                    {errors.model && (
+                      <p className="text-[11px] text-red-500 mt-1 font-semibold">{errors.model.message}</p>
+                    )}
+                  </div>
                 )}
-              </div>
-            )}
 
-            <input type="hidden" {...register('brand')} />
-            <input type="hidden" {...register('model')} />
-          </div>
+                <input type="hidden" {...register('brand')} />
+                <input type="hidden" {...register('model')} />
+              </div>
+            );
+          })()}
 
           {/* Problem description with Add Button */}
           <div className="flex gap-2">
@@ -1474,16 +1753,16 @@ export default function NewRepair() {
         <div className="pt-4">
           <Button
             type="submit"
-            disabled={createRepairMutation.isPending}
+            disabled={createRepairMutation.isPending || updateRepairMutation.isPending}
             className="w-full bg-[#4caf50] hover:bg-[#43a047] text-white py-4 rounded-xl font-bold uppercase tracking-wider text-sm border-none shadow-lg transition-transform active:scale-[0.99] flex items-center justify-center gap-2"
           >
-            {createRepairMutation.isPending ? (
+            {createRepairMutation.isPending || updateRepairMutation.isPending ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" /> SUBMITTING ORDER...
+                <Loader2 className="h-4 w-4 animate-spin" /> {isEditMode ? 'UPDATING ORDER...' : 'SUBMITTING ORDER...'}
               </>
             ) : (
               <>
-                <CheckCircle className="h-4 w-4" /> SUBMIT
+                <CheckCircle className="h-4 w-4" /> {isEditMode ? 'UPDATE TICKET' : 'SUBMIT'}
               </>
             )}
           </Button>

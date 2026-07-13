@@ -155,8 +155,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsLoading(false);
     });
 
+    // Refresh token every 30 minutes in background to keep user logged in indefinitely
+    const refreshInterval = setInterval(() => {
+      refreshSession();
+    }, 30 * 60 * 1000);
+
     return () => {
       subscription.unsubscribe();
+      clearInterval(refreshInterval);
     };
   }, []);
 

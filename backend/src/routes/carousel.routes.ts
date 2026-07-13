@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import multer from 'multer';
 import { authenticateToken, requireSuperAdmin } from '../middleware/auth';
-import { getSlides, createSlide, deleteSlide } from '../controllers/carousel.controller';
+import { getSlides, createSlide, deleteSlide, updateSlide } from '../controllers/carousel.controller';
 
 const router = Router();
 const upload = multer({
@@ -16,6 +16,9 @@ router.get('/', authenticateToken, getSlides);
 
 // POST /api/carousel (superadmin only)
 router.post('/', authenticateToken, requireSuperAdmin, upload.single('image'), createSlide);
+
+// PUT /api/carousel/:id (superadmin only)
+router.put('/:id', authenticateToken, requireSuperAdmin, upload.single('image'), updateSlide);
 
 // DELETE /api/carousel/:id (superadmin only)
 router.delete('/:id', authenticateToken, requireSuperAdmin, deleteSlide);

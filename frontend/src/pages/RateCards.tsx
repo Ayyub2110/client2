@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Plus, Trash2, Save, Loader2, Edit3, X, Smartphone, Upload, ImageIcon, Search
@@ -97,6 +97,10 @@ export default function RateCards() {
   const [selectedModel, setSelectedModel] = useState('');
   const [customBrand, setCustomBrand] = useState('');
   const [customModel, setCustomModel] = useState('');
+  const [brandDropdownOpen, setBrandDropdownOpen] = useState(false);
+  const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
+  const [brandSearchQuery, setBrandSearchQuery] = useState('');
+  const [modelSearchQuery, setModelSearchQuery] = useState('');
   const [newImageFile, setNewImageFile] = useState<File | null>(null);
   const [editServices, setEditServices] = useState<RateCardService[]>([]);
   const [editImageFile, setEditImageFile] = useState<File | null>(null);
@@ -113,6 +117,48 @@ export default function RateCards() {
     card.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
     card.model.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Synchronize brand search query with selectedBrand / customBrand
+  useEffect(() => {
+    if (selectedBrand) {
+      if (selectedBrand === 'Other') {
+        setBrandSearchQuery(customBrand);
+      } else {
+        setBrandSearchQuery(selectedBrand);
+      }
+    } else {
+      setBrandSearchQuery('');
+    }
+  }, [selectedBrand, customBrand]);
+
+  // Synchronize model search query with selectedModel / customModel
+  useEffect(() => {
+    if (selectedModel) {
+      if (selectedModel === 'Other') {
+        setModelSearchQuery(customModel);
+      } else {
+        setModelSearchQuery(selectedModel);
+      }
+    } else {
+      setModelSearchQuery('');
+    }
+  }, [selectedModel, customModel]);
+
+  // Close brand/model dropdown lists when clicking outside of them
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const brandContainer = document.getElementById('brand-select-container');
+      const modelContainer = document.getElementById('model-select-container');
+      if (brandContainer && !brandContainer.contains(event.target as Node)) {
+        setBrandDropdownOpen(false);
+      }
+      if (modelContainer && !modelContainer.contains(event.target as Node)) {
+        setModelDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const createMutation = useMutation({
     mutationFn: (formData: FormData) => apiClient.post<{ message: string, rateCard: RateCard }>('/ratecards', formData),
@@ -266,52 +312,168 @@ export default function RateCards() {
           <Card className="border-primary/40 bg-primary/5">
             <CardContent className="p-4 space-y-3">
               <p className="text-xs font-bold text-primary uppercase tracking-wider">New Rate Card</p>
-              <div className="space-y-1">
-                <select
-                  value={selectedBrand}
-                  onChange={(e) => {
-                    setSelectedBrand(e.target.value);
-                    setSelectedModel('');
-                    setCustomBrand('');
-                    setCustomModel('');
-                  }}
-                  className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary font-semibold text-foreground select-custom cursor-pointer"
-                >
-                  <option value="" className="bg-neutral-900 text-white">Select Brand</option>
-                  <option value="Other" className="bg-neutral-900 text-white">Other (Custom Brand)</option>
-                  {Object.keys(DEVICE_BRANDS).map((b) => (
-                    <option key={b} value={b} className="bg-neutral-900 text-white">{b}</option>
-                  ))}
-                </select>
-              </div>
+              {(() => {
+                const brandList = Object.keys(DEVICE_BRANDS);
+                const filteredBrands = brandList.filter(b => 
+                  b.toLowerCase().includes(brandSearchQuery.toLowerCase())
+                );
 
-              {selectedBrand === 'Other' && (
-                <Input
-                  placeholder="Brand (e.g. Motorola)"
-                  value={customBrand}
-                  onChange={(e) => setCustomBrand(e.target.value)}
-                  className="uppercase font-semibold text-foreground"
-                />
-              )}
+                const availableModels = selectedBrand && selectedBrand !== 'Other' 
+                  ? (DEVICE_BRANDS[selectedBrand] || []) 
+                  : [];
 
-              {selectedBrand && selectedBrand !== 'Other' && (
-                <div className="space-y-1">
-                  <select
-                    value={selectedModel}
-                    onChange={(e) => {
-                      setSelectedModel(e.target.value);
-                      setCustomModel('');
-                    }}
-                    className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary font-semibold text-foreground select-custom cursor-pointer"
-                  >
-                    <option value="" className="bg-neutral-900 text-white">Select Model</option>
-                    <option value="Other" className="bg-neutral-900 text-white">Other (Custom Model)</option>
-                    {DEVICE_BRANDS[selectedBrand]?.map((m) => (
-                      <option key={m} value={m} className="bg-neutral-900 text-white">{m}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
+                const filteredModels = availableModels.filter(m => 
+                  m.toLowerCase().includes(modelSearchQuery.toLowerCase())
+                );
+
+                return (
+                  <>
+                    {/* Brand select */}
+                    <div className="space-y-1 relative" id="brand-select-container">
+                      <div className="relative">
+                        <input
+                          type="text"
+                          placeholder="Search or Select Brand..."
+                          value={brandSearchQuery}
+                          onChange={(e) => {
+                            setBrandSearchQuery(e.target.value);
+                            setBrandDropdownOpen(true);
+                            const typed = e.target.value;
+                            const exactMatch = brandList.find(b => b.toLowerCase() === typed.toLowerCase());
+                            if (exactMatch) {
+                              setSelectedBrand(exactMatch);
+                              setSelectedModel('');
+                              setCustomBrand('');
+                              setCustomModel('');
+                            } else {
+                              setSelectedBrand('Other');
+                              setCustomBrand(typed);
+                              setSelectedModel('');
+                              setCustomModel('');
+                            }
+                          }}
+                          onFocus={() => {
+                            setBrandDropdownOpen(true);
+                            setModelDropdownOpen(false);
+                          }}
+                          className="w-full bg-secondary/35 border border-border rounded-xl pl-4 pr-10 py-3 text-sm focus:outline-none focus:border-primary font-semibold text-foreground select-custom"
+                        />
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
+                          <Search className="h-4 w-4" />
+                        </div>
+                      </div>
+                      {brandDropdownOpen && (
+                        <div className="absolute z-50 w-full mt-1 max-h-60 overflow-y-auto bg-neutral-900 border border-border rounded-xl shadow-lg scrollbar-thin">
+                          <div 
+                            onClick={() => {
+                              setSelectedBrand('Other');
+                              setBrandSearchQuery('Other');
+                              setSelectedModel('');
+                              setCustomBrand('');
+                              setCustomModel('');
+                              setBrandDropdownOpen(false);
+                            }}
+                            className="px-4 py-2 hover:bg-primary/25 hover:text-white cursor-pointer text-sm font-semibold text-white/90 border-b border-border/20"
+                          >
+                            Other (Custom Brand)
+                          </div>
+                          {filteredBrands.length > 0 ? (
+                            filteredBrands.map((b) => (
+                              <div
+                                key={b}
+                                onClick={() => {
+                                  setSelectedBrand(b);
+                                  setBrandSearchQuery(b);
+                                  setSelectedModel('');
+                                  setCustomBrand('');
+                                  setCustomModel('');
+                                  setBrandDropdownOpen(false);
+                                }}
+                                className="px-4 py-2 hover:bg-primary/25 hover:text-white cursor-pointer text-sm font-semibold text-white/90"
+                              >
+                                {b}
+                              </div>
+                            ))
+                          ) : (
+                            <div className="px-4 py-2 text-xs text-muted-foreground">
+                              No matching brand. Type to specify custom brand.
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Model select */}
+                    {selectedBrand && selectedBrand !== 'Other' && (
+                      <div className="space-y-1 relative" id="model-select-container">
+                        <div className="relative">
+                          <input
+                            type="text"
+                            placeholder="Search or Select Model..."
+                            value={modelSearchQuery}
+                            onChange={(e) => {
+                              setModelSearchQuery(e.target.value);
+                              setModelDropdownOpen(true);
+                              const typed = e.target.value;
+                              const exactMatch = availableModels.find(m => m.toLowerCase() === typed.toLowerCase());
+                              if (exactMatch) {
+                                setSelectedModel(exactMatch);
+                                setCustomModel('');
+                              } else {
+                                setSelectedModel('Other');
+                                setCustomModel(typed);
+                              }
+                            }}
+                            onFocus={() => {
+                              setModelDropdownOpen(true);
+                              setBrandDropdownOpen(false);
+                            }}
+                            className="w-full bg-secondary/35 border border-border rounded-xl pl-4 pr-10 py-3 text-sm focus:outline-none focus:border-primary font-semibold text-foreground select-custom"
+                          />
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
+                            <Search className="h-4 w-4" />
+                          </div>
+                        </div>
+                        {modelDropdownOpen && (
+                          <div className="absolute z-50 w-full mt-1 max-h-60 overflow-y-auto bg-neutral-900 border border-border rounded-xl shadow-lg scrollbar-thin">
+                            <div 
+                              onClick={() => {
+                                setSelectedModel('Other');
+                                setModelSearchQuery('Other');
+                                setCustomModel('');
+                                setModelDropdownOpen(false);
+                              }}
+                              className="px-4 py-2 hover:bg-primary/25 hover:text-white cursor-pointer text-sm font-semibold text-white/90 border-b border-border/20"
+                            >
+                              Other (Custom Model)
+                            </div>
+                            {filteredModels.length > 0 ? (
+                              filteredModels.map((m) => (
+                                <div
+                                  key={m}
+                                  onClick={() => {
+                                    setSelectedModel(m);
+                                    setModelSearchQuery(m);
+                                    setCustomModel('');
+                                    setModelDropdownOpen(false);
+                                  }}
+                                  className="px-4 py-2 hover:bg-primary/25 hover:text-white cursor-pointer text-sm font-semibold text-white/90"
+                                >
+                                  {m}
+                                </div>
+                              ))
+                            ) : (
+                              <div className="px-4 py-2 text-xs text-muted-foreground">
+                                No matching model. Type to specify custom model.
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
 
               {(selectedBrand === 'Other' || selectedModel === 'Other') && (
                 <Input

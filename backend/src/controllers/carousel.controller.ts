@@ -4,8 +4,8 @@ import { supabaseAdmin } from '../utils/supabase';
 import { uploadPhoto } from '../utils/photoUpload';
 
 const createSlideSchema = z.object({
-  title: z.string().min(1, 'Title is required'),
-  description: z.string().min(1, 'Description is required')
+  title: z.string().optional().default(''),
+  description: z.string().optional().default('')
 });
 
 export async function getSlides(_req: Request, res: Response): Promise<void> {
@@ -121,6 +121,63 @@ export async function deleteSlide(req: Request, res: Response): Promise<void> {
     res.json({ message: 'Carousel slide deleted successfully' });
   } catch (err) {
     console.error('Failed to delete slide:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+export async function updateSlide(req: Request, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+
+    // 1. Fetch slide to find image path
+    const { data: slide, error: fetchError } = await supabaseAdmin
+      .from('carousel_slides')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !slide) {
+      res.status(404).json({ error: 'Carousel slide not found' });
+      return;
+    }
+
+    let imageUrl = slide.image_url;
+    if (req.file) {
+      try {
+        imageUrl = await uploadPhoto(req.file as Express.Multer.File, 'carousel-images');
+        
+        // Remove old image from storage if it exists
+        if (slide.image_url) {
+          const path = slide.image_url.split('/carousel-images/')[1];
+          if (path) {
+            await supabaseAdmin.storage.from('carousel-images').remove([path]);
+          }
+        }
+      } catch (uploadErr: any) {
+        console.error('Carousel slide image upload failed:', uploadErr);
+        res.status(400).json({ error: uploadErr.message || 'Failed to upload slide image' });
+        return;
+      }
+    }
+
+    const { data: updatedSlide, error } = await supabaseAdmin
+      .from('carousel_slides')
+      .update({
+        image_url: imageUrl,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error || !updatedSlide) {
+      res.status(400).json({ error: error?.message || 'Failed to update carousel slide' });
+      return;
+    }
+
+    res.json({ slide: updatedSlide, message: 'Carousel slide updated successfully' });
+  } catch (err) {
+    console.error('Failed to update slide:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 }

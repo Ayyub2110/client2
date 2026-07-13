@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import SignatureCanvas from 'react-signature-canvas';
@@ -141,7 +141,13 @@ export default function DeliverRepair() {
     }
   };
 
-  // Start native camera
+  // Pre-fill receiver details on selection change or when repair loads
+  useEffect(() => {
+    if (repair?.customer && receivedBy === 'customer') {
+      setReceiverName(repair.customer.name);
+      setReceiverPhone(repair.customer.phone);
+    }
+  }, [repair, receivedBy]);
   const startCamera = async () => {
     setCapturedPhoto(null);
     try {
@@ -220,18 +226,10 @@ export default function DeliverRepair() {
       return;
     }
 
-    if (!capturedPhoto) {
-      toast.error('Recipient photo is required to close delivery');
-      return;
-    }
-
-    if (!sigPadRef.current || sigPadRef.current.isEmpty()) {
-      toast.error('Receiver signature is required to close delivery');
-      return;
-    }
-
-    // Convert signature pad vectors to Base64 Image
-    const signatureDataUrl = sigPadRef.current.getTrimmedCanvas().toDataURL('image/png');
+    // Convert signature pad vectors to Base64 Image if not empty
+    const signatureDataUrl = (sigPadRef.current && !sigPadRef.current.isEmpty())
+      ? sigPadRef.current.getTrimmedCanvas().toDataURL('image/png')
+      : null;
 
     deliverMutation.mutate({
       receiverName,
@@ -519,7 +517,7 @@ export default function DeliverRepair() {
               <CardTitle className="text-base text-white flex items-center gap-2">
                 <Camera className="h-4.5 w-4.5 text-primary" /> Recipient Handoff Photo
               </CardTitle>
-              <CardDescription>Photographic verification of the recipient (Required).</CardDescription>
+              <CardDescription>Photographic verification of the recipient (Optional).</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Media viewer frame */}
@@ -586,8 +584,8 @@ export default function DeliverRepair() {
           <Card className="bg-slate-900/40 border-border/80">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <div>
-                <CardTitle className="text-base text-white">Recipient Signature</CardTitle>
-                <CardDescription>Have the recipient sign their name inside the panel below.</CardDescription>
+                <CardTitle className="text-base text-white">Recipient Signature (Optional)</CardTitle>
+                <CardDescription>Have the recipient sign their name inside the panel below (Optional).</CardDescription>
               </div>
               <Button type="button" variant="outline" size="sm" onClick={clearSignature} className="h-8">
                 Clear Panel

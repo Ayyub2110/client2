@@ -16,7 +16,8 @@ import {
   DollarSign,
   Plus,
   ArrowLeft,
-  ChevronRight
+  ChevronRight,
+  Trash2
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -112,6 +113,24 @@ export default function CustomerProfile() {
     updateMutation.mutate(formData);
   };
 
+  const deleteMutation = useMutation({
+    mutationFn: () => apiClient.delete(`/customers/${id}`),
+    onSuccess: () => {
+      toast.success('Customer profile deleted successfully!');
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      navigate('/customers');
+    },
+    onError: (err: any) => {
+      toast.error(err.message || 'Failed to delete customer');
+    }
+  });
+
+  const handleDeleteCustomer = () => {
+    if (window.confirm('Are you sure you want to delete this customer profile? This action will archive their record.')) {
+      deleteMutation.mutate();
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-32 gap-3">
@@ -202,6 +221,15 @@ export default function CustomerProfile() {
             >
               <Edit3 className="h-4 w-4" />
               <span>{isEditing ? 'Cancel Edit' : 'Edit Profile'}</span>
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteCustomer}
+              disabled={deleteMutation.isPending}
+              className="gap-2 bg-red-600 hover:bg-red-500 text-white"
+            >
+              {deleteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+              <span>Delete Customer</span>
             </Button>
             <Button
               onClick={() => navigate(`/customers/${customer.id}/new-repair`)}
