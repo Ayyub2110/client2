@@ -58,7 +58,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem('gk_access_token', token);
       const { profile } = await apiClient.get<{ profile: UserProfile & { shop: ShopProfile } }>('/auth/me');
       
-      setUser({
+      const loadedUser: UserProfile = {
         id: profile.id,
         name: profile.name,
         email: profile.email,
@@ -73,12 +73,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         personal_phone: profile.personal_phone,
         aadhar_number: profile.aadhar_number,
         photo_url: profile.photo_url
-      });
+      };
+
+      setUser(loadedUser);
       setRole(profile.role);
       setShop(profile.shop);
+
+      // Save to cache for offline/transient error fallback
+      localStorage.setItem('gk_cached_user', JSON.stringify(loadedUser));
+      localStorage.setItem('gk_cached_shop', JSON.stringify(profile.shop));
+      localStorage.setItem('gk_cached_role', profile.role);
     } catch (error) {
       console.error('Failed to load profile:', error);
-      clearAuth();
+      
+      // Clear auth ONLY on genuine 401/403 credentials errors
+      if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
+        clearAuth();
+      } else {
+        // Retrieve cached user session if available to prevent kicking out to login screen
+        const cachedUser = localStorage.getItem('gk_cached_user');
+        const cachedShop = localStorage.getItem('gk_cached_shop');
+        const cachedRole = localStorage.getItem('gk_cached_role');
+        
+        if (cachedUser && cachedShop && cachedRole) {
+          try {
+            setUser(JSON.parse(cachedUser));
+            setShop(JSON.parse(cachedShop));
+            setRole(cachedRole as any);
+          } catch {
+            clearAuth();
+          }
+        } else {
+          clearAuth();
+        }
+      }
     }
   };
 
@@ -95,6 +123,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setShop(null);
     localStorage.removeItem('gk_access_token');
     localStorage.removeItem('gk_refresh_token');
+    localStorage.removeItem('gk_cached_user');
+    localStorage.removeItem('gk_cached_shop');
+    localStorage.removeItem('gk_cached_role');
   };
 
   // Sync Supabase Client State with Local Storage and vice versa
@@ -229,7 +260,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
     } catch (err) {
       console.error('Failed to refresh session', err);
-      await logout();
+      // ONLY log out if it is a genuine credentials error (400 Bad Request, 401 Unauthorized, 403 Forbidden)
+      if (err instanceof ApiError && (err.status === 400 || err.status === 401 || err.status === 403)) {
+        await logout();
+      }
     }
   };
 
