@@ -1,7 +1,6 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import repairRoutes from './routes/repairs.routes';
 import authRoutes from './routes/auth.routes';
@@ -125,17 +124,8 @@ app.use(express.json({ limit: '50mb' }));
 // Global input HTML sanitization middleware
 app.use(sanitizeMiddleware);
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100000, // Raised limit to prevent lockouts during active usage
-  skip: (req) => req.method === 'OPTIONS', // Skip preflight options requests
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Too many requests, please try again later.' }
-});
+// Rate limiting disabled completely to prevent lockouts
 
-app.use('/api', limiter);
 
 // Health Check Route
 app.get(['/health', '/api/health'], (_req: Request, res: Response) => {
