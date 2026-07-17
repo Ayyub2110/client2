@@ -385,6 +385,8 @@ export async function createRepair(req: Request, res: Response): Promise<void> {
 
     // 5. Create the repair order
     const repairId = uuidv4();
+    const processedKyc = await processKycDetails(validatedData.kycDetails);
+    
     const { data: repair, error: repairError } = await supabaseAdmin
       .from('repairs')
       .insert({
@@ -405,7 +407,7 @@ export async function createRepair(req: Request, res: Response): Promise<void> {
         send_email: validatedData.sendEmail,
         allow_cashback: validatedData.allowCashback,
         expense: validatedData.expense,
-        kyc_details: validatedData.kycDetails
+        kyc_details: processedKyc
       })
       .select()
       .single();
@@ -660,6 +662,8 @@ export async function updateRepair(req: Request, res: Response): Promise<void> {
     }
 
     // 2. Update Repair details
+    const processedKyc = await processKycDetails(validatedData.kycDetails);
+
     const { data: repair, error: repairError } = await supabaseAdmin
       .from('repairs')
       .update({
@@ -672,7 +676,7 @@ export async function updateRepair(req: Request, res: Response): Promise<void> {
         send_email: validatedData.sendEmail,
         allow_cashback: validatedData.allowCashback,
         expense: validatedData.expense,
-        kyc_details: validatedData.kycDetails,
+        kyc_details: processedKyc,
         updated_by: user.id,
         updated_at: new Date().toISOString()
       })
@@ -766,6 +770,43 @@ function parseBase64DataUrl(dataUrl: string): { buffer: Buffer; mimetype: string
     ext = '.webp';
   }
   return { buffer, mimetype, ext };
+}
+
+async function processKycDetails(kycDetailsStr: string | null | undefined): Promise<string | null> {
+  if (!kycDetailsStr) return null;
+  try {
+    const kyc = JSON.parse(kycDetailsStr);
+
+    for (const key of ['idCardFront', 'idCardBack', 'mobileFront', 'mobileBack', 'customerPhoto', 'signature']) {
+      const val = kyc[key];
+      if (val && typeof val === 'string' && val.startsWith('data:image/')) {
+        try {
+          const parsed = parseBase64DataUrl(val);
+          const fakeFile = {
+            fieldname: key,
+            originalname: `${key}_${uuidv4()}${parsed.ext}`,
+            encoding: '7bit',
+            mimetype: parsed.mimetype,
+            size: parsed.buffer.length,
+            buffer: parsed.buffer,
+            destination: '',
+            filename: '',
+            path: ''
+          } as Express.Multer.File;
+
+          const url = await uploadPhoto(fakeFile, 'device-photos');
+          kyc[key] = url;
+        } catch (uploadErr) {
+          console.error(`Failed to upload KYC ${key}:`, uploadErr);
+        }
+      }
+    }
+
+    return JSON.stringify(kyc);
+  } catch (err) {
+    console.error('Failed to parse or process kycDetails:', err);
+    return kycDetailsStr;
+  }
 }
 
 export async function deliverRepair(req: Request, res: Response): Promise<void> {
