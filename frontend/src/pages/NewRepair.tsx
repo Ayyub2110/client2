@@ -309,6 +309,14 @@ export default function NewRepair() {
   // Core Data States
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [phoneSearch, setPhoneSearch] = useState('');
+  const [debouncedPhoneSearch, setDebouncedPhoneSearch] = useState('');
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedPhoneSearch(phoneSearch);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [phoneSearch]);
   const [selectedServices, setSelectedServices] = useState<Array<{ service_name: string; labor_cost: number }>>([]);
   const [customProblem, setCustomProblem] = useState('');
   // Split brand and model states
@@ -462,9 +470,9 @@ export default function NewRepair() {
 
   // Autocomplete customer search
   const { data: customersSearchData } = useQuery<{ customers: Customer[] }>({
-    queryKey: ['customers-search', phoneSearch],
-    queryFn: () => apiClient.get(`/customers?search=${phoneSearch}`),
-    enabled: phoneSearch.length >= 2
+    queryKey: ['customers-search', debouncedPhoneSearch],
+    queryFn: () => apiClient.get(`/customers?search=${debouncedPhoneSearch}`),
+    enabled: debouncedPhoneSearch.length >= 2
   });
 
   // Pre-load customer if ID is in URL parameters
