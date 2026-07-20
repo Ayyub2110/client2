@@ -468,13 +468,65 @@ export default function NewRepair() {
   });
   const { brandOptions, modelsByBrand } = buildDeviceOptions(rateCardOptionsData?.rateCards || []);
 
-  // Autocomplete customer search
+  // Fetch full shop customer list for instant 0ms client-side search & ranking
+  const { data: allCustomersData } = useQuery<{ customers: Customer[] }>({
+    queryKey: ['all-shop-customers'],
+    queryFn: () => apiClient.get('/customers?limit=1000'),
+    staleTime: 5 * 60 * 1000
+  });
+
+  // Autocomplete customer search backend fallback
   const { data: customersSearchData } = useQuery<{ customers: Customer[] }>({
     queryKey: ['customers-search', debouncedPhoneSearch],
     queryFn: () => apiClient.get(`/customers?search=${debouncedPhoneSearch}`),
     enabled: debouncedPhoneSearch.trim().length >= 1,
     staleTime: 60 * 1000
   });
+
+  // Instant 0ms Smart Relevance Sorted Customer List
+  const filteredCustomers = React.useMemo(() => {
+    const q = phoneSearch.trim().toLowerCase();
+    if (!q) return [];
+
+    const rawList = [...(allCustomersData?.customers || []), ...(customersSearchData?.customers || [])];
+    
+    // Deduplicate by ID
+    const uniqueMap = new Map<string, Customer>();
+    rawList.forEach(c => uniqueMap.set(c.id, c));
+    const list = Array.from(uniqueMap.values());
+
+    // Filter matching name, phone, or address
+    const matches = list.filter(c => 
+      c.name.toLowerCase().includes(q) || 
+      c.phone.toLowerCase().includes(q) ||
+      (c.address && c.address.toLowerCase().includes(q))
+    );
+
+    // Smart Relevance Sorting (Accuracy Fix):
+    // 1. Name or Phone STARTS WITH query comes FIRST (e.g. 's' -> 'saerf', 'singh')
+    // 2. Word in name starts with query comes SECOND
+    // 3. Alphabetical order for remaining matches
+    return matches.sort((a, b) => {
+      const aName = a.name.toLowerCase();
+      const bName = b.name.toLowerCase();
+      const aPhone = a.phone.toLowerCase();
+      const bPhone = b.phone.toLowerCase();
+
+      const aStartsWith = aName.startsWith(q) || aPhone.startsWith(q);
+      const bStartsWith = bName.startsWith(q) || bPhone.startsWith(q);
+
+      if (aStartsWith && !bStartsWith) return -1;
+      if (!aStartsWith && bStartsWith) return 1;
+
+      const aWordStart = aName.split(/\s+/).some(w => w.startsWith(q));
+      const bWordStart = bName.split(/\s+/).some(w => w.startsWith(q));
+
+      if (aWordStart && !bWordStart) return -1;
+      if (!aWordStart && bWordStart) return 1;
+
+      return aName.localeCompare(bName);
+    });
+  }, [phoneSearch, allCustomersData, customersSearchData]);
 
   // Pre-load customer if ID is in URL parameters
   useEffect(() => {
@@ -1066,8 +1118,8 @@ export default function NewRepair() {
             {/* Dropdown autocomplete results */}
             {customerSearchOpen && phoneSearch.trim().length >= 1 && (
               <div className="absolute z-30 left-0 right-0 bg-secondary/95 border border-border rounded-xl divide-y divide-border/60 overflow-hidden shadow-xl max-h-52 overflow-y-auto mt-1">
-                {customersSearchData?.customers && customersSearchData.customers.length > 0 ? (
-                  customersSearchData.customers.map((cust) => (
+                {filteredCustomers.length > 0 ? (
+                  filteredCustomers.map((cust) => (
                     <button
                       type="button"
                       key={cust.id}
