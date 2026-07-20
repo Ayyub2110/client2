@@ -1171,6 +1171,9 @@ export default function NewRepair() {
 
       {/* Main Form Form */}
       <form onSubmit={handleSubmit(onFormSubmit)} className="p-6 space-y-6">
+        {/* Dummy hidden fields to trap Chrome Password Manager / Autofill */}
+        <input type="text" name="chrome_prevent_autofill_email" style={{ display: 'none' }} tabIndex={-1} autoComplete="off" />
+        <input type="password" name="chrome_prevent_autofill_pass" style={{ display: 'none' }} tabIndex={-1} autoComplete="off" />
         
         {/* ROW 1: ORDER STATUS & CUSTOMER DETAILS — SIDE BY SIDE */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-b border-border/40 pb-6">
@@ -1269,17 +1272,26 @@ export default function NewRepair() {
               <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Customer Name</label>
               <input
                 type="text"
-                id="customer_full_name_no_autofill"
-                name="customer_full_name_no_autofill"
+                id="customer_full_name_no_autofill_v2"
+                name="customer_full_name_no_autofill_v2"
                 placeholder="e.g. Jane Doe"
                 value={newCustName}
                 autoComplete="off"
+                readOnly
+                onFocus={(e) => {
+                  e.target.removeAttribute('readonly');
+                  setNameSearchOpen(true);
+                }}
                 onChange={(e) => {
-                  setNewCustName(e.target.value);
+                  const val = e.target.value;
+                  if (val.includes('@')) {
+                    setNewCustName('');
+                    return;
+                  }
+                  setNewCustName(val);
                   setNameSearchOpen(true);
                   if (selectedCustomer) { setSelectedCustomer(null); setValue('customerId', ''); }
                 }}
-                onFocus={() => setNameSearchOpen(true)}
                 className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-2.5 text-sm text-foreground focus:outline-none focus:border-primary font-semibold"
               />
               {/* Instant 1-letter Customer Name Autocomplete */}

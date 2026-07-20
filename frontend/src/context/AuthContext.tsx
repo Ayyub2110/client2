@@ -101,11 +101,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem('gk_cached_shop', JSON.stringify(profile.shop));
       localStorage.setItem('gk_cached_role', profile.role);
     } catch (error) {
-      console.error('Failed to load profile:', error);
+      console.warn('Profile refresh notice:', error);
       
-      // Clear auth ONLY on genuine 401/403 credentials errors
+      // If token expired, attempt background token refresh without kicking user out
       if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
-        clearAuth();
+        try {
+          const storedRefreshToken = localStorage.getItem('gk_refresh_token');
+          if (storedRefreshToken) {
+            const { data } = await supabase.auth.refreshSession({ refresh_token: storedRefreshToken });
+            if (data?.session?.access_token) {
+              localStorage.setItem('gk_access_token', data.session.access_token);
+              localStorage.setItem('gk_refresh_token', data.session.refresh_token);
+              const { profile } = await apiClient.get<{ profile: UserProfile & { shop: ShopProfile } }>('/auth/me');
+              if (profile) {
+                setUser(profile);
+                setRole(profile.role);
+                setShop(profile.shop);
+                localStorage.setItem('gk_cached_user', JSON.stringify(profile));
+                localStorage.setItem('gk_cached_shop', JSON.stringify(profile.shop));
+                localStorage.setItem('gk_cached_role', profile.role);
+                return;
+              }
+            }
+          }
+        } catch (refreshErr) {
+          console.warn('Background token refresh failed:', refreshErr);
+        }
+      }
+
+      // If cached profile exists in localStorage, KEEP user logged in!
+      const cached = localStorage.getItem('gk_cached_user');
+      if (cached) {
+        try {
+          const parsedUser = JSON.parse(cached);
+          setUser(parsedUser);
+          const cachedShop = localStorage.getItem('gk_cached_shop');
+          if (cachedShop) setShop(JSON.parse(cachedShop));
+          const cachedRole = localStorage.getItem('gk_cached_role');
+          if (cachedRole) setRole(cachedRole as any);
+        } catch {
+          // Keep state intact
+        }
       }
     }
   };
