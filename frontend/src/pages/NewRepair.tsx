@@ -237,21 +237,6 @@ export function buildDeviceOptions(rateCards: DeviceOptionEntry[]) {
 }
 
 // ----------------------------------------------------
-const COMMON_PROBLEMS = [
-  'DISPLAY CHANGE',
-  'BATTERY REPLACEMENT',
-  'TOUCH GLASS REPAIR',
-  'MIC REPAIR',
-  'SPEAKER / RINGER ISSUE',
-  'CHARGING PORT REPLACEMENT',
-  'NETWORK / SIM SLOT ISSUE',
-  'CAMERA REPAIR',
-  'SOFTWARE FLASHING / UNLOCK',
-  'WATER DAMAGE DIAGNOSTICS',
-  'DEAD MOTHERBOARD REPAIR',
-  'VOLUME / POWER BUTTON',
-  'BACK GLASS REPLACEMENT'
-];
 
 const repairOrderSchema = z.object({
   status: z.enum(['pending', 'repairing', 'ready', 'delivered', 'cancelled']).default('pending'),
@@ -596,22 +581,41 @@ export default function NewRepair() {
     });
   }, [newCustPhone, allCustomersData, customersSearchData]);
 
-  // Instant 1-letter Problem Description Autocomplete Filter
+  // Fetch past repairs to extract real stored problem descriptions from database
+  const { data: pastRepairsData } = useQuery<{ repairs: Array<{ problem?: string; device?: { problem?: string } }> }>({
+    queryKey: ['past-repairs-problems'],
+    queryFn: () => apiClient.get('/repairs?limit=500'),
+    staleTime: 2 * 60 * 1000
+  });
+
+  // Extract unique past problem descriptions created in the shop DB
+  const existingShopProblems = React.useMemo(() => {
+    const problemsSet = new Set<string>();
+    (pastRepairsData?.repairs || []).forEach(r => {
+      const p = r.problem || r.device?.problem;
+      if (p && p.trim()) {
+        p.split(',').forEach(subP => {
+          const cleaned = subP.trim();
+          if (cleaned) problemsSet.add(cleaned);
+        });
+      }
+    });
+    return Array.from(problemsSet);
+  }, [pastRepairsData]);
+
+  // Instant 1-letter Filter from real database problem entries only
   const filteredProblems = React.useMemo(() => {
     const q = customProblem.trim().toLowerCase();
-    if (!q) return COMMON_PROBLEMS;
+    if (!q) return existingShopProblems;
 
-    const rateCardSvcs = (rateCardOptionsData?.rateCards || []).map(r => r.model).filter(Boolean);
-    const combined = Array.from(new Set([...COMMON_PROBLEMS, ...rateCardSvcs]));
-
-    return combined.filter(p => p.toLowerCase().includes(q)).sort((a, b) => {
+    return existingShopProblems.filter(p => p.toLowerCase().includes(q)).sort((a, b) => {
       const aStarts = a.toLowerCase().startsWith(q);
       const bStarts = b.toLowerCase().startsWith(q);
       if (aStarts && !bStarts) return -1;
       if (!aStarts && bStarts) return 1;
       return a.localeCompare(b);
     });
-  }, [customProblem, rateCardOptionsData]);
+  }, [customProblem, existingShopProblems]);
 
   // Ensure Customer Name, Phone, Address ALWAYS start EMPTY for new bookings
   useEffect(() => {
@@ -1641,8 +1645,8 @@ export default function NewRepair() {
 
             {/* Instant 1-Letter Problem Description Autocomplete Dropdown */}
             {problemSearchOpen && customProblem.trim().length >= 1 && (
-              <div className="absolute z-40 left-0 right-16 bg-neutral-900 border border-primary/40 rounded-xl divide-y divide-border/40 overflow-hidden shadow-2xl max-h-52 overflow-y-auto mt-1">
-                {filteredProblems.length > 0 ? (
+              <div className="absolute z-40 left-0 right-16 bg-neutral-900 border border-primary/40 rounded-xl divide-y divide-border/40 overflow-hidden shadow-2xl max-h-56 overflow-y-auto mt-1">
+                {filteredProblems.length > 0 && (
                   filteredProblems.map((item) => (
                     <button
                       type="button"
@@ -1658,14 +1662,22 @@ export default function NewRepair() {
                       className="w-full p-2.5 text-left hover:bg-primary/25 hover:text-white cursor-pointer flex justify-between items-center text-xs font-semibold text-white/90"
                     >
                       <span>🔧 {item}</span>
-                      <span className="text-[10px] text-primary uppercase font-bold">ADD +</span>
+                      <span className="text-[10px] text-primary uppercase font-bold">SELECT +</span>
                     </button>
                   ))
-                ) : (
-                  <div className="p-2.5 text-center text-xs text-muted-foreground">
-                    Press ADD to use custom problem: "{customProblem}"
-                  </div>
                 )}
+                {/* Create New Problem Option */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleAddCustomProblem();
+                    setProblemSearchOpen(false);
+                  }}
+                  className="w-full p-2.5 text-left bg-primary/10 hover:bg-primary/25 cursor-pointer flex justify-between items-center text-xs font-extrabold text-primary border-t border-primary/30"
+                >
+                  <span>➕ Create new problem: "{customProblem}"</span>
+                  <span className="text-[10px] uppercase tracking-wider font-black">ADD</span>
+                </button>
               </div>
             )}
           </div>
