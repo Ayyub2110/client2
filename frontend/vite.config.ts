@@ -12,6 +12,12 @@ export default defineConfig({
   },
   server: {
     port: 5180,
-    host: true
+    host: true,
+    allowedHosts: true
+  },
+  preview: {
+    port: 8080,
+    host: true,
+    allowedHosts: true
   }
 });
