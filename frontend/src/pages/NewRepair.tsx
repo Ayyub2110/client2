@@ -744,15 +744,22 @@ export default function NewRepair() {
     });
   };
 
-  // Add custom problem description text to form state
-  const handleAddCustomProblem = () => {
-    if (customProblem.trim()) {
-      const currentDesc = watch('problem');
-      const newDesc = currentDesc ? `${currentDesc}, ${customProblem}` : customProblem;
-      setValue('problem', newDesc, { shouldValidate: true });
-      setCustomProblem('');
-      toast.success('Problem instruction added');
+  // Add custom problem description text to form state with deduplication
+  const handleAddCustomProblem = (textToAdd?: string) => {
+    const target = (textToAdd || customProblem).trim();
+    if (!target) return;
+
+    const current = watch('problem') || '';
+    const existingItems = current.split(',').map(s => s.trim()).filter(Boolean);
+
+    // Prevent duplicate entries
+    if (!existingItems.some(item => item.toLowerCase() === target.toLowerCase())) {
+      existingItems.push(target);
     }
+
+    const newDesc = existingItems.join(', ');
+    setValue('problem', newDesc, { shouldValidate: true });
+    setCustomProblem('');
   };
 
   // File Upload Helper to convert files into Base64 strings
@@ -1620,13 +1627,11 @@ export default function NewRepair() {
             <div className="flex gap-2">
               <input
                 type="text"
-                placeholder="Write Problem Description... (Type 1 letter for suggestions)"
+                placeholder="Write Problem Description..."
                 value={customProblem}
                 onChange={(e) => {
                   setCustomProblem(e.target.value);
                   setProblemSearchOpen(true);
-                  // Update form problem value as user types
-                  setValue('problem', e.target.value, { shouldValidate: true });
                 }}
                 onFocus={() => setProblemSearchOpen(true)}
                 className="flex-1 bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold"
@@ -1652,12 +1657,8 @@ export default function NewRepair() {
                       type="button"
                       key={item}
                       onClick={() => {
-                        const current = watch('problem');
-                        const updated = current ? `${current}, ${item}` : item;
-                        setValue('problem', updated, { shouldValidate: true });
-                        setCustomProblem('');
+                        handleAddCustomProblem(item);
                         setProblemSearchOpen(false);
-                        toast.success(`Added "${item}" to problem description`);
                       }}
                       className="w-full p-2.5 text-left hover:bg-primary/25 hover:text-white cursor-pointer flex justify-between items-center text-xs font-semibold text-white/90"
                     >
