@@ -70,10 +70,10 @@ const corsOptionsDelegate = (
       if (isLocalhost) isAllowed = true;
     }
     
-    // 3. Check if it's a Vercel deployment domain
+    // 3. Check if it's a Vercel or Railway deployment domain
     if (!isAllowed) {
-      const isVercelOrigin = origin.endsWith('.vercel.app') || origin.includes('vercel.app');
-      if (isVercelOrigin) isAllowed = true;
+      const isDeploymentOrigin = origin.endsWith('.vercel.app') || origin.includes('vercel.app') || origin.endsWith('.up.railway.app') || origin.includes('railway.app');
+      if (isDeploymentOrigin) isAllowed = true;
     }
 
     // 4. Dynamic Apex Domain Matching (Self-Healing CORS)
