@@ -265,8 +265,8 @@ export default function Repairs() {
           { key: 'repairing', label: 'Repairing' },
           { key: 'ready', label: 'Repaired' },
           { key: 'delivered', label: 'Delivered' },
-          { key: 'balance_due', label: 'Balance Due ⚠️' },
-          { key: 'cancelled', label: 'Cancelled' }
+          { key: 'cancelled', label: 'Cancelled' },
+          { key: 'balance_due', label: 'Outflow Balance ⚠️' }
         ].map((tab) => {
           const isActive = status === tab.key;
           return (
@@ -301,13 +301,13 @@ export default function Repairs() {
       ) : data?.repairs && data.repairs.length > 0 ? (
         <div className="space-y-3">
           {data.repairs.map((r) => {
-            const hasPendingBalance = Number(r.balance ?? 0) > 0;
+            const isOutflowBalance = r.status === 'delivered' && Number(r.balance ?? 0) > 0;
             return (
               <Card
                 key={r.id}
                 onClick={() => navigate(`/repairs/${r.id}`)}
                 className={`relative bg-card/90 border rounded-xl hover:border-primary/45 transition-all cursor-pointer ${
-                  hasPendingBalance ? 'border-orange-500/40 bg-orange-950/10' : 'border-border/70'
+                  isOutflowBalance ? 'border-orange-500/40 bg-orange-950/10' : 'border-border/70'
                 }`}
               >
                 <div className="flex flex-col gap-2 p-3 sm:p-4">
@@ -328,6 +328,11 @@ export default function Repairs() {
                           <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider border ${statusColors[r.status] || 'bg-secondary/20 text-muted-foreground border-border'}`}>
                             {statusLabels[r.status] || r.status}
                           </span>
+                          {isOutflowBalance && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-orange-500/20 text-orange-400 border border-orange-500/40">
+                              Outflow Balance ⚠️
+                            </span>
+                          )}
                         </div>
                         <div className="text-xs text-muted-foreground mt-0.5 flex flex-wrap items-center gap-2">
                           <span className="font-mono text-primary font-bold">{r.job_number}</span>
@@ -339,7 +344,7 @@ export default function Repairs() {
                         </div>
                         <div className="mt-2 flex flex-wrap gap-2 text-[10px] font-semibold text-white">
                           <span className="rounded-full bg-slate-800/70 px-2 py-1">Advance ₹{Number(r.advance ?? 0).toFixed(2)}</span>
-                          <span className={`rounded-full px-2 py-1 ${hasPendingBalance ? 'bg-orange-500/20 text-orange-400 font-bold border border-orange-500/40' : 'bg-slate-800/70'}`}>
+                          <span className={`rounded-full px-2 py-1 ${isOutflowBalance ? 'bg-orange-500/20 text-orange-400 font-bold border border-orange-500/40' : 'bg-slate-800/70'}`}>
                             Balance ₹{Number(r.balance ?? 0).toFixed(2)}
                           </span>
                         </div>
@@ -363,8 +368,8 @@ export default function Repairs() {
                     </div>
                   </div>
 
-                  {/* Pending Balance Contact Follow-Up Bar */}
-                  {hasPendingBalance && (() => {
+                  {/* Outflow Balance Contact Follow-Up Bar (ONLY SHOWN FOR DELIVERED ITEMS WITH UNPAID BALANCE) */}
+                  {isOutflowBalance && (() => {
                     const dueMatch = (r as any).notes?.match(/\[PROMISED_DUE:(\d{4}-\d{2}-\d{2})\]/);
                     const promisedDueDate = dueMatch ? dueMatch[1] : null;
                     const isOverdue = promisedDueDate ? (new Date() > new Date(promisedDueDate + 'T23:59:59')) : false;
@@ -372,11 +377,11 @@ export default function Repairs() {
                     return (
                       <div className="mt-1 pt-2 border-t border-border/40 flex flex-wrap items-center justify-between gap-2">
                         <div className="flex flex-wrap items-center gap-2 text-[11px] font-extrabold">
-                          <span className="text-orange-400">⚠️ Outstanding Balance:</span>
+                          <span className="text-orange-400">⚠️ Outflow Balance:</span>
                           <span className="font-mono text-white">₹{Number(r.balance).toFixed(2)}</span>
                           {promisedDueDate && (
                             <span className="text-muted-foreground font-semibold">
-                              (Due: <strong className="text-amber-300">{promisedDueDate}</strong>)
+                              (Promised Due: <strong className="text-amber-300">{promisedDueDate}</strong>)
                             </span>
                           )}
                           {isOverdue && (
@@ -389,9 +394,20 @@ export default function Repairs() {
                         <div className="flex flex-wrap items-center gap-2">
                           <button
                             type="button"
-                            onClick={(e) => handleCollectBalance(e, r.id, r.job_number, Number(r.balance))}
+                            onClick={(e) => {
+                              handleCollectBalance(e, r.id, r.job_number, Number(r.balance));
+                              if (r.device?.customer?.phone) {
+                                const cleanPhone = (r.device.customer.phone || '').replace(/\D/g, '');
+                                const text = encodeURIComponent(
+                                  `Hello ${r.device?.customer?.name || 'Customer'}! Thank you for clearing your remaining outflow balance of ₹${Number(r.balance).toFixed(2)} for Repair Job ${r.job_number} (${r.device?.brand || ''} ${r.device?.model || ''}). Your payment is now FULLY PAID! Best regards, GK Mobile Service.`
+                                );
+                                setTimeout(() => {
+                                  window.open(`https://wa.me/91${cleanPhone}?text=${text}`, '_blank');
+                                }, 800);
+                              }
+                            }}
                             className="px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[10px] font-black uppercase tracking-wider transition-all shadow-md active:scale-95 cursor-pointer"
-                            title="Collect remaining balance in full"
+                            title="Collect remaining outflow balance in full"
                           >
                             💵 Collect ₹{Number(r.balance).toFixed(2)}
                           </button>
@@ -403,12 +419,12 @@ export default function Repairs() {
                                 e.stopPropagation();
                                 const cleanPhone = (r.device?.customer?.phone || '').replace(/\D/g, '');
                                 const text = encodeURIComponent(
-                                  `Hello ${r.device?.customer?.name || 'Customer'}, your repair order ${r.job_number} for ${r.device?.brand || ''} ${r.device?.model || ''} has an unpaid balance of ₹${Number(r.balance).toFixed(2)}${promisedDueDate ? ` promised on ${promisedDueDate}` : ''}. Kindly clear the payment at your earliest convenience. Thank you, GK Mobile Service.`
+                                  `Hello ${r.device?.customer?.name || 'Customer'}, your repair order ${r.job_number} for ${r.device?.brand || ''} ${r.device?.model || ''} was delivered with an unpaid outflow balance of ₹${Number(r.balance).toFixed(2)}${promisedDueDate ? ` promised on ${promisedDueDate}` : ''}. Kindly clear the payment at your earliest convenience. Thank you, GK Mobile Service.`
                                 );
                                 window.open(`https://wa.me/91${cleanPhone}?text=${text}`, '_blank');
                               }}
                               className="px-2.5 py-1 rounded-lg bg-emerald-600/25 hover:bg-emerald-600/40 text-emerald-300 border border-emerald-500/40 text-[10px] font-extrabold uppercase flex items-center gap-1 transition-all shadow-sm"
-                              title="Send WhatsApp Payment Reminder"
+                              title="Send WhatsApp Outflow Payment Reminder"
                             >
                               <span>💬 WhatsApp Reminder</span>
                             </button>

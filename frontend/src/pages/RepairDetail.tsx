@@ -46,6 +46,7 @@ interface RepairDetailData {
   estimate: number;
   advance: number;
   balance: number;
+  expense?: number;
   status: 'pending' | 'repairing' | 'ready' | 'delivered' | 'delivered_pending_balance' | 'cancelled';
   delivery_date: string | null;
   notes: string | null;
@@ -610,26 +611,73 @@ export default function RepairDetail() {
 
           {/* Financial summary */}
           <Card>
-            <CardHeader>
-              <CardTitle className="text-base text-white">Financial Summary</CardTitle>
-              <CardDescription>Financial calculations and cash collected.</CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <div>
+                <CardTitle className="text-base text-white">Financial Summary</CardTitle>
+                <CardDescription>Financial calculations, expenses, and cash collected.</CardDescription>
+              </div>
             </CardHeader>
-            <CardContent className="space-y-3.5 text-sm">
+            <CardContent className="space-y-3 text-sm">
               <div className="flex justify-between items-center">
-                <span className="text-muted-foreground">Estimate Cost:</span>
+                <span className="text-muted-foreground">Estimate Charges:</span>
                 <span className="font-bold text-white">₹{Number(repair.estimate).toFixed(2)}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-muted-foreground">Advance Deposited:</span>
+                <span className="text-muted-foreground">Paid Advance / Collected:</span>
                 <span className="font-bold text-emerald-400">₹{Number(repair.advance).toFixed(2)}</span>
               </div>
+              {Number(repair.expense || 0) > 0 && (
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Parts / Service Expense:</span>
+                  <span className="font-bold text-rose-400">₹{Number(repair.expense).toFixed(2)}</span>
+                </div>
+              )}
+              {Number(repair.expense || 0) > 0 && (
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-muted-foreground font-semibold">Net Shop Profit:</span>
+                  <span className="font-black text-emerald-300 font-mono">
+                    ₹{Math.max(0, Number(repair.advance) - Number(repair.expense)).toFixed(2)}
+                  </span>
+                </div>
+              )}
               <div className="h-px bg-border/60 my-2" />
+              
               <div className="flex justify-between items-center bg-secondary/35 rounded-xl p-3 border border-border/50">
-                <span className="font-semibold text-white">Balance Due:</span>
-                <span className={`text-base font-extrabold ${repair.balance > 0 ? 'text-amber-400' : 'text-slate-400'}`}>
+                <span className="font-semibold text-white">
+                  {repair.status === 'delivered' && Number(repair.balance) > 0 ? '⚠️ Outflow Balance:' : 'Balance Due:'}
+                </span>
+                <span className={`text-base font-extrabold ${repair.balance > 0 ? 'text-amber-400 font-mono' : 'text-slate-400'}`}>
                   ₹{Number(repair.balance).toFixed(2)}
                 </span>
               </div>
+
+              {repair.status === 'delivered' && Number(repair.balance) > 0 && (
+                <div className="pt-2">
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      if (window.confirm(`Mark outflow balance of ₹${Number(repair.balance).toFixed(2)} as collected in full for job #${repair.job_number}?`)) {
+                        updateStatusMutation.mutate({
+                          status: 'delivered',
+                          notes: `${repair.notes || ''} [OUTFLOW_BAL_COLLECTED: ₹${Number(repair.balance).toFixed(2)}]`.trim()
+                        });
+                        if (repair.customer?.phone) {
+                          const cleanPhone = (repair.customer.phone || '').replace(/\D/g, '');
+                          const text = encodeURIComponent(
+                            `Hello ${repair.customer.name}! Thank you for clearing your remaining outflow balance of ₹${Number(repair.balance).toFixed(2)} for Repair Job ${repair.job_number} (${repair.device?.brand || ''} ${repair.device?.model || ''}). Your payment is now FULLY PAID in full! Best regards, GK Mobile Service.`
+                          );
+                          setTimeout(() => {
+                            window.open(`https://wa.me/91${cleanPhone}?text=${text}`, '_blank');
+                          }, 800);
+                        }
+                      }
+                    }}
+                    className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black uppercase text-xs tracking-wider py-2.5 rounded-xl shadow-lg transition-all cursor-pointer"
+                  >
+                    💵 Collect Outflow Balance (₹{Number(repair.balance).toFixed(2)})
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
 

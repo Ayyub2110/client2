@@ -429,11 +429,20 @@ export async function generateReceiptPdf(data: ReceiptData): Promise<Uint8Array>
 
   let rowY = tableHeaderY - 20;
 
+  const dueMatch = repair.notes?.match(/\[PROMISED_DUE:(\d{4}-\d{2}-\d{2})\]/);
+  const promisedDueDate = dueMatch ? dueMatch[1] : null;
+  const isOutflow = repair.status === 'delivered' && repair.balance > 0;
+
   // Financial Rows definition
   const financialRows = [
     { label: 'Total Estimate Charges', amount: repair.estimate, isNegative: false },
-    { label: 'Less: Advance Paid', amount: repair.advance, isNegative: true },
-    { label: 'Balance Due / Paid at Hand-off', amount: repair.balance, isNegative: false, isTotal: true },
+    { label: 'Less: Paid Advance / Collected', amount: repair.advance, isNegative: true },
+    { 
+      label: isOutflow ? `OUTFLOW BALANCE REMAINING (Due: ${promisedDueDate || 'As Promised'})` : 'Final Outstanding Balance', 
+      amount: repair.balance, 
+      isNegative: false, 
+      isTotal: true 
+    },
   ];
 
   financialRows.forEach((row, index) => {
