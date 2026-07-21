@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { 
@@ -525,7 +525,7 @@ export default function NewRepair() {
     }
   });
 
-  const { register, handleSubmit, setValue, watch, formState: { errors } } = form;
+  const { register, handleSubmit, setValue, watch, control, formState: { errors } } = form;
 
   // Pre-load current date and time
   useEffect(() => {
@@ -862,8 +862,8 @@ export default function NewRepair() {
   }, [isEditMode, editRepairData, setValue]);
 
   // Fetch Rate Cards based on Brand and Model
-  const watchBrand = watch('brand');
-  const watchModel = watch('model');
+  const watchBrand = useWatch({ control, name: 'brand' }) || '';
+  const watchModel = useWatch({ control, name: 'model' }) || '';
   const { data: rateCardData } = useQuery<{ rateCard: { services: Array<{ id: string; service_name: string; og_cost: number; ditto_cost: number; copy_cost: number }> } | null }>({
     queryKey: ['rate-card-lookup', watchBrand, watchModel],
     queryFn: () => apiClient.get(`/ratecards/lookup?brand=${encodeURIComponent(watchBrand)}&model=${encodeURIComponent(watchModel)}`),
@@ -879,8 +879,8 @@ export default function NewRepair() {
   const nextJobNumber = nextJobNumberData?.nextJobNumber;
 
   // Dynamic balance calculations
-  const watchEstimate = watch('estimate');
-  const watchAdvance = watch('advance');
+  const watchEstimate = useWatch({ control, name: 'estimate' }) || 0;
+  const watchAdvance = useWatch({ control, name: 'advance' }) || 0;
   const outstandingBalance = Math.max(0, (Number(watchEstimate) || 0) - (Number(watchAdvance) || 0));
 
   // Toggle selected rate card services and update estimate price sum

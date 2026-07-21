@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getSuperAdminDashboard, toggleShopStatus } from '../controllers/superadmin.controller';
+import { getSuperAdminDashboard, toggleShopStatus, getStorageMetricsHandler, deleteStorageFileHandler } from '../controllers/superadmin.controller';
 import { authenticateToken, requireSuperAdmin } from '../middleware/auth';
 
 const router = Router();
@@ -10,5 +10,7 @@ router.use(requireSuperAdmin);
 
 router.get('/dashboard', getSuperAdminDashboard);
 router.post('/shops/:id/toggle', toggleShopStatus);
+router.get('/storage-metrics', getStorageMetricsHandler);
+router.delete('/storage-file', deleteStorageFileHandler);
 
 export default router;

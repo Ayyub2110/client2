@@ -110,12 +110,134 @@ export async function toggleShopStatus(req: Request, res: Response): Promise<voi
       .update({ is_active: newStatus })
       .eq('shop_id', id);
 
-    res.json({ 
-      message: `Shop owner account has been ${newStatus ? 'activated' : 'deactivated'} successfully`, 
-      success: true 
+    res.json({
+      message: `Shop owner account ${newStatus ? 'activated' : 'deactivated'} successfully`,
+      is_active: newStatus
     });
   } catch (err) {
     console.error('Toggle shop status error:', err);
     res.status(500).json({ error: 'Failed to toggle shop status' });
+  }
+}
+
+export async function getStorageMetricsHandler(_req: Request, res: Response): Promise<void> {
+  try {
+    const bucketList = [
+      'device-photos',
+      'customer-photos',
+      'shop-logos',
+      'delivery-photos',
+      'rate-card-images',
+      'carousel-images',
+      'owner-photos'
+    ];
+
+    const bucketMetrics: Array<{
+      name: string;
+      fileCount: number;
+      totalSizeBytes: number;
+      totalSizeMB: string;
+      files: Array<{ name: string; size: number; created_at: string; url: string }>;
+    }> = [];
+
+    let totalGlobalBytes = 0;
+    let totalGlobalFiles = 0;
+
+    for (const bucketName of bucketList) {
+      try {
+        const { data: files, error } = await supabaseAdmin.storage
+          .from(bucketName)
+          .list('', { limit: 100, sortBy: { column: 'created_at', order: 'desc' } });
+
+        if (error || !files) {
+          bucketMetrics.push({
+            name: bucketName,
+            fileCount: 0,
+            totalSizeBytes: 0,
+            totalSizeMB: '0.00',
+            files: []
+          });
+          continue;
+        }
+
+        const validFiles = files.filter(f => f.name && !f.name.startsWith('.emptyFolderPlaceholder'));
+        
+        let bucketBytes = 0;
+        const mappedFiles = validFiles.map(f => {
+          const fileSize = f.metadata?.size || 0;
+          bucketBytes += fileSize;
+          const { data: pubData } = supabaseAdmin.storage.from(bucketName).getPublicUrl(f.name);
+          return {
+            name: f.name,
+            size: fileSize,
+            created_at: f.created_at || new Date().toISOString(),
+            url: pubData.publicUrl
+          };
+        });
+
+        totalGlobalBytes += bucketBytes;
+        totalGlobalFiles += validFiles.length;
+
+        bucketMetrics.push({
+          name: bucketName,
+          fileCount: validFiles.length,
+          totalSizeBytes: bucketBytes,
+          totalSizeMB: (bucketBytes / (1024 * 1024)).toFixed(2),
+          files: mappedFiles
+        });
+      } catch (err) {
+        console.error(`Error querying bucket ${bucketName}:`, err);
+        bucketMetrics.push({
+          name: bucketName,
+          fileCount: 0,
+          totalSizeBytes: 0,
+          totalSizeMB: '0.00',
+          files: []
+        });
+      }
+    }
+
+    const totalGlobalMB = (totalGlobalBytes / (1024 * 1024)).toFixed(2);
+    const quotaLimitMB = 1024;
+    const usagePercent = ((totalGlobalBytes / (1024 * 1024 * 1024)) * 100).toFixed(1);
+
+    res.json({
+      summary: {
+        totalFiles: totalGlobalFiles,
+        totalSizeBytes: totalGlobalBytes,
+        totalSizeMB: totalGlobalMB,
+        quotaLimitMB,
+        usagePercent,
+        status: 'Healthy'
+      },
+      buckets: bucketMetrics
+    });
+  } catch (err) {
+    console.error('Storage metrics error:', err);
+    res.status(500).json({ error: 'Failed to retrieve Supabase storage metrics' });
+  }
+}
+
+export async function deleteStorageFileHandler(req: Request, res: Response): Promise<void> {
+  const { bucket, file } = req.query;
+  if (!bucket || !file) {
+    res.status(400).json({ error: 'Bucket and file parameters are required' });
+    return;
+  }
+
+  try {
+    const { error } = await supabaseAdmin.storage
+      .from(bucket as string)
+      .remove([file as string]);
+
+    if (error) {
+      res.status(400).json({ error: error.message });
+      return;
+    }
+
+    res.json({ message: `File ${file} deleted successfully from ${bucket}` });
+  } catch (err) {
+    console.error('Delete storage file error:', err);
+    res.status(500).json({ error: 'Failed to delete file from storage' });
   }
 }

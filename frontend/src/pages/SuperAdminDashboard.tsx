@@ -13,7 +13,12 @@ import {
   Plus,
   Trash2,
   Edit3,
-  Image as ImageIcon
+  Image as ImageIcon,
+  HardDrive,
+  Folder,
+  FileText,
+  ExternalLink,
+  Database
 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/Card';
@@ -21,6 +26,35 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { apiClient } from '../lib/api';
 import toast from 'react-hot-toast';
+
+interface StorageSummary {
+  totalFiles: number;
+  totalSizeBytes: number;
+  totalSizeMB: string;
+  quotaLimitMB: number;
+  usagePercent: string;
+  status: string;
+}
+
+interface BucketFile {
+  name: string;
+  size: number;
+  created_at: string;
+  url: string;
+}
+
+interface BucketMetric {
+  name: string;
+  fileCount: number;
+  totalSizeBytes: number;
+  totalSizeMB: string;
+  files: BucketFile[];
+}
+
+interface StorageMetricsResponse {
+  summary: StorageSummary;
+  buckets: BucketMetric[];
+}
 
 interface Shop {
   id: string;
@@ -59,9 +93,10 @@ interface CarouselSlide {
 export default function SuperAdminDashboard() {
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
-  const initialTab = searchParams.get('tab') === 'carousel' ? 'carousel' : 'shops';
+  const initialTab = searchParams.get('tab') === 'carousel' ? 'carousel' : searchParams.get('tab') === 'storage' ? 'storage' : 'shops';
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState<'shops' | 'carousel'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'shops' | 'carousel' | 'storage'>(initialTab);
+  const [selectedBucketFilter, setSelectedBucketFilter] = useState<string>('all');
 
   // Slide form state
   const [slideTitle, setSlideTitle] = useState('');
@@ -80,6 +115,24 @@ export default function SuperAdminDashboard() {
   const { data: responseData, refetch: refetchSlides, isLoading: isSlidesLoading } = useQuery<any>({
     queryKey: ['carousel-slides'],
     queryFn: () => apiClient.get('/carousel')
+  });
+
+  // Fetch Supabase Storage Metrics
+  const { data: storageMetricsData, refetch: refetchStorage, isLoading: isStorageLoading } = useQuery<StorageMetricsResponse>({
+    queryKey: ['storage-metrics'],
+    queryFn: () => apiClient.get('/superadmin/storage-metrics')
+  });
+
+  const deleteStorageFileMutation = useMutation({
+    mutationFn: ({ bucket, file }: { bucket: string; file: string }) =>
+      apiClient.delete(`/superadmin/storage-file?bucket=${encodeURIComponent(bucket)}&file=${encodeURIComponent(file)}`),
+    onSuccess: (res: any) => {
+      toast.success(res.message || 'File deleted successfully');
+      queryClient.invalidateQueries({ queryKey: ['storage-metrics'] });
+    },
+    onError: (err: any) => {
+      toast.error(err.message || 'Failed to delete storage file');
+    }
   });
 
   const slides = responseData?.slides || [];
@@ -293,6 +346,17 @@ export default function SuperAdminDashboard() {
         >
           Manage Carousel Slides
         </button>
+        <button
+          onClick={() => setActiveTab('storage')}
+          className={`pb-3 text-sm font-bold border-b-2 transition-all relative flex items-center gap-1.5 ${
+            activeTab === 'storage'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Database className="h-4 w-4" />
+          <span>Supabase Storage Monitor</span>
+        </button>
       </div>
 
       {/* Tab Contents */}
@@ -427,7 +491,7 @@ export default function SuperAdminDashboard() {
             )}
           </CardContent>
         </Card>
-      ) : (
+      ) : activeTab === 'carousel' ? (
         <div className="grid gap-6 md:grid-cols-3">
           {/* Add/Edit Slide Panel */}
           <Card className="bg-card/90 border-border/85 h-fit md:col-span-1">
@@ -613,6 +677,243 @@ export default function SuperAdminDashboard() {
                   <p className="text-xs text-muted-foreground mt-1">
                     The platform is currently showing the system default placeholder slides. Add a custom slide above to override them.
                   </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      ) : (
+        /* Storage Monitor View */
+        <div className="space-y-6">
+          <Card className="bg-card/90 border-border/80">
+            <CardHeader className="pb-3 border-b border-border/40 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <CardTitle className="text-lg font-bold flex items-center gap-2 text-white">
+                  <Database className="h-5 w-5 text-primary" />
+                  Supabase Cloud Storage Monitor
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  Real-time health, quota usage, and bucket asset inspection across all shop image stores.
+                </CardDescription>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => refetchStorage()} 
+                  disabled={isStorageLoading}
+                  className="gap-2 shrink-0 text-xs"
+                >
+                  <RefreshCw className={`h-3.5 w-3.5 ${isStorageLoading ? 'animate-spin' : ''}`} />
+                  <span>Scan Storage</span>
+                </Button>
+              </div>
+            </CardHeader>
+
+            <CardContent className="p-6 space-y-6">
+              {isStorageLoading ? (
+                <div className="flex flex-col items-center justify-center py-20 gap-3">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">
+                    Scanning Supabase Storage Buckets...
+                  </span>
+                </div>
+              ) : storageMetricsData ? (
+                <>
+                  {/* Summary Bar */}
+                  <div className="grid gap-4 md:grid-cols-4">
+                    <div className="bg-secondary/35 border border-border/60 rounded-xl p-4 space-y-1">
+                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Storage Usage</span>
+                      <p className="text-2xl font-extrabold text-white font-mono">
+                        {storageMetricsData.summary.totalSizeMB} MB
+                      </p>
+                      <span className="text-[10px] text-muted-foreground font-semibold">
+                        Limit: {storageMetricsData.summary.quotaLimitMB} MB (Free Quota)
+                      </span>
+                    </div>
+
+                    <div className="bg-secondary/35 border border-border/60 rounded-xl p-4 space-y-1">
+                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Total Assets Stored</span>
+                      <p className="text-2xl font-extrabold text-white font-mono">
+                        {storageMetricsData.summary.totalFiles} Files
+                      </p>
+                      <span className="text-[10px] text-emerald-400 font-semibold flex items-center gap-1">
+                        <CheckCircle2 className="h-3 w-3" /> All Buckets Active
+                      </span>
+                    </div>
+
+                    <div className="bg-secondary/35 border border-border/60 rounded-xl p-4 space-y-1">
+                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Quota Utilized</span>
+                      <p className="text-2xl font-extrabold text-emerald-400 font-mono">
+                        {storageMetricsData.summary.usagePercent}%
+                      </p>
+                      <div className="w-full bg-slate-800 rounded-full h-1.5 mt-2">
+                        <div 
+                          className="bg-emerald-500 h-1.5 rounded-full" 
+                          style={{ width: `${Math.min(100, Math.max(1, Number(storageMetricsData.summary.usagePercent)))}%` }} 
+                        />
+                      </div>
+                    </div>
+
+                    <div className="bg-secondary/35 border border-border/60 rounded-xl p-4 space-y-1">
+                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Storage Health</span>
+                      <p className="text-xl font-extrabold text-emerald-400 flex items-center gap-1.5">
+                        <ShieldAlert className="h-5 w-5 text-emerald-400" />
+                        {storageMetricsData.summary.status}
+                      </p>
+                      <span className="text-[10px] text-muted-foreground">Supabase S3 Compatible Object API</span>
+                    </div>
+                  </div>
+
+                  {/* Buckets Grid */}
+                  <div>
+                    <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
+                      <Folder className="h-4 w-4 text-primary" /> Registered Buckets ({storageMetricsData.buckets.length})
+                    </h3>
+
+                    <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                      <button
+                        onClick={() => setSelectedBucketFilter('all')}
+                        className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                          selectedBucketFilter === 'all'
+                            ? 'bg-white text-slate-950 border-white font-bold shadow-md'
+                            : 'bg-secondary/30 border-border/60 text-muted-foreground hover:bg-secondary/50 hover:text-white'
+                        }`}
+                      >
+                        <div className="text-xs font-extrabold">ALL BUCKETS</div>
+                        <div className="text-xs mt-1 font-mono">
+                          {storageMetricsData.summary.totalFiles} Files ({storageMetricsData.summary.totalSizeMB} MB)
+                        </div>
+                      </button>
+
+                      {storageMetricsData.buckets.map((b) => {
+                        const isSelected = selectedBucketFilter === b.name;
+                        return (
+                          <button
+                            key={b.name}
+                            onClick={() => setSelectedBucketFilter(b.name)}
+                            className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                              isSelected
+                                ? 'bg-white text-slate-950 border-white font-bold shadow-md'
+                                : 'bg-secondary/30 border-border/60 text-muted-foreground hover:bg-secondary/50 hover:text-white'
+                            }`}
+                          >
+                            <div className="text-xs font-extrabold uppercase font-mono">{b.name}</div>
+                            <div className="text-xs mt-1 font-mono">
+                              {b.fileCount} Files ({b.totalSizeMB} MB)
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* File Assets Inspector Table */}
+                  <div className="space-y-3 pt-2 border-t border-border/40">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-primary" /> 
+                        Stored Assets Inspector {selectedBucketFilter !== 'all' && `(${selectedBucketFilter})`}
+                      </h3>
+                      <span className="text-xs text-muted-foreground">Showing stored images & files</span>
+                    </div>
+
+                    {(() => {
+                      const allFiles: Array<{ bucket: string; name: string; size: number; created_at: string; url: string }> = [];
+                      storageMetricsData.buckets.forEach(b => {
+                        if (selectedBucketFilter === 'all' || selectedBucketFilter === b.name) {
+                          b.files.forEach(f => {
+                            allFiles.push({ ...f, bucket: b.name });
+                          });
+                        }
+                      });
+
+                      if (allFiles.length === 0) {
+                        return (
+                          <div className="text-center py-12 bg-secondary/20 rounded-xl border border-border/40">
+                            <Folder className="h-10 w-10 text-muted-foreground mx-auto mb-2 opacity-50" />
+                            <p className="text-xs font-semibold text-muted-foreground">No files uploaded in this storage bucket yet.</p>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className="rounded-xl border border-border/60 overflow-hidden overflow-x-auto bg-card/60">
+                          <table className="w-full text-left border-collapse text-xs">
+                            <thead>
+                              <tr className="border-b border-border/60 bg-secondary/60 text-muted-foreground font-semibold uppercase text-[10px] tracking-wider">
+                                <th className="py-3 px-4">Preview</th>
+                                <th className="py-3 px-4">Bucket</th>
+                                <th className="py-3 px-4">Filename</th>
+                                <th className="py-3 px-4">Size</th>
+                                <th className="py-3 px-4">Uploaded Date</th>
+                                <th className="py-3 px-4 text-right">Actions</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-border/40 text-foreground">
+                              {allFiles.map((file, idx) => (
+                                <tr key={idx} className="hover:bg-secondary/30 transition-colors">
+                                  <td className="py-2.5 px-4">
+                                    <div className="w-10 h-10 rounded-lg border border-border bg-slate-900 overflow-hidden flex items-center justify-center">
+                                      {file.url ? (
+                                        <img src={file.url} alt="asset thumbnail" className="w-full h-full object-cover" />
+                                      ) : (
+                                        <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                                      )}
+                                    </div>
+                                  </td>
+                                  <td className="py-2.5 px-4 font-mono font-bold text-amber-400">
+                                    {file.bucket}
+                                  </td>
+                                  <td className="py-2.5 px-4 font-mono text-white max-w-xs truncate">
+                                    {file.name}
+                                  </td>
+                                  <td className="py-2.5 px-4 font-mono text-muted-foreground">
+                                    {(file.size / 1024).toFixed(1)} KB
+                                  </td>
+                                  <td className="py-2.5 px-4 text-muted-foreground">
+                                    {new Date(file.created_at).toLocaleString()}
+                                  </td>
+                                  <td className="py-2.5 px-4 text-right">
+                                    <div className="flex items-center justify-end gap-2">
+                                      <a
+                                        href={file.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="p-1.5 rounded-lg bg-secondary/60 hover:bg-primary text-white transition-colors"
+                                        title="View full file"
+                                      >
+                                        <ExternalLink className="h-3.5 w-3.5" />
+                                      </a>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          if (window.confirm(`Delete storage file "${file.name}" from bucket "${file.bucket}"?`)) {
+                                            deleteStorageFileMutation.mutate({ bucket: file.bucket, file: file.name });
+                                          }
+                                        }}
+                                        disabled={deleteStorageFileMutation.isPending}
+                                        className="p-1.5 rounded-lg bg-red-500/20 hover:bg-red-500 text-red-300 hover:text-white transition-colors cursor-pointer"
+                                        title="Delete file"
+                                      >
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-12">
+                  <ShieldAlert className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-xs text-muted-foreground">Unable to fetch Supabase storage metrics.</p>
                 </div>
               )}
             </CardContent>
