@@ -518,7 +518,32 @@ export default function NewRepair() {
     queryFn: () => apiClient.get('/ratecards'),
     staleTime: 5 * 60 * 1000
   });
-  const { brandOptions, modelsByBrand } = buildDeviceOptions(rateCardOptionsData?.rateCards || []);
+
+  // Fetch past repairs to extract real stored problem descriptions and brands/models from database
+  const { data: pastRepairsData } = useQuery<{ repairs: Array<{ brand?: string; model?: string; problem?: string; device?: { brand?: string; model?: string; problem?: string } }> }>({
+    queryKey: ['past-repairs-problems'],
+    queryFn: () => apiClient.get('/repairs?limit=500'),
+    staleTime: 2 * 60 * 1000
+  });
+
+  const { brandOptions, modelsByBrand } = React.useMemo(() => {
+    const rateCardsList = rateCardOptionsData?.rateCards || [];
+    const pastRepairsList = pastRepairsData?.repairs || [];
+    
+    const combined: DeviceOptionEntry[] = [...rateCardsList];
+    pastRepairsList.forEach((r: any) => {
+      const b = r.brand || r.device?.brand;
+      const m = r.model || r.device?.model;
+      if (b && m) {
+        combined.push({
+          brand: b.trim().toUpperCase(),
+          model: m.trim().toUpperCase()
+        });
+      }
+    });
+
+    return buildDeviceOptions(combined);
+  }, [rateCardOptionsData, pastRepairsData]);
 
   // Fetch full shop customer list for instant 0ms client-side search & ranking
   const { data: allCustomersData } = useQuery<{ customers: Customer[] }>({
@@ -628,12 +653,7 @@ export default function NewRepair() {
     });
   }, [newCustPhone, allCustomersData, customersSearchData]);
 
-  // Fetch past repairs to extract real stored problem descriptions from database
-  const { data: pastRepairsData } = useQuery<{ repairs: Array<{ problem?: string; device?: { problem?: string } }> }>({
-    queryKey: ['past-repairs-problems'],
-    queryFn: () => apiClient.get('/repairs?limit=500'),
-    staleTime: 2 * 60 * 1000
-  });
+
 
   // Extract unique past problem descriptions created in the shop DB
   const existingShopProblems = React.useMemo(() => {
@@ -1542,7 +1562,7 @@ export default function NewRepair() {
                         placeholder="Search or Type Brand..."
                         value={brandSearchQuery}
                         onChange={(e) => {
-                          const val = e.target.value;
+                          const val = e.target.value.toUpperCase();
                           setBrandSearchQuery(val);
                           setValue('brand', val, { shouldValidate: true });
                           setSelectedBrand(val);
@@ -1552,7 +1572,7 @@ export default function NewRepair() {
                           setBrandDropdownOpen(true);
                           setModelDropdownOpen(false);
                         }}
-                        className="w-full bg-secondary/35 border border-border rounded-xl pl-4 pr-10 py-3 text-sm focus:outline-none focus:border-primary font-semibold text-foreground"
+                        className="w-full bg-secondary/35 border border-border rounded-xl pl-4 pr-10 py-3 text-sm focus:outline-none focus:border-primary font-bold uppercase text-foreground"
                       />
                       <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
                         <Search className="h-4 w-4" />
@@ -1565,7 +1585,7 @@ export default function NewRepair() {
                             <div
                               key={b}
                               onClick={() => handleSelectBrand(b)}
-                              className="px-4 py-2.5 hover:bg-primary/25 hover:text-white cursor-pointer text-xs font-semibold text-white/90 flex items-center justify-between"
+                              className="px-4 py-2.5 hover:bg-primary/25 hover:text-white cursor-pointer text-xs font-bold uppercase text-white/90 flex items-center justify-between"
                             >
                               <span>📱 {b}</span>
                               <span className="text-[10px] text-primary uppercase font-bold">SELECT</span>
@@ -1598,7 +1618,7 @@ export default function NewRepair() {
                         placeholder="Search or Type Model..."
                         value={modelSearchQuery}
                         onChange={(e) => {
-                          const val = e.target.value;
+                          const val = e.target.value.toUpperCase();
                           setModelSearchQuery(val);
                           setValue('model', val, { shouldValidate: true });
                           setSelectedModel(val);
@@ -1608,7 +1628,7 @@ export default function NewRepair() {
                           setModelDropdownOpen(true);
                           setBrandDropdownOpen(false);
                         }}
-                        className="w-full bg-secondary/35 border border-border rounded-xl pl-4 pr-10 py-3 text-sm focus:outline-none focus:border-primary font-semibold text-foreground"
+                        className="w-full bg-secondary/35 border border-border rounded-xl pl-4 pr-10 py-3 text-sm focus:outline-none focus:border-primary font-bold uppercase text-foreground"
                       />
                       <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
                         <Search className="h-4 w-4" />
@@ -1621,7 +1641,7 @@ export default function NewRepair() {
                             <div
                               key={m}
                               onClick={() => handleSelectModel(m)}
-                              className="px-4 py-2.5 hover:bg-primary/25 hover:text-white cursor-pointer text-xs font-semibold text-white/90 flex items-center justify-between"
+                              className="px-4 py-2.5 hover:bg-primary/25 hover:text-white cursor-pointer text-xs font-bold uppercase text-white/90 flex items-center justify-between"
                             >
                               <span>🔧 {m}</span>
                               <span className="text-[10px] text-primary uppercase font-bold">SELECT</span>
@@ -1660,11 +1680,11 @@ export default function NewRepair() {
                 placeholder="Write Problem Description..."
                 value={customProblem}
                 onChange={(e) => {
-                  setCustomProblem(e.target.value);
+                  setCustomProblem(e.target.value.toUpperCase());
                   setProblemSearchOpen(true);
                 }}
                 onFocus={() => setProblemSearchOpen(true)}
-                className="flex-1 bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold"
+                className="flex-1 bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-bold uppercase"
               />
               <Button
                 type="button"

@@ -338,10 +338,10 @@ export async function createRepair(req: Request, res: Response): Promise<void> {
       .insert({
         id: deviceId,
         customer_id: validatedData.customerId,
-        brand: validatedData.brand,
-        model: validatedData.model,
+        brand: validatedData.brand.toUpperCase(),
+        model: validatedData.model.toUpperCase(),
         imei: validatedData.imei || null,
-        problem: validatedData.problem,
+        problem: validatedData.problem.toUpperCase(),
         quality: validatedData.quality,
         physical_damage: validatedData.physicalDamage || null,
         front_photo_url: frontPhotoUrl,
@@ -360,6 +360,35 @@ export async function createRepair(req: Request, res: Response): Promise<void> {
     if (deviceError || !device) {
       res.status(400).json({ error: deviceError?.message || 'Failed to register device' });
       return;
+    }
+
+    // Auto-create/upsert Rate Card for brand + model so it reflects in Repair Price List & Create Repair Price List
+    try {
+      const cleanBrand = validatedData.brand.trim().toUpperCase();
+      const cleanModel = validatedData.model.trim().toUpperCase();
+
+      if (cleanBrand && cleanModel) {
+        const { data: existingRateCard } = await supabaseAdmin
+          .from('rate_cards')
+          .select('id')
+          .eq('shop_id', user.shop_id)
+          .ilike('brand', cleanBrand)
+          .ilike('model', cleanModel)
+          .maybeSingle();
+
+        if (!existingRateCard) {
+          await supabaseAdmin
+            .from('rate_cards')
+            .insert({
+              id: uuidv4(),
+              shop_id: user.shop_id,
+              brand: cleanBrand,
+              model: cleanModel
+            });
+        }
+      }
+    } catch (rcErr) {
+      console.warn('Auto rate card creation notice:', rcErr);
     }
 
     // 4. Generate unique sequential job number atomically
