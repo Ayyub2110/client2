@@ -46,7 +46,7 @@ interface RepairDetailData {
   estimate: number;
   advance: number;
   balance: number;
-  status: 'pending' | 'repairing' | 'ready' | 'delivered' | 'cancelled';
+  status: 'pending' | 'repairing' | 'ready' | 'delivered' | 'delivered_pending_balance' | 'cancelled';
   delivery_date: string | null;
   notes: string | null;
   created_at: string;

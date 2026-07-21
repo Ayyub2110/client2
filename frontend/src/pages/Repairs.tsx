@@ -97,6 +97,24 @@ export default function Repairs() {
     }
   };
 
+  const collectBalanceMutation = useMutation({
+    mutationFn: (id: string) => apiClient.put(`/repairs/${id}/status`, { status: 'delivered', notes: 'Balance collected in full' }),
+    onSuccess: () => {
+      toast.success('Balance collected in full! Ticket updated to Fully Paid Delivered.');
+      queryClient.invalidateQueries({ queryKey: ['repairs-list'] });
+    },
+    onError: (err: any) => {
+      toast.error(err.message || 'Failed to update balance status');
+    }
+  });
+
+  const handleCollectBalance = (e: React.MouseEvent, id: string, jobNumber: string, amount: number) => {
+    e.stopPropagation();
+    if (window.confirm(`Mark balance of ₹${amount.toFixed(2)} as collected in full for ticket ${jobNumber}?`)) {
+      collectBalanceMutation.mutate(id);
+    }
+  };
+
   const handleDownloadInvoice = async (e: React.MouseEvent, id: string, jobNumber: string) => {
     e.stopPropagation();
     try {
@@ -346,45 +364,70 @@ export default function Repairs() {
                   </div>
 
                   {/* Pending Balance Contact Follow-Up Bar */}
-                  {hasPendingBalance && (
-                    <div className="mt-1 pt-2 border-t border-border/40 flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex items-center gap-1.5 text-[11px] font-extrabold text-orange-400">
-                        <span>⚠️ Outstanding Balance:</span>
-                        <span className="font-mono text-white">₹{Number(r.balance).toFixed(2)}</span>
-                      </div>
+                  {hasPendingBalance && (() => {
+                    const dueMatch = (r as any).notes?.match(/\[PROMISED_DUE:(\d{4}-\d{2}-\d{2})\]/);
+                    const promisedDueDate = dueMatch ? dueMatch[1] : null;
+                    const isOverdue = promisedDueDate ? (new Date() > new Date(promisedDueDate + 'T23:59:59')) : false;
 
-                      <div className="flex items-center gap-2">
-                        {r.device?.customer?.phone && (
+                    return (
+                      <div className="mt-1 pt-2 border-t border-border/40 flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex flex-wrap items-center gap-2 text-[11px] font-extrabold">
+                          <span className="text-orange-400">⚠️ Outstanding Balance:</span>
+                          <span className="font-mono text-white">₹{Number(r.balance).toFixed(2)}</span>
+                          {promisedDueDate && (
+                            <span className="text-muted-foreground font-semibold">
+                              (Due: <strong className="text-amber-300">{promisedDueDate}</strong>)
+                            </span>
+                          )}
+                          {isOverdue && (
+                            <span className="px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/40 text-[9px] uppercase font-black animate-pulse">
+                              🚨 OVERDUE
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-2">
                           <button
                             type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const cleanPhone = (r.device?.customer?.phone || '').replace(/\D/g, '');
-                              const text = encodeURIComponent(
-                                `Hello ${r.device?.customer?.name || 'Customer'}, your repair order ${r.job_number} for ${r.device?.brand || ''} ${r.device?.model || ''} has an unpaid balance of ₹${Number(r.balance).toFixed(2)}. Please remit the payment at your earliest convenience. Thank you, GK Mobile Service.`
-                              );
-                              window.open(`https://wa.me/91${cleanPhone}?text=${text}`, '_blank');
-                            }}
-                            className="px-2.5 py-1 rounded-lg bg-emerald-600/25 hover:bg-emerald-600/40 text-emerald-300 border border-emerald-500/40 text-[10px] font-extrabold uppercase flex items-center gap-1 transition-all shadow-sm"
-                            title="Send WhatsApp Payment Reminder"
+                            onClick={(e) => handleCollectBalance(e, r.id, r.job_number, Number(r.balance))}
+                            className="px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[10px] font-black uppercase tracking-wider transition-all shadow-md active:scale-95 cursor-pointer"
+                            title="Collect remaining balance in full"
                           >
-                            <span>💬 WhatsApp Reminder</span>
+                            💵 Collect ₹{Number(r.balance).toFixed(2)}
                           </button>
-                        )}
-                        {r.device?.customer?.phone && (
-                          <button
-                            type="button"
-                            onClick={(e) => handleCall(e, r.device?.customer?.phone || '')}
-                            className="px-2 py-1 rounded-lg bg-blue-600/25 hover:bg-blue-600/40 text-blue-300 border border-blue-500/40 text-[10px] font-extrabold uppercase flex items-center gap-1 transition-all shadow-sm"
-                            title="Call Customer"
-                          >
-                            <Phone className="h-3 w-3" />
-                            <span>Call</span>
-                          </button>
-                        )}
+
+                          {r.device?.customer?.phone && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const cleanPhone = (r.device?.customer?.phone || '').replace(/\D/g, '');
+                                const text = encodeURIComponent(
+                                  `Hello ${r.device?.customer?.name || 'Customer'}, your repair order ${r.job_number} for ${r.device?.brand || ''} ${r.device?.model || ''} has an unpaid balance of ₹${Number(r.balance).toFixed(2)}${promisedDueDate ? ` promised on ${promisedDueDate}` : ''}. Kindly clear the payment at your earliest convenience. Thank you, GK Mobile Service.`
+                                );
+                                window.open(`https://wa.me/91${cleanPhone}?text=${text}`, '_blank');
+                              }}
+                              className="px-2.5 py-1 rounded-lg bg-emerald-600/25 hover:bg-emerald-600/40 text-emerald-300 border border-emerald-500/40 text-[10px] font-extrabold uppercase flex items-center gap-1 transition-all shadow-sm"
+                              title="Send WhatsApp Payment Reminder"
+                            >
+                              <span>💬 WhatsApp Reminder</span>
+                            </button>
+                          )}
+                          {r.device?.customer?.phone && (
+                            <button
+                              type="button"
+                              onClick={(e) => handleCall(e, r.device?.customer?.phone || '')}
+                              className="px-2 py-1 rounded-lg bg-blue-600/25 hover:bg-blue-600/40 text-blue-300 border border-blue-500/40 text-[10px] font-extrabold uppercase flex items-center gap-1 transition-all shadow-sm"
+                              title="Call Customer"
+                            >
+                              <Phone className="h-3 w-3" />
+                              <span>Call</span>
+                            </button>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
                 </div>
               </Card>
             );

@@ -855,7 +855,9 @@ export async function deliverRepair(req: Request, res: Response): Promise<void> 
     receiverPhotoUrl: z.string().optional().nullable(),
     signatureDataUrl: z.string().optional().nullable(),
     deliveryDate: z.string().optional().nullable(),
-    deliveryTime: z.string().optional().nullable()
+    deliveryTime: z.string().optional().nullable(),
+    amountPaidAtDelivery: z.number().optional().nullable(),
+    paymentDueDate: z.string().optional().nullable()
   });
 
   try {
@@ -874,7 +876,7 @@ export async function deliverRepair(req: Request, res: Response): Promise<void> 
       return;
     }
 
-    if (existing.status !== 'ready') {
+    if (existing.status !== 'ready' && existing.status !== 'delivered_pending_balance') {
       res.status(400).json({ error: 'Repair must be in "ready" state before delivery' });
       return;
     }
@@ -919,26 +921,42 @@ export async function deliverRepair(req: Request, res: Response): Promise<void> 
     let deliveredAt = new Date().toISOString();
     if (validated.deliveryDate) {
       const timeStr = validated.deliveryTime || '00:00';
-      // Create local date string and parse to ISO
       deliveredAt = new Date(`${validated.deliveryDate}T${timeStr}`).toISOString();
     }
 
-    // 4. Update the repair order status
-    const deliverySummary = `Received by ${validated.receivedBy}. Notes: ${validated.notes || 'No notes'}`;
+    // 4. Calculate total advance/paid vs estimate
+    const existingAdvance = Number(existing.advance || 0);
+    const estimate = Number(existing.estimate || 0);
+    
+    // Amount collected today during delivery
+    const paidToday = validated.amountPaidAtDelivery !== undefined && validated.amountPaidAtDelivery !== null
+      ? Number(validated.amountPaidAtDelivery)
+      : (estimate - existingAdvance);
+
+    const newTotalPaid = Math.min(estimate, existingAdvance + Math.max(0, paidToday));
+    const isFullyPaid = newTotalPaid >= estimate;
+    const finalStatus = isFullyPaid ? 'delivered' : 'delivered_pending_balance';
+
+    let mergedNotes = validated.notes || existing.notes || '';
+    if (!isFullyPaid && validated.paymentDueDate) {
+      mergedNotes = `${mergedNotes} [PROMISED_DUE:${validated.paymentDueDate}]`.trim();
+    }
+
+    const deliverySummary = `Received by ${validated.receivedBy}. Paid at delivery: ₹${paidToday}. Notes: ${mergedNotes || 'No notes'}`;
 
     const { data: dbRepair, error: updateError } = await supabaseAdmin
       .from('repairs')
       .update({
-        status: 'delivered',
+        status: finalStatus,
+        advance: newTotalPaid,
         receiver_name: validated.receiverName,
         receiver_phone: validated.receiverPhone,
         receiver_photo_url: receiverPhotoUrl,
         signature_url: signatureUrl,
         delivered_at: deliveredAt,
-        notes: validated.notes || existing.notes,
+        notes: mergedNotes,
         updated_by: user.id,
-        updated_at: new Date().toISOString(),
-        advance: existing.estimate
+        updated_at: new Date().toISOString()
       })
       .eq('id', id)
       .select(`

@@ -27,7 +27,7 @@ interface RepairDetailData {
   estimate: number;
   advance: number;
   balance: number;
-  status: 'pending' | 'repairing' | 'ready' | 'delivered' | 'cancelled';
+  status: 'pending' | 'repairing' | 'ready' | 'delivered' | 'delivered_pending_balance' | 'cancelled';
   delivery_date: string | null;
   notes: string | null;
   created_at: string;
@@ -212,11 +212,28 @@ export default function DeliverRepair() {
     sigPadRef.current?.clear();
   };
 
+  const [amountPaidNow, setAmountPaidNow] = useState<string>('');
+  const [paymentDueDate, setPaymentDueDate] = useState<string>('');
+
+  // Set default amount paid now once repair data loads
+  useEffect(() => {
+    if (repair) {
+      const remainingBal = Math.max(0, Number(repair.estimate) - Number(repair.advance));
+      setAmountPaidNow(remainingBal.toString());
+
+      // Default payment due date to 7 days from now
+      const d = new Date();
+      d.setDate(d.getDate() + 7);
+      const defaultDue = d.toISOString().split('T')[0];
+      setPaymentDueDate(defaultDue);
+    }
+  }, [repair]);
+
   // Submit delivery closure
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (repair.status !== 'ready') {
+    if (repair.status !== 'ready' && repair.status !== 'delivered_pending_balance') {
       toast.error('Only repairs marked as "Ready" can be delivered.');
       return;
     }
@@ -236,6 +253,8 @@ export default function DeliverRepair() {
       ? sigPadRef.current.getTrimmedCanvas().toDataURL('image/png')
       : null;
 
+    const paidNum = parseFloat(amountPaidNow || '0');
+
     deliverMutation.mutate({
       receiverName,
       receiverPhone,
@@ -244,7 +263,9 @@ export default function DeliverRepair() {
       receiverPhotoUrl: capturedPhoto, // Base64 data url
       signatureDataUrl,
       deliveryDate,
-      deliveryTime
+      deliveryTime,
+      amountPaidAtDelivery: paidNum,
+      paymentDueDate: paidNum < (Number(repair.estimate) - Number(repair.advance)) ? paymentDueDate : null
     });
   };
 
@@ -502,13 +523,62 @@ export default function DeliverRepair() {
                 </div>
               </div>
 
+              {/* PAYMENT COLLECTION & UNPAID BALANCE PROMISE */}
+              <div className="p-4 bg-secondary/25 border border-primary/30 rounded-2xl space-y-3 mt-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black text-primary uppercase tracking-wider">💳 Payment Collection at Delivery</span>
+                  <span className="text-xs font-bold text-white">Full Balance: ₹{(Number(repair.estimate) - Number(repair.advance)).toFixed(2)}</span>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider block">Payment Collected Now (₹)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max={Number(repair.estimate) - Number(repair.advance)}
+                      value={amountPaidNow}
+                      onChange={(e) => setAmountPaidNow(e.target.value)}
+                      placeholder="0.00"
+                      className="w-full bg-slate-950 border border-emerald-500/50 rounded-xl px-3 py-2 text-sm font-bold text-emerald-300 focus:outline-none focus:border-emerald-400"
+                    />
+                  </div>
+
+                  {/* Dynamic remaining balance calculation */}
+                  {(() => {
+                    const paidNowNum = parseFloat(amountPaidNow || '0');
+                    const totalPaid = Number(repair.advance) + paidNowNum;
+                    const remBal = Math.max(0, Number(repair.estimate) - totalPaid);
+
+                    if (remBal > 0) {
+                      return (
+                        <div className="space-y-1">
+                          <label className="text-[11px] font-bold text-orange-400 uppercase tracking-wider block">Promised Due Date for ₹{remBal.toFixed(2)}</label>
+                          <input
+                            type="date"
+                            value={paymentDueDate}
+                            onChange={(e) => setPaymentDueDate(e.target.value)}
+                            className="w-full bg-slate-950 border border-orange-500/50 rounded-xl px-3 py-2 text-sm font-bold text-orange-300 focus:outline-none focus:border-orange-400"
+                          />
+                        </div>
+                      );
+                    }
+                    return (
+                      <div className="flex items-center justify-center p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-extrabold">
+                        ✓ FULLY PAID IN FULL
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+
               {/* Delivery notes */}
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-muted-foreground">Handoff Notes (Optional)</label>
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Record payment methods, accessories returned, or client comments..."
+                  placeholder="Record payment methods, promised payment terms, accessories returned..."
                   rows={2}
                   className="flex w-full rounded-md border border-input bg-secondary/50 px-3 py-2 text-sm text-white focus:border-primary focus-visible:outline-none"
                 />
