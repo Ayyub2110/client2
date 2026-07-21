@@ -1306,37 +1306,56 @@ export default function NewRepair() {
 
   return (
     <div className="space-y-6 w-full pb-16 bg-background rounded-3xl overflow-hidden shadow-2xl border border-border/85 light text-foreground">
-      {/* Theme Matched Purple/Indigo Top Header */}
-      <div className="bg-gradient-to-r from-primary to-primary/80 p-6 relative">
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => navigate('/repairs')}
-            className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-          >
-            <ArrowLeft className="h-5 w-5 text-white" />
-          </button>
-          <div className="flex-1">
-            <h1 className="text-xl font-black tracking-tight text-white uppercase">
-              {isEditMode ? 'Modify Booking Details' : 'Create New Booking'}
-            </h1>
-            <p className="text-white/80 text-xs mt-0.5">
-              {isEditMode ? 'Update diagnostics and repair items' : 'Structured repair order logging terminal'}
-            </p>
+      {/* Modern Glassmorphic Mesh Banner Header */}
+      <div className="relative overflow-hidden rounded-t-3xl bg-gradient-to-r from-violet-950 via-slate-900 to-purple-950 p-6 sm:p-8 border-b border-white/10 shadow-2xl">
+        {/* Glowing Decorative Ambient Backdrop */}
+        <div className="absolute -top-16 -right-16 w-64 h-64 bg-primary/30 rounded-full blur-3xl pointer-events-none animate-pulse" />
+        <div className="absolute -bottom-16 -left-16 w-64 h-64 bg-purple-600/25 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <button
+              type="button"
+              onClick={() => navigate('/repairs')}
+              className="p-3 rounded-2xl bg-white/10 hover:bg-white/20 text-white backdrop-blur-md border border-white/15 transition-all shadow-lg hover:scale-105 active:scale-95 cursor-pointer shrink-0"
+              title="Go back to Repairs List"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </button>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-primary/25 text-primary-foreground border border-primary/40 backdrop-blur-md">
+                  TERMINAL v2.5
+                </span>
+                <span className="flex items-center text-[10px] font-bold text-emerald-400">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping mr-1" />
+                  LIVE DB ACTIVE
+                </span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white uppercase mt-1 drop-shadow-md">
+                {isEditMode ? 'Modify Booking Details' : 'Create New Booking'}
+              </h1>
+              <p className="text-white/70 text-xs sm:text-sm font-medium mt-0.5">
+                {isEditMode ? 'Update diagnostics and repair items' : '⚡ High-speed repair ticket logging & diagnostics portal'}
+              </p>
+            </div>
           </div>
+
           {(isEditMode ? editRepairData?.repair?.job_number : nextJobNumber) && (
-            <div className="bg-white/10 border border-white/20 px-3.5 py-1.5 rounded-xl text-right shrink-0">
-              <span className="text-[10px] text-white/70 block uppercase font-bold tracking-wider">
-                {isEditMode ? 'Billing ID' : 'Billing ID (Generated)'}
-              </span>
-              <span className="font-mono text-sm font-black text-foreground">
-                {isEditMode ? editRepairData.repair.job_number : nextJobNumber}
-              </span>
+            <div className="bg-white/10 backdrop-blur-xl border border-white/20 px-4 py-2.5 rounded-2xl shadow-xl flex items-center justify-between sm:justify-end gap-3 shrink-0">
+              <div className="text-left sm:text-right">
+                <span className="text-[10px] text-white/70 block uppercase font-bold tracking-wider">
+                  {isEditMode ? 'Billing ID' : 'Billing ID (Generated)'}
+                </span>
+                <span className="font-mono text-base sm:text-lg font-black text-white tracking-wider">
+                  {isEditMode ? editRepairData.repair.job_number : nextJobNumber}
+                </span>
+              </div>
+              <div className="p-2 rounded-xl bg-white/10 text-white/90">
+                <Sparkles className="h-4 w-4 text-primary animate-pulse" />
+              </div>
             </div>
           )}
-        </div>
-        <div className="absolute right-4 top-4 opacity-10 pointer-events-none">
-          <Smile className="h-16 w-16 text-white" />
         </div>
       </div>
 
@@ -1346,81 +1365,92 @@ export default function NewRepair() {
         <input type="text" name="chrome_prevent_autofill_email" style={{ display: 'none' }} tabIndex={-1} autoComplete="off" />
         <input type="password" name="chrome_prevent_autofill_pass" style={{ display: 'none' }} tabIndex={-1} autoComplete="off" />
         
-        {/* ROW 1: ORDER STATUS & CUSTOMER DETAILS — SIDE BY SIDE */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-b border-border/40 pb-6">
-          {/* Order Status */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-primary uppercase tracking-wider block">Order Status</label>
-            <select
-              {...register('status')}
-              className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-bold uppercase cursor-pointer"
-            >
-              <option value="pending">😊 PENDING</option>
-              <option value="repairing">🔧 REPAIRING</option>
-              <option value="ready">✅ READY</option>
-              {watch('status') === 'delivered' && <option value="delivered">📦 DELIVERED</option>}
-              <option value="cancelled">❌ CANCELLED</option>
-            </select>
-          </div>
-
-          {/* Customer Details Search */}
-          <div className="space-y-1.5 relative">
-            <label className="text-xs font-bold text-primary uppercase tracking-wider block">Customer Details</label>
-            <div className="relative">
-              <Search className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
-              <input
-                type="text"
-                placeholder="Searching 🔍"
-                value={phoneSearch}
-                onChange={(e) => {
-                  setPhoneSearch(e.target.value);
-                  setCustomerSearchOpen(true);
-                }}
-                className="w-full pl-9 pr-3 py-3 bg-secondary/35 border border-border rounded-xl text-sm focus:outline-none focus:border-primary text-foreground font-semibold"
-              />
+        {/* ROW 1: ORDER STATUS & QUICK SEARCH */}
+        <div className="bg-card/70 backdrop-blur-xl border border-border/80 p-5 rounded-2xl shadow-xl border-l-4 border-l-primary">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Order Status */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-1.5">
+                <span>⚡</span>
+                <span>Order Status</span>
+              </label>
+              <select
+                {...register('status')}
+                className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 font-bold uppercase cursor-pointer transition-all shadow-sm"
+              >
+                <option value="pending">😊 PENDING</option>
+                <option value="repairing">🔧 REPAIRING</option>
+                <option value="ready">✅ READY</option>
+                {watch('status') === 'delivered' && <option value="delivered">📦 DELIVERED</option>}
+                <option value="cancelled">❌ CANCELLED</option>
+              </select>
             </div>
-            {/* Dropdown autocomplete results */}
-            {customerSearchOpen && phoneSearch.trim().length >= 1 && (
-              <div className="absolute z-30 left-0 right-0 bg-secondary/95 border border-border rounded-xl divide-y divide-border/60 overflow-hidden shadow-xl max-h-52 overflow-y-auto mt-1">
-                {filteredCustomers.length > 0 ? (
-                  filteredCustomers.map((cust) => (
-                    <button
-                      type="button"
-                      key={cust.id}
-                      onClick={() => {
-                        setSelectedCustomer(cust);
-                        setValue('customerId', cust.id, { shouldValidate: true });
-                        setNewCustName(cust.name);
-                        setNewCustPhone(cust.phone);
-                        setNewCustAddr(cust.address || '');
-                        setPhoneSearch('');
-                        setCustomerSearchOpen(false);
-                      }}
-                      className="w-full p-3 text-left hover:bg-primary/10 cursor-pointer flex justify-between items-center gap-3"
-                    >
-                      <div>
-                        <div className="text-sm font-semibold text-foreground">{cust.name}</div>
-                        <div className="text-xs text-muted-foreground">{cust.phone}</div>
-                      </div>
-                      <span className="text-[10px] uppercase font-bold text-primary whitespace-nowrap">Select</span>
-                    </button>
-                  ))
-                ) : (
-                  <div className="p-3 text-center text-xs text-muted-foreground">
-                    No match — fill in details below to register.
-                  </div>
-                )}
+
+            {/* Customer Details Search */}
+            <div className="space-y-1.5 relative">
+              <label className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-1.5">
+                <span>🔍</span>
+                <span>Quick Customer Search</span>
+              </label>
+              <div className="relative">
+                <Search className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
+                <input
+                  type="text"
+                  placeholder="Search customer name or phone..."
+                  value={phoneSearch}
+                  onChange={(e) => {
+                    setPhoneSearch(e.target.value);
+                    setCustomerSearchOpen(true);
+                  }}
+                  className="w-full pl-9 pr-3 py-3 bg-secondary/35 border border-border rounded-xl text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 text-foreground font-semibold transition-all shadow-sm"
+                />
               </div>
-            )}
+              {/* Dropdown autocomplete results */}
+              {customerSearchOpen && phoneSearch.trim().length >= 1 && (
+                <div className="absolute z-30 left-0 right-0 bg-neutral-900 border border-primary/40 rounded-xl divide-y divide-border/40 overflow-hidden shadow-2xl max-h-52 overflow-y-auto mt-1">
+                  {filteredCustomers.length > 0 ? (
+                    filteredCustomers.map((cust) => (
+                      <button
+                        type="button"
+                        key={cust.id}
+                        onClick={() => {
+                          setSelectedCustomer(cust);
+                          setValue('customerId', cust.id, { shouldValidate: true });
+                          setNewCustName(cust.name);
+                          setNewCustPhone(cust.phone);
+                          setNewCustAddr(cust.address || '');
+                          setPhoneSearch('');
+                          setCustomerSearchOpen(false);
+                        }}
+                        className="w-full p-3 text-left hover:bg-primary/25 hover:text-white cursor-pointer flex justify-between items-center gap-3 transition-colors"
+                      >
+                        <div>
+                          <div className="text-sm font-bold text-white">{cust.name}</div>
+                          <div className="text-xs text-white/70 font-mono">{cust.phone}</div>
+                        </div>
+                        <span className="text-[10px] uppercase font-black text-primary bg-primary/20 px-2 py-1 rounded-md">Select</span>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="p-3 text-center text-xs text-muted-foreground">
+                      No match — fill in details below to register.
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* ROW 2: REGISTER NEW CUSTOMER — ALWAYS VISIBLE */}
-        <div className="bg-secondary/10 border border-border/60 p-4 rounded-2xl space-y-4">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-bold text-foreground uppercase tracking-[0.2em] underline decoration-primary decoration-2 underline-offset-4">Register New Customer</span>
+        {/* ROW 2: REGISTER NEW CUSTOMER — GLASS CARD */}
+        <div className="bg-card/70 backdrop-blur-xl border border-border/80 p-5 rounded-2xl space-y-4 shadow-xl border-l-4 border-l-primary relative overflow-hidden">
+          <div className="flex items-center justify-between border-b border-border/40 pb-3">
+            <div className="flex items-center gap-2">
+              <span className="text-base">👤</span>
+              <span className="text-sm font-extrabold text-foreground uppercase tracking-wider">Customer Details</span>
+            </div>
             {selectedCustomer && (
-              <span className="flex items-center gap-1.5 text-[10px] font-black text-primary bg-primary/10 border border-primary/20 px-2.5 py-1 rounded-lg">
+              <span className="flex items-center gap-1.5 text-[10px] font-black text-primary bg-primary/15 border border-primary/30 px-3 py-1 rounded-xl shadow-sm">
                 ✓ {selectedCustomer.name}
                 <button
                   type="button"
@@ -1431,16 +1461,16 @@ export default function NewRepair() {
                     setNewCustPhone('');
                     setNewCustAddr('');
                   }}
-                  className="ml-0.5 text-red-400 hover:text-red-600"
+                  className="ml-1 text-red-400 hover:text-red-600 font-extrabold cursor-pointer"
                 >✕</button>
               </span>
             )}
           </div>
 
-          <div className="grid grid-cols-1 gap-3">
+          <div className="grid grid-cols-1 gap-3.5">
             {/* Customer Name */}
             <div className="space-y-1 relative">
-              <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Customer Name</label>
+              <label className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider block">Customer Name</label>
               <input
                 type="text"
                 id="customer_full_name_no_autofill_v2"
@@ -1463,11 +1493,11 @@ export default function NewRepair() {
                   setNameSearchOpen(true);
                   if (selectedCustomer) { setSelectedCustomer(null); setValue('customerId', ''); }
                 }}
-                className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-2.5 text-sm text-foreground focus:outline-none focus:border-primary font-semibold"
+                className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 font-semibold transition-all shadow-sm"
               />
               {/* Instant 1-letter Customer Name Autocomplete */}
               {nameSearchOpen && newCustName.trim().length >= 1 && (
-                <div className="absolute z-30 left-0 right-0 bg-secondary/95 border border-border rounded-xl divide-y divide-border/60 overflow-hidden shadow-xl max-h-48 overflow-y-auto mt-1">
+                <div className="absolute z-30 left-0 right-0 bg-neutral-900 border border-primary/40 rounded-xl divide-y divide-border/40 overflow-hidden shadow-2xl max-h-48 overflow-y-auto mt-1">
                   {filteredCustomersByName.length > 0 ? (
                     filteredCustomersByName.map((cust) => (
                       <button
@@ -1481,13 +1511,13 @@ export default function NewRepair() {
                           setNewCustAddr(cust.address || '');
                           setNameSearchOpen(false);
                         }}
-                        className="w-full p-2.5 text-left hover:bg-primary/10 cursor-pointer flex justify-between items-center gap-2"
+                        className="w-full p-3 text-left hover:bg-primary/25 hover:text-white cursor-pointer flex justify-between items-center gap-2 transition-colors"
                       >
                         <div>
-                          <div className="text-xs font-bold text-foreground">{cust.name}</div>
-                          <div className="text-[10px] text-muted-foreground">{cust.phone}</div>
+                          <div className="text-xs font-bold text-white">{cust.name}</div>
+                          <div className="text-[10px] text-white/70 font-mono">{cust.phone}</div>
                         </div>
-                        <span className="text-[9px] uppercase font-black text-primary">SELECT</span>
+                        <span className="text-[9px] uppercase font-black text-primary bg-primary/20 px-2 py-1 rounded-md">SELECT</span>
                       </button>
                     ))
                   ) : (
@@ -1501,7 +1531,7 @@ export default function NewRepair() {
 
             {/* Phone */}
             <div className="space-y-1 relative">
-              <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Phone</label>
+              <label className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider block">Phone Number</label>
               <input
                 type="text"
                 id="customer_phone_no_autofill"
@@ -1515,11 +1545,11 @@ export default function NewRepair() {
                   if (selectedCustomer) { setSelectedCustomer(null); setValue('customerId', ''); }
                 }}
                 onFocus={() => setPhoneInputSearchOpen(true)}
-                className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-2.5 text-sm text-foreground focus:outline-none focus:border-primary font-semibold"
+                className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 font-semibold transition-all shadow-sm"
               />
               {/* Instant 1-letter Phone Autocomplete */}
               {phoneInputSearchOpen && newCustPhone.trim().length >= 1 && (
-                <div className="absolute z-30 left-0 right-0 bg-secondary/95 border border-border rounded-xl divide-y divide-border/60 overflow-hidden shadow-xl max-h-48 overflow-y-auto mt-1">
+                <div className="absolute z-30 left-0 right-0 bg-neutral-900 border border-primary/40 rounded-xl divide-y divide-border/40 overflow-hidden shadow-2xl max-h-48 overflow-y-auto mt-1">
                   {filteredCustomersByPhone.length > 0 ? (
                     filteredCustomersByPhone.map((cust) => (
                       <button
@@ -1533,13 +1563,13 @@ export default function NewRepair() {
                           setNewCustAddr(cust.address || '');
                           setPhoneInputSearchOpen(false);
                         }}
-                        className="w-full p-2.5 text-left hover:bg-primary/10 cursor-pointer flex justify-between items-center gap-2"
+                        className="w-full p-3 text-left hover:bg-primary/25 hover:text-white cursor-pointer flex justify-between items-center gap-2 transition-colors"
                       >
                         <div>
-                          <div className="text-xs font-bold text-foreground">{cust.phone}</div>
-                          <div className="text-[10px] text-muted-foreground">{cust.name}</div>
+                          <div className="text-xs font-bold text-white">{cust.phone}</div>
+                          <div className="text-[10px] text-white/70">{cust.name}</div>
                         </div>
-                        <span className="text-[9px] uppercase font-black text-primary">SELECT</span>
+                        <span className="text-[9px] uppercase font-black text-primary bg-primary/20 px-2 py-1 rounded-md">SELECT</span>
                       </button>
                     ))
                   ) : (
@@ -1552,21 +1582,22 @@ export default function NewRepair() {
             </div>
             {/* Address */}
             <div className="space-y-1">
-              <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Address</label>
+              <label className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider block">Address</label>
               <input
                 type="text"
                 placeholder="e.g. New Delhi"
                 value={newCustAddr}
                 autoComplete="off"
                 onChange={(e) => setNewCustAddr(e.target.value)}
-                className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-2.5 text-sm text-foreground focus:outline-none focus:border-primary font-semibold"
+                className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 font-semibold transition-all shadow-sm"
               />
             </div>
 
             {/* Inline Device Images (Optional) Upload Section */}
-            <div className="space-y-2 pt-2 border-t border-border/40">
-              <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">
-                Device Images (Optional)
+            <div className="space-y-2 pt-3 border-t border-border/40">
+              <label className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-wider block flex items-center gap-1.5">
+                <span>🖼️</span>
+                <span>Device Images (Optional)</span>
               </label>
               <div className="border border-border/80 rounded-2xl p-4 bg-secondary/15 space-y-3 shadow-sm">
                 <div className="flex items-center gap-2 text-xs font-bold text-foreground">
@@ -1576,7 +1607,7 @@ export default function NewRepair() {
 
                 <div className="grid grid-cols-2 gap-3">
                   {/* Gallery Button */}
-                  <label className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-border bg-card hover:bg-secondary/60 cursor-pointer font-extrabold text-xs text-foreground transition-all shadow-sm active:scale-95">
+                  <label className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-border bg-card hover:bg-secondary/60 cursor-pointer font-extrabold text-xs text-foreground transition-all shadow-sm active:scale-95">
                     <ImageIcon className="h-4 w-4 text-primary" />
                     <span>Gallery</span>
                     <input
@@ -1589,7 +1620,7 @@ export default function NewRepair() {
                   </label>
 
                   {/* Camera Button */}
-                  <label className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-border bg-card hover:bg-secondary/60 cursor-pointer font-extrabold text-xs text-foreground transition-all shadow-sm active:scale-95">
+                  <label className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-border bg-card hover:bg-secondary/60 cursor-pointer font-extrabold text-xs text-foreground transition-all shadow-sm active:scale-95">
                     <Camera className="h-4 w-4 text-primary" />
                     <span>Camera</span>
                     <input
@@ -1626,7 +1657,7 @@ export default function NewRepair() {
 
           {/* Previous Repairs/Problems if existing customer */}
           {selectedCustomer && customerProfileData?.devices && customerProfileData.devices.length > 0 && (
-            <div className="mt-3 p-3.5 bg-primary/5 border border-primary/20 rounded-2xl space-y-2">
+            <div className="mt-3 p-4 bg-primary/5 border border-primary/20 rounded-2xl space-y-2">
               <span className="text-[10px] font-black text-primary uppercase tracking-wider block">Past Problems & Devices</span>
               <div className="space-y-2 max-h-32 overflow-y-auto pr-1">
                 {customerProfileData.devices.map((dev: any) => (
@@ -1645,6 +1676,14 @@ export default function NewRepair() {
           {errors.customerId && (
             <p className="text-[11px] text-red-500 font-semibold">{errors.customerId.message}</p>
           )}
+        </div>
+
+        {/* DEVICE & PROBLEM SPECIFICATION — GLASS CARD */}
+        <div className="bg-card/70 backdrop-blur-xl border border-border/80 p-5 sm:p-6 rounded-2xl space-y-4 shadow-xl border-l-4 border-l-indigo-500 relative overflow-hidden">
+          <div className="flex items-center gap-2 border-b border-border/40 pb-3">
+            <span className="text-base">📱</span>
+            <span className="text-sm font-extrabold text-foreground uppercase tracking-wider">Device & Problem Specification</span>
+          </div>
 
           {/* Brand & Model Selectors */}
           {(() => {
@@ -1682,7 +1721,7 @@ export default function NewRepair() {
                           setBrandDropdownOpen(true);
                           setModelDropdownOpen(false);
                         }}
-                        className="w-full bg-secondary/35 border border-border rounded-xl pl-4 pr-10 py-3 text-sm focus:outline-none focus:border-primary font-bold uppercase text-foreground"
+                        className="w-full bg-secondary/35 border border-border rounded-xl pl-4 pr-10 py-3 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 font-bold uppercase text-foreground transition-all shadow-sm"
                       />
                       <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
                         <Search className="h-4 w-4" />
@@ -1738,7 +1777,7 @@ export default function NewRepair() {
                           setModelDropdownOpen(true);
                           setBrandDropdownOpen(false);
                         }}
-                        className="w-full bg-secondary/35 border border-border rounded-xl pl-4 pr-10 py-3 text-sm focus:outline-none focus:border-primary font-bold uppercase text-foreground"
+                        className="w-full bg-secondary/35 border border-border rounded-xl pl-4 pr-10 py-3 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 font-bold uppercase text-foreground transition-all shadow-sm"
                       />
                       <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
                         <Search className="h-4 w-4" />
@@ -1794,7 +1833,7 @@ export default function NewRepair() {
                   setProblemSearchOpen(true);
                 }}
                 onFocus={() => setProblemSearchOpen(true)}
-                className="flex-1 bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-bold uppercase"
+                className="flex-1 bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 font-bold uppercase transition-all shadow-sm"
               />
               <Button
                 type="button"
@@ -1802,7 +1841,7 @@ export default function NewRepair() {
                   handleAddCustomProblem();
                   setProblemSearchOpen(false);
                 }}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground font-extrabold uppercase text-xs px-4 shrink-0"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground font-extrabold uppercase text-xs px-5 shrink-0 rounded-xl shadow-md cursor-pointer"
               >
                 ADD
               </Button>
@@ -1820,10 +1859,10 @@ export default function NewRepair() {
                         handleAddCustomProblem(item);
                         setProblemSearchOpen(false);
                       }}
-                      className="w-full p-2.5 text-left hover:bg-primary/25 hover:text-white cursor-pointer flex justify-between items-center text-xs font-semibold text-white/90"
+                      className="w-full p-2.5 text-left hover:bg-primary/25 hover:text-white cursor-pointer flex justify-between items-center text-xs font-semibold text-white/90 transition-colors"
                     >
                       <span>🔧 {item}</span>
-                      <span className="text-[10px] text-primary uppercase font-bold">SELECT +</span>
+                      <span className="text-[10px] text-primary uppercase font-bold bg-primary/20 px-2 py-0.5 rounded-md">SELECT +</span>
                     </button>
                   ))
                 )}
@@ -1847,6 +1886,7 @@ export default function NewRepair() {
           {errors.problem && (
             <p className="text-[11px] text-red-500 font-semibold">{errors.problem.message}</p>
           )}
+        </div>
 
           {/* Rate Card Autocomplete Services List */}
           {rateCardData?.rateCard?.services && rateCardData.rateCard.services.length > 0 && (
@@ -1906,160 +1946,8 @@ export default function NewRepair() {
             </div>
           )}
 
-          {/* Problem display text */}
-          {watch('problem') && (
-            <div className="p-3 bg-secondary/30 rounded-xl text-xs text-foreground/90 italic border border-border/60">
-              <span className="font-bold text-primary/95 not-italic block mb-1">Diagnostic Log:</span>
-              "{watch('problem')}"
-            </div>
-          )}
-        </div>
-
-
-
-        {/* ESTIMATED PRICE & PAID SIDE BY SIDE */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-primary uppercase tracking-wider block">Estimated Price ($)</label>
-            <Input
-              type="number"
-              placeholder="0.00"
-              {...register('estimate', { valueAsNumber: true })}
-              className={errors.estimate ? 'border-red-500' : ''}
-            />
-            {errors.estimate && (
-              <p className="text-[11px] text-red-500 font-semibold">{errors.estimate.message}</p>
-            )}
-          </div>
-          
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-primary uppercase tracking-wider block">Paid (Advance)</label>
-            <Input
-              type="number"
-              placeholder="0.00"
-              {...register('advance', { valueAsNumber: true })}
-              className={errors.advance ? 'border-red-500' : ''}
-            />
-            {errors.advance && (
-              <p className="text-[11px] text-red-500 font-semibold">{errors.advance.message}</p>
-            )}
-          </div>
-        </div>
-
-        {/* Balances Display Banner */}
-        <div className="p-4 bg-secondary/20 border border-border/80 rounded-2xl flex items-center justify-between">
-          <div>
-            <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Remaining Balance</span>
-            <div className="text-2xl font-black text-foreground mt-0.5">₹{outstandingBalance.toFixed(2)}</div>
-          </div>
-          <span className="text-xs text-muted-foreground italic">Balance = Estimate - Paid</span>
-        </div>
-
-        {/* LOCK CODE & PATTERN LOCK */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-primary uppercase tracking-wider block">Lock Code (optional)</label>
-            <div className="relative">
-              <Input
-                type={showLockCode ? 'text' : 'password'}
-                placeholder="PIN / Password"
-                {...register('lockCode')}
-                className="pr-10"
-              />
-              <button
-                type="button"
-                onClick={() => setShowLockCode(!showLockCode)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1"
-                title={showLockCode ? 'Hide password' : 'Show password'}
-              >
-                {showLockCode ? <EyeOff className="h-4.5 w-4.5" /> : <Eye className="h-4.5 w-4.5" />}
-              </button>
-            </div>
-          </div>
-
-          <Button
-            type="button"
-            onClick={() => setPatternLockOpen(true)}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground py-3 rounded-xl font-bold uppercase tracking-wider text-xs h-[42px]"
-          >
-            {watch('patternLock') ? 'EDIT PATTERN' : 'PATTERN LOCK'}
-          </Button>
-        </div>
-        {watch('patternLock') && (
-          <div className="flex flex-col items-center gap-3 p-4 bg-primary/10 rounded-2xl border border-primary/25 relative">
-            <button
-              type="button"
-              onClick={() => setShowPattern(!showPattern)}
-              className="absolute top-3 right-3 text-muted-foreground hover:text-foreground transition-colors p-1"
-              title={showPattern ? 'Hide pattern preview' : 'Show pattern preview'}
-            >
-              {showPattern ? <EyeOff className="h-4.5 w-4.5" /> : <Eye className="h-4.5 w-4.5" />}
-            </button>
-
-            <div className="text-[10px] text-muted-foreground font-black uppercase tracking-widest text-center pr-6">
-              Selected Pattern Lock Preview
-            </div>
-            
-            {/* Visual Mini Grid Preview */}
-            <div className="relative w-24 h-24 bg-secondary/15 rounded-xl border border-border/80 p-2 flex items-center justify-center">
-              <svg className="absolute inset-0 w-full h-full pointer-events-none">
-                {showPattern && (() => {
-                  const nodes = (watch('patternLock') || '').split('-').map(Number);
-                  return nodes.map((node, index) => {
-                    if (index === 0) return null;
-                    const prevNode = nodes[index - 1];
-                    const getMiniCoords = (n: number) => {
-                      const r = Math.floor((n - 1) / 3);
-                      const c = (n - 1) % 3;
-                      return { x: 16 + c * 32, y: 16 + r * 32 };
-                    };
-                    const p1 = getMiniCoords(prevNode);
-                    const p2 = getMiniCoords(node);
-                    return (
-                      <line
-                        key={index}
-                        x1={p1.x}
-                        y1={p1.y}
-                        x2={p2.x}
-                        y2={p2.y}
-                        className="stroke-primary"
-                        strokeWidth="3.5"
-                        strokeLinecap="round"
-                      />
-                    );
-                  });
-                })()}
-                
-                {/* Visual nodes dots */}
-                {Array.from({ length: 9 }).map((_, idx) => {
-                  const n = idx + 1;
-                  const nodes = (watch('patternLock') || '').split('-').map(Number);
-                  const isSelected = showPattern && nodes.includes(n);
-                  const r = Math.floor((n - 1) / 3);
-                  const c = (n - 1) % 3;
-                  const x = 16 + c * 32;
-                  const y = 16 + r * 32;
-                  return (
-                    <circle
-                      key={n}
-                      cx={x}
-                      cy={y}
-                      r={isSelected ? 4 : 2}
-                      className={isSelected ? "fill-primary" : "fill-muted-foreground/35"}
-                    />
-                  );
-                })}
-              </svg>
-            </div>
-            
-            <div className="text-xs font-mono text-center text-primary/95">
-              Sequence: <span className="font-extrabold text-foreground">{showPattern ? watch('patternLock') : '••••••••'}</span>
-            </div>
-          </div>
-        )}
-
         {/* REPAIR DATE & TIME SETTERS */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center p-4 bg-secondary/15 rounded-2xl border border-border/60">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center p-5 bg-card/70 backdrop-blur-xl rounded-2xl border border-border/80 shadow-lg">
           <div className="space-y-1">
             <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block">Current repair date</span>
             <div className="text-sm font-bold text-foreground">{repairDateDisplay || 'Loading...'}</div>
@@ -2070,7 +1958,7 @@ export default function NewRepair() {
                 setRepairDateDisplay(`${today.getDate()}/${today.getMonth() + 1}/${today.getFullYear()}`);
                 toast.success('Repair date initialized');
               }}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground text-[10px] font-bold uppercase py-1 px-2.5 h-7 mt-1.5"
+              className="bg-primary/20 hover:bg-primary/30 text-primary border border-primary/30 text-[10px] font-bold uppercase py-1 px-3 h-7 mt-1.5 cursor-pointer"
             >
               REPAIR DATE
             </Button>
@@ -2086,7 +1974,7 @@ export default function NewRepair() {
                 setRepairTimeDisplay(`${String(today.getHours()).padStart(2, '0')}H:${String(today.getMinutes()).padStart(2, '0')}M:${String(today.getSeconds()).padStart(2, '0')}S`);
                 toast.success('Repair time timestamped');
               }}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground text-[10px] font-bold uppercase py-1 px-2.5 h-7 mt-1.5"
+              className="bg-primary/20 hover:bg-primary/30 text-primary border border-primary/30 text-[10px] font-bold uppercase py-1 px-3 h-7 mt-1.5 cursor-pointer"
             >
               REPAIR TIME
             </Button>
@@ -2150,19 +2038,19 @@ export default function NewRepair() {
         </div>
 
         {/* SERIAL NUMBERS, IMEI & TECH ASSIGNMENT */}
-        <div className="space-y-4">
+        <div className="space-y-4 bg-card/70 backdrop-blur-xl p-5 rounded-2xl border border-border/80 shadow-lg">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="flex gap-2">
               <input
                 type="text"
-                placeholder="Serial numbers (OPTIONAL)"
+                placeholder="Serial Number (OPTIONAL)"
                 {...register('serialNumber')}
                 className="flex-1 bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold"
               />
               <Button
                 type="button"
                 onClick={() => toast.success('Mock barcode scanner triggered')}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground font-extrabold uppercase text-xs px-4"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground font-extrabold uppercase text-xs px-4 rounded-xl cursor-pointer"
               >
                 SCAN
               </Button>
@@ -2181,7 +2069,7 @@ export default function NewRepair() {
               <label className="text-xs font-bold text-primary uppercase tracking-wider block">Assign Technician</label>
               <select
                 {...register('staffId')}
-                className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-bold"
+                className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-bold cursor-pointer"
               >
                 <option value="">Unassigned (Default)</option>
                 {staffData?.staff.map((s) => (
@@ -2198,14 +2086,14 @@ export default function NewRepair() {
         </div>
 
         {/* MESSAGING & CASHBACK SWITCHES */}
-        <div className="space-y-3 bg-[#2a303c]/30 p-4 rounded-2xl border border-border/85">
+        <div className="space-y-3 bg-card/70 backdrop-blur-xl p-5 rounded-2xl border border-border/80 shadow-lg">
           {/* Whatsapp Switch */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <MessageSquare className="h-4.5 w-4.5 text-emerald-400" />
               <span className="text-xs text-foreground/95 font-semibold">Send Whatsapp Message ?</span>
             </div>
-            <label className="relative inline-flex inline-flex items-center cursor-pointer select-none">
+            <label className="relative inline-flex items-center cursor-pointer select-none">
               <input
                 type="checkbox"
                 {...register('sendWhatsapp')}
@@ -2221,7 +2109,7 @@ export default function NewRepair() {
               <MessageSquare className="h-4.5 w-4.5 text-blue-400" />
               <span className="text-xs text-foreground/95 font-semibold">Send Email To Customer ?</span>
             </div>
-            <label className="relative inline-flex inline-flex items-center cursor-pointer select-none">
+            <label className="relative inline-flex items-center cursor-pointer select-none">
               <input
                 type="checkbox"
                 {...register('sendEmail')}
@@ -2237,7 +2125,7 @@ export default function NewRepair() {
               <Sparkles className="h-4.5 w-4.5 text-amber-400" />
               <span className="text-xs text-foreground/95 font-semibold">Allow 10% cashback for this order ?</span>
             </div>
-            <label className="relative inline-flex inline-flex items-center cursor-pointer select-none">
+            <label className="relative inline-flex items-center cursor-pointer select-none">
               <input
                 type="checkbox"
                 {...register('allowCashback')}
@@ -2248,42 +2136,38 @@ export default function NewRepair() {
           </div>
         </div>
 
-        {/* ADDITIONAL DETAILS OPTIONAL TEXTAREA */}
-        <div className="space-y-1">
+        {/* ADDITIONAL DETAILS & WARRANTY */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <textarea
             placeholder="Additional details (Optional)"
             {...register('notes')}
             rows={3}
-            className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold"
+            className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold resize-none"
           />
-        </div>
-
-
-
-        {/* WARRANTY FIELD */}
-        <div className="space-y-1">
           <textarea
             placeholder="Device Warranty (Optional)"
             {...register('warranty')}
-            rows={2}
-            className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold"
+            rows={3}
+            className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold resize-none"
           />
         </div>
 
-        {/* LARGE GREEN SUBMIT BUTTON */}
-        <div className="pt-4">
+        {/* VIBRANT GRADIENT SUBMIT BUTTON BAR */}
+        <div className="pt-6 border-t border-border/60 flex items-center justify-end">
           <Button
             type="submit"
             disabled={createRepairMutation.isPending || updateRepairMutation.isPending}
-            className="w-full bg-[#4caf50] hover:bg-[#43a047] text-white py-4 rounded-xl font-bold uppercase tracking-wider text-sm border-none shadow-lg transition-transform active:scale-[0.99] flex items-center justify-center gap-2"
+            className="w-full sm:w-auto px-10 py-4 rounded-2xl bg-gradient-to-r from-primary via-indigo-600 to-purple-600 hover:from-primary/90 hover:to-purple-700 text-white font-black uppercase text-sm tracking-wider shadow-xl shadow-primary/25 hover:shadow-primary/40 transform hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 cursor-pointer flex items-center justify-center gap-2.5"
           >
-            {createRepairMutation.isPending || updateRepairMutation.isPending ? (
+            {(createRepairMutation.isPending || updateRepairMutation.isPending) ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" /> {isEditMode ? 'UPDATING ORDER...' : 'SUBMITTING ORDER...'}
+                <Loader2 className="h-5 w-5 animate-spin" />
+                <span>PROCESSING TICKET...</span>
               </>
             ) : (
               <>
-                <CheckCircle className="h-4 w-4" /> {isEditMode ? 'UPDATE TICKET' : 'SUBMIT'}
+                <CheckCircle className="h-5 w-5" />
+                <span>{isEditMode ? 'UPDATE REPAIR TICKET' : 'CREATE REPAIR TICKET'}</span>
               </>
             )}
           </Button>
