@@ -1359,36 +1359,36 @@ export default function NewRepair() {
         </div>
       </div>
 
-      {/* Main Form Form */}
-      <form onSubmit={handleSubmit(onFormSubmit)} className="p-6 space-y-6">
+      {/* Main Form — SINGLE UNIFIED FULL CONTAINER */}
+      <form onSubmit={handleSubmit(onFormSubmit)} className="p-4 sm:p-8 space-y-8 divide-y divide-border/40">
         {/* Dummy hidden fields to trap Chrome Password Manager / Autofill */}
         <input type="text" name="chrome_prevent_autofill_email" style={{ display: 'none' }} tabIndex={-1} autoComplete="off" />
         <input type="password" name="chrome_prevent_autofill_pass" style={{ display: 'none' }} tabIndex={-1} autoComplete="off" />
         
-        {/* ROW 1: ORDER STATUS & QUICK SEARCH */}
-        <div className="bg-card/70 backdrop-blur-xl border border-border/80 p-5 rounded-2xl shadow-xl border-l-4 border-l-primary">
+        {/* SECTION 1: ORDER STATUS & QUICK SEARCH */}
+        <div className="space-y-4 pt-2">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Order Status */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-1.5">
+              <label className="text-xs font-extrabold text-primary uppercase tracking-wider flex items-center gap-1.5">
                 <span>⚡</span>
                 <span>Order Status</span>
               </label>
               <select
                 {...register('status')}
-                className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 font-bold uppercase cursor-pointer transition-all shadow-sm"
+                className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 font-bold uppercase cursor-pointer transition-all shadow-sm min-h-[44px]"
               >
-                <option value="pending">😊 PENDING</option>
-                <option value="repairing">🔧 REPAIRING</option>
-                <option value="ready">✅ READY</option>
-                {watch('status') === 'delivered' && <option value="delivered">📦 DELIVERED</option>}
-                <option value="cancelled">❌ CANCELLED</option>
+                <option value="pending" className="bg-card text-foreground font-bold py-2">😊 PENDING</option>
+                <option value="repairing" className="bg-card text-foreground font-bold py-2">🔧 REPAIRING</option>
+                <option value="ready" className="bg-card text-foreground font-bold py-2">✅ READY</option>
+                {watch('status') === 'delivered' && <option value="delivered" className="bg-card text-foreground font-bold py-2">📦 DELIVERED</option>}
+                <option value="cancelled" className="bg-card text-foreground font-bold py-2">❌ CANCELLED</option>
               </select>
             </div>
 
             {/* Customer Details Search */}
             <div className="space-y-1.5 relative">
-              <label className="text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-1.5">
+              <label className="text-xs font-extrabold text-primary uppercase tracking-wider flex items-center gap-1.5">
                 <span>🔍</span>
                 <span>Quick Customer Search</span>
               </label>
@@ -1402,7 +1402,7 @@ export default function NewRepair() {
                     setPhoneSearch(e.target.value);
                     setCustomerSearchOpen(true);
                   }}
-                  className="w-full pl-9 pr-3 py-3 bg-secondary/35 border border-border rounded-xl text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 text-foreground font-semibold transition-all shadow-sm"
+                  className="w-full pl-9 pr-3 py-3 bg-secondary/35 border border-border rounded-xl text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 text-foreground font-semibold transition-all shadow-sm min-h-[44px]"
                 />
               </div>
               {/* Dropdown autocomplete results */}
@@ -1442,9 +1442,9 @@ export default function NewRepair() {
           </div>
         </div>
 
-        {/* ROW 2: REGISTER NEW CUSTOMER — GLASS CARD */}
-        <div className="bg-card/70 backdrop-blur-xl border border-border/80 p-5 rounded-2xl space-y-4 shadow-xl border-l-4 border-l-primary relative overflow-hidden">
-          <div className="flex items-center justify-between border-b border-border/40 pb-3">
+        {/* SECTION 2: CUSTOMER DETAILS */}
+        <div className="space-y-4 pt-6">
+          <div className="flex items-center justify-between border-b border-border/40 pb-2">
             <div className="flex items-center gap-2">
               <span className="text-base">👤</span>
               <span className="text-sm font-extrabold text-foreground uppercase tracking-wider">Customer Details</span>
@@ -1467,7 +1467,7 @@ export default function NewRepair() {
             )}
           </div>
 
-          <div className="grid grid-cols-1 gap-3.5">
+          <div className="grid grid-cols-1 gap-4">
             {/* Customer Name */}
             <div className="space-y-1 relative">
               <label className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider block">Customer Name</label>
@@ -1493,7 +1493,7 @@ export default function NewRepair() {
                   setNameSearchOpen(true);
                   if (selectedCustomer) { setSelectedCustomer(null); setValue('customerId', ''); }
                 }}
-                className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 font-semibold transition-all shadow-sm"
+                className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 font-semibold transition-all shadow-sm min-h-[44px]"
               />
               {/* Instant 1-letter Customer Name Autocomplete */}
               {nameSearchOpen && newCustName.trim().length >= 1 && (
@@ -1545,7 +1545,7 @@ export default function NewRepair() {
                   if (selectedCustomer) { setSelectedCustomer(null); setValue('customerId', ''); }
                 }}
                 onFocus={() => setPhoneInputSearchOpen(true)}
-                className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 font-semibold transition-all shadow-sm"
+                className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 font-semibold transition-all shadow-sm min-h-[44px]"
               />
               {/* Instant 1-letter Phone Autocomplete */}
               {phoneInputSearchOpen && newCustPhone.trim().length >= 1 && (
@@ -1580,6 +1580,7 @@ export default function NewRepair() {
                 </div>
               )}
             </div>
+
             {/* Address */}
             <div className="space-y-1">
               <label className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider block">Address</label>
@@ -1589,7 +1590,7 @@ export default function NewRepair() {
                 value={newCustAddr}
                 autoComplete="off"
                 onChange={(e) => setNewCustAddr(e.target.value)}
-                className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 font-semibold transition-all shadow-sm"
+                className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 font-semibold transition-all shadow-sm min-h-[44px]"
               />
             </div>
 
@@ -1607,7 +1608,7 @@ export default function NewRepair() {
 
                 <div className="grid grid-cols-2 gap-3">
                   {/* Gallery Button */}
-                  <label className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-border bg-card hover:bg-secondary/60 cursor-pointer font-extrabold text-xs text-foreground transition-all shadow-sm active:scale-95">
+                  <label className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-border bg-card hover:bg-secondary/60 cursor-pointer font-extrabold text-xs text-foreground transition-all shadow-sm active:scale-95 min-h-[44px]">
                     <ImageIcon className="h-4 w-4 text-primary" />
                     <span>Gallery</span>
                     <input
@@ -1620,7 +1621,7 @@ export default function NewRepair() {
                   </label>
 
                   {/* Camera Button */}
-                  <label className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-border bg-card hover:bg-secondary/60 cursor-pointer font-extrabold text-xs text-foreground transition-all shadow-sm active:scale-95">
+                  <label className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-border bg-card hover:bg-secondary/60 cursor-pointer font-extrabold text-xs text-foreground transition-all shadow-sm active:scale-95 min-h-[44px]">
                     <Camera className="h-4 w-4 text-primary" />
                     <span>Camera</span>
                     <input
@@ -1655,32 +1656,14 @@ export default function NewRepair() {
             </div>
           </div>
 
-          {/* Previous Repairs/Problems if existing customer */}
-          {selectedCustomer && customerProfileData?.devices && customerProfileData.devices.length > 0 && (
-            <div className="mt-3 p-4 bg-primary/5 border border-primary/20 rounded-2xl space-y-2">
-              <span className="text-[10px] font-black text-primary uppercase tracking-wider block">Past Problems & Devices</span>
-              <div className="space-y-2 max-h-32 overflow-y-auto pr-1">
-                {customerProfileData.devices.map((dev: any) => (
-                  <div key={dev.id} className="text-xs bg-card/60 p-2.5 rounded-xl border border-border/40 flex flex-col gap-1 shadow-sm">
-                    <div className="flex justify-between font-bold text-foreground">
-                      <span>{dev.brand} {dev.model}</span>
-                      {dev.imei && <span className="text-[10px] text-muted-foreground font-mono">IMEI: {dev.imei}</span>}
-                    </div>
-                    <p className="text-[11px] text-muted-foreground"><strong className="text-foreground">Problem:</strong> {dev.problem}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
           {errors.customerId && (
             <p className="text-[11px] text-red-500 font-semibold">{errors.customerId.message}</p>
           )}
         </div>
 
-        {/* DEVICE & PROBLEM SPECIFICATION — GLASS CARD */}
-        <div className="bg-card/70 backdrop-blur-xl border border-border/80 p-5 sm:p-6 rounded-2xl space-y-4 shadow-xl border-l-4 border-l-indigo-500 relative overflow-hidden">
-          <div className="flex items-center gap-2 border-b border-border/40 pb-3">
+        {/* SECTION 3: DEVICE & PROBLEM SPECIFICATION */}
+        <div className="space-y-4 pt-6">
+          <div className="flex items-center gap-2 border-b border-border/40 pb-2">
             <span className="text-base">📱</span>
             <span className="text-sm font-extrabold text-foreground uppercase tracking-wider">Device & Problem Specification</span>
           </div>
@@ -1721,7 +1704,7 @@ export default function NewRepair() {
                           setBrandDropdownOpen(true);
                           setModelDropdownOpen(false);
                         }}
-                        className="w-full bg-secondary/35 border border-border rounded-xl pl-4 pr-10 py-3 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 font-bold uppercase text-foreground transition-all shadow-sm"
+                        className="w-full bg-secondary/35 border border-border rounded-xl pl-4 pr-10 py-3 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 font-bold uppercase text-foreground transition-all shadow-sm min-h-[44px]"
                       />
                       <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
                         <Search className="h-4 w-4" />
@@ -1777,7 +1760,7 @@ export default function NewRepair() {
                           setModelDropdownOpen(true);
                           setBrandDropdownOpen(false);
                         }}
-                        className="w-full bg-secondary/35 border border-border rounded-xl pl-4 pr-10 py-3 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 font-bold uppercase text-foreground transition-all shadow-sm"
+                        className="w-full bg-secondary/35 border border-border rounded-xl pl-4 pr-10 py-3 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 font-bold uppercase text-foreground transition-all shadow-sm min-h-[44px]"
                       />
                       <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
                         <Search className="h-4 w-4" />
@@ -1833,7 +1816,7 @@ export default function NewRepair() {
                   setProblemSearchOpen(true);
                 }}
                 onFocus={() => setProblemSearchOpen(true)}
-                className="flex-1 bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 font-bold uppercase transition-all shadow-sm"
+                className="flex-1 bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 font-bold uppercase transition-all shadow-sm min-h-[44px]"
               />
               <Button
                 type="button"
@@ -1841,7 +1824,7 @@ export default function NewRepair() {
                   handleAddCustomProblem();
                   setProblemSearchOpen(false);
                 }}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground font-extrabold uppercase text-xs px-5 shrink-0 rounded-xl shadow-md cursor-pointer"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground font-extrabold uppercase text-xs px-5 shrink-0 rounded-xl shadow-md cursor-pointer min-h-[44px]"
               >
                 ADD
               </Button>
@@ -1886,7 +1869,6 @@ export default function NewRepair() {
           {errors.problem && (
             <p className="text-[11px] text-red-500 font-semibold">{errors.problem.message}</p>
           )}
-        </div>
 
           {/* Rate Card Autocomplete Services List */}
           {rateCardData?.rateCard?.services && rateCardData.rateCard.services.length > 0 && (
@@ -1945,9 +1927,203 @@ export default function NewRepair() {
               </div>
             </div>
           )}
+        </div>
 
-        {/* REPAIR DATE & TIME SETTERS */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center p-5 bg-card/70 backdrop-blur-xl rounded-2xl border border-border/80 shadow-lg">
+        {/* SECTION 4: ACCESSORY RECEIVED */}
+        <div className="space-y-4 pt-6">
+          <div className="flex items-center gap-2 border-b border-border/40 pb-2">
+            <Package className="h-5 w-5 text-purple-500" />
+            <span className="text-sm font-extrabold text-foreground uppercase tracking-wider">📦 ACCESSORY RECEIVED</span>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {QUICK_ACCESSORIES.map((item) => {
+              const isSelected = selectedAccessories.includes(item);
+              return (
+                <button
+                  type="button"
+                  key={item}
+                  onClick={() => toggleAccessoryChip(item)}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer min-h-[40px] ${
+                    isSelected
+                      ? 'bg-gradient-to-r from-primary to-purple-600 text-white shadow-md shadow-primary/20 scale-105 border border-primary/40'
+                      : 'bg-secondary/40 border border-border/70 text-foreground/80 hover:bg-secondary/70 hover:text-foreground'
+                  }`}
+                >
+                  <span>{isSelected ? '✓ ' : ''}{item}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Additional Accessory details text box */}
+          <textarea
+            placeholder="Add details about received accessories (e.g., color, brand, physical condition)..."
+            value={accessoryDetails}
+            onChange={(e) => setAccessoryDetails(e.target.value)}
+            rows={2}
+            className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-medium resize-none shadow-sm"
+          />
+        </div>
+
+        {/* SECTION 5: SECURITY LOCK & PASSCODE */}
+        <div className="space-y-4 pt-6">
+          <div className="flex items-center gap-2 border-b border-border/40 pb-2">
+            <span className="text-base">🔒</span>
+            <span className="text-sm font-extrabold text-foreground uppercase tracking-wider">Security Lock & Passcode</span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-primary uppercase tracking-wider block">Lock Code (optional)</label>
+              <div className="relative">
+                <Input
+                  type={showLockCode ? 'text' : 'password'}
+                  placeholder="PIN / Password"
+                  {...register('lockCode')}
+                  className="pr-10 bg-secondary/35 border-border rounded-xl py-3 text-sm font-bold text-foreground min-h-[44px]"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowLockCode(!showLockCode)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1 cursor-pointer"
+                  title={showLockCode ? 'Hide password' : 'Show password'}
+                >
+                  {showLockCode ? <EyeOff className="h-4.5 w-4.5" /> : <Eye className="h-4.5 w-4.5" />}
+                </button>
+              </div>
+            </div>
+
+            <Button
+              type="button"
+              onClick={() => setPatternLockOpen(true)}
+              className="bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/40 py-3 rounded-xl font-extrabold uppercase tracking-wider text-xs min-h-[44px] shadow-sm cursor-pointer"
+            >
+              {watch('patternLock') ? '✓ EDIT PATTERN LOCK' : '➕ PATTERN LOCK'}
+            </Button>
+          </div>
+
+          {watch('patternLock') && (
+            <div className="flex flex-col items-center gap-3 p-4 bg-primary/10 rounded-2xl border border-primary/25 relative">
+              <button
+                type="button"
+                onClick={() => setShowPattern(!showPattern)}
+                className="absolute top-3 right-3 text-muted-foreground hover:text-foreground transition-colors p-1 cursor-pointer"
+                title={showPattern ? 'Hide pattern preview' : 'Show pattern preview'}
+              >
+                {showPattern ? <EyeOff className="h-4.5 w-4.5" /> : <Eye className="h-4.5 w-4.5" />}
+              </button>
+
+              <div className="text-[10px] text-muted-foreground font-black uppercase tracking-widest text-center pr-6">
+                Selected Pattern Lock Preview
+              </div>
+              
+              {/* Visual Mini Grid Preview */}
+              <div className="relative w-24 h-24 bg-secondary/15 rounded-xl border border-border/80 p-2 flex items-center justify-center">
+                <svg className="absolute inset-0 w-full h-full pointer-events-none">
+                  {showPattern && (() => {
+                    const nodes = (watch('patternLock') || '').split('-').map(Number);
+                    return nodes.map((node, index) => {
+                      if (index === 0) return null;
+                      const prevNode = nodes[index - 1];
+                      const getMiniCoords = (n: number) => {
+                        const r = Math.floor((n - 1) / 3);
+                        const c = (n - 1) % 3;
+                        return { x: 16 + c * 32, y: 16 + r * 32 };
+                      };
+                      const p1 = getMiniCoords(prevNode);
+                      const p2 = getMiniCoords(node);
+                      return (
+                        <line
+                          key={index}
+                          x1={p1.x}
+                          y1={p1.y}
+                          x2={p2.x}
+                          y2={p2.y}
+                          className="stroke-primary"
+                          strokeWidth="3.5"
+                          strokeLinecap="round"
+                        />
+                      );
+                    });
+                  })()}
+                  
+                  {/* Visual nodes dots */}
+                  {Array.from({ length: 9 }).map((_, idx) => {
+                    const n = idx + 1;
+                    const nodes = (watch('patternLock') || '').split('-').map(Number);
+                    const isSelected = showPattern && nodes.includes(n);
+                    const r = Math.floor((n - 1) / 3);
+                    const c = (n - 1) % 3;
+                    const x = 16 + c * 32;
+                    const y = 16 + r * 32;
+                    return (
+                      <circle
+                        key={n}
+                        cx={x}
+                        cy={y}
+                        r={isSelected ? 4 : 2}
+                        className={isSelected ? "fill-primary" : "fill-muted-foreground/35"}
+                      />
+                    );
+                  })}
+                </svg>
+              </div>
+              
+              <div className="text-xs font-mono text-center text-primary/95">
+                Sequence: <span className="font-extrabold text-foreground">{showPattern ? watch('patternLock') : '••••••••'}</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* SECTION 6: FINANCIALS & REPAIR ESTIMATE */}
+        <div className="space-y-4 pt-6">
+          <div className="flex items-center gap-2 border-b border-border/40 pb-2">
+            <span className="text-base">💳</span>
+            <span className="text-sm font-extrabold text-foreground uppercase tracking-wider">Financials & Repair Estimate</span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-primary uppercase tracking-wider block">Estimated Price (₹)</label>
+              <Input
+                type="number"
+                placeholder="0.00"
+                {...register('estimate', { valueAsNumber: true })}
+                className={`bg-secondary/35 border-border rounded-xl px-4 py-3 text-sm font-bold text-foreground focus:ring-2 focus:ring-primary/30 transition-all min-h-[44px] ${errors.estimate ? 'border-red-500' : ''}`}
+              />
+              {errors.estimate && (
+                <p className="text-[11px] text-red-500 font-semibold">{errors.estimate.message}</p>
+              )}
+            </div>
+            
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-emerald-500 uppercase tracking-wider block">Paid (Advance ₹)</label>
+              <Input
+                type="number"
+                placeholder="0.00"
+                {...register('advance', { valueAsNumber: true })}
+                className={`bg-secondary/35 border-border rounded-xl px-4 py-3 text-sm font-bold text-foreground focus:ring-2 focus:ring-emerald-500/30 transition-all min-h-[44px] ${errors.advance ? 'border-red-500' : ''}`}
+              />
+              {errors.advance && (
+                <p className="text-[11px] text-red-500 font-semibold">{errors.advance.message}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Balances Display Banner */}
+          <div className="p-4 bg-secondary/30 border border-border/80 rounded-2xl flex items-center justify-between shadow-inner">
+            <div>
+              <span className="text-[10px] uppercase font-extrabold text-muted-foreground tracking-wider block">Remaining Balance</span>
+              <div className="text-2xl sm:text-3xl font-black text-primary mt-0.5">₹{outstandingBalance.toFixed(2)}</div>
+            </div>
+            <span className="text-xs text-muted-foreground font-medium italic">Balance = Estimate - Paid</span>
+          </div>
+        </div>
+
+        {/* SECTION 7: REPAIR DATE, TIME & REMINDER */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center pt-6">
           <div className="space-y-1">
             <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block">Current repair date</span>
             <div className="text-sm font-bold text-foreground">{repairDateDisplay || 'Loading...'}</div>
@@ -1980,7 +2156,7 @@ export default function NewRepair() {
             </Button>
           </div>
 
-          <div className="col-span-2 pt-3 border-t border-border/40 flex items-center justify-between">
+          <div className="col-span-1 sm:col-span-2 pt-3 border-t border-border/40 flex items-center justify-between">
             <span className="text-xs text-foreground font-semibold">Reminder Enable?</span>
             <label className="relative inline-flex items-center cursor-pointer select-none">
               <input
@@ -1993,64 +2169,20 @@ export default function NewRepair() {
           </div>
         </div>
 
-        {/* ACCESSORY RECEIVED */}
-        <div className="p-4 sm:p-5 bg-secondary/15 rounded-2xl border border-border/60 space-y-4">
-          <div className="flex items-center gap-2">
-            <Package className="h-5 w-5 text-primary" />
-            <h3 className="text-xs sm:text-sm font-extrabold text-foreground uppercase tracking-wider">ACCESSORY RECEIVED</h3>
-          </div>
-
-          {/* Quick Select Chips */}
-          <div className="space-y-2">
-            <label className="text-xs font-semibold text-muted-foreground block">Quick select</label>
-            <div className="flex flex-wrap gap-2">
-              {QUICK_ACCESSORIES.map((item) => {
-                const isSelected = selectedAccessories.includes(item);
-                return (
-                  <button
-                    type="button"
-                    key={item}
-                    onClick={() => toggleAccessoryChip(item)}
-                    className={`px-4 py-2 text-xs font-bold rounded-full transition-all duration-150 cursor-pointer flex items-center gap-1.5 ${
-                      isSelected
-                        ? 'bg-primary text-primary-foreground border border-primary shadow-md scale-105 font-extrabold'
-                        : 'bg-secondary/40 border border-border text-foreground/80 hover:bg-secondary/70 hover:text-foreground'
-                    }`}
-                  >
-                    {isSelected ? '✓ ' : ''}{item}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Description Textarea */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-muted-foreground block">Description</label>
-            <textarea
-              rows={2}
-              placeholder="Add details about received accessories..."
-              value={accessoryDetails}
-              onChange={(e) => setAccessoryDetails(e.target.value)}
-              className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold placeholder:text-muted-foreground/60 resize-none"
-            />
-          </div>
-        </div>
-
-        {/* SERIAL NUMBERS, IMEI & TECH ASSIGNMENT */}
-        <div className="space-y-4 bg-card/70 backdrop-blur-xl p-5 rounded-2xl border border-border/80 shadow-lg">
+        {/* SECTION 8: SERIAL NUMBER, IMEI & TECHNICIAN */}
+        <div className="space-y-4 pt-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="flex gap-2">
               <input
                 type="text"
                 placeholder="Serial Number (OPTIONAL)"
                 {...register('serialNumber')}
-                className="flex-1 bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold"
+                className="flex-1 bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold min-h-[44px]"
               />
               <Button
                 type="button"
                 onClick={() => toast.success('Mock barcode scanner triggered')}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground font-extrabold uppercase text-xs px-4 rounded-xl cursor-pointer"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground font-extrabold uppercase text-xs px-4 rounded-xl cursor-pointer min-h-[44px]"
               >
                 SCAN
               </Button>
@@ -2060,7 +2192,7 @@ export default function NewRepair() {
               type="text"
               placeholder="IMEI number (OPTIONAL)"
               {...register('imei')}
-              className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold"
+              className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold min-h-[44px]"
             />
           </div>
 
@@ -2069,11 +2201,11 @@ export default function NewRepair() {
               <label className="text-xs font-bold text-primary uppercase tracking-wider block">Assign Technician</label>
               <select
                 {...register('staffId')}
-                className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-bold cursor-pointer"
+                className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-bold cursor-pointer min-h-[44px]"
               >
-                <option value="">Unassigned (Default)</option>
+                <option value="" className="bg-card text-foreground font-bold">Unassigned (Default)</option>
                 {staffData?.staff.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name} ({s.staff_id || 'owner'})</option>
+                  <option key={s.id} value={s.id} className="bg-card text-foreground font-bold">{s.name} ({s.staff_id || 'owner'})</option>
                 ))}
               </select>
             </div>
@@ -2085,8 +2217,8 @@ export default function NewRepair() {
           )}
         </div>
 
-        {/* MESSAGING & CASHBACK SWITCHES */}
-        <div className="space-y-3 bg-card/70 backdrop-blur-xl p-5 rounded-2xl border border-border/80 shadow-lg">
+        {/* SECTION 9: MESSAGING & CASHBACK SWITCHES */}
+        <div className="space-y-3 pt-6">
           {/* Whatsapp Switch */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -2136,8 +2268,8 @@ export default function NewRepair() {
           </div>
         </div>
 
-        {/* ADDITIONAL DETAILS & WARRANTY */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* SECTION 10: ADDITIONAL DETAILS & WARRANTY */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-6">
           <textarea
             placeholder="Additional details (Optional)"
             {...register('notes')}
@@ -2152,29 +2284,28 @@ export default function NewRepair() {
           />
         </div>
 
-        {/* VIBRANT GRADIENT SUBMIT BUTTON BAR */}
-        <div className="pt-6 border-t border-border/60 flex items-center justify-end">
+        {/* SECTION 11: VIBRANT GRADIENT SUBMIT BUTTON BAR — CREATE BOOKING */}
+        <div className="pt-8 flex items-center justify-end">
           <Button
             type="submit"
             disabled={createRepairMutation.isPending || updateRepairMutation.isPending}
-            className="w-full sm:w-auto px-10 py-4 rounded-2xl bg-gradient-to-r from-primary via-indigo-600 to-purple-600 hover:from-primary/90 hover:to-purple-700 text-white font-black uppercase text-sm tracking-wider shadow-xl shadow-primary/25 hover:shadow-primary/40 transform hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 cursor-pointer flex items-center justify-center gap-2.5"
+            className="w-full sm:w-auto px-10 py-4 rounded-2xl bg-gradient-to-r from-primary via-indigo-600 to-purple-600 hover:from-primary/90 hover:to-purple-700 text-white font-black uppercase text-sm tracking-wider shadow-xl shadow-primary/25 hover:shadow-primary/40 transform hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 cursor-pointer flex items-center justify-center gap-2.5 min-h-[48px]"
           >
             {(createRepairMutation.isPending || updateRepairMutation.isPending) ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin" />
-                <span>PROCESSING TICKET...</span>
+                <span>{isEditMode ? 'UPDATING BOOKING...' : 'CREATING BOOKING...'}</span>
               </>
             ) : (
               <>
                 <CheckCircle className="h-5 w-5" />
-                <span>{isEditMode ? 'UPDATE REPAIR TICKET' : 'CREATE REPAIR TICKET'}</span>
+                <span>{isEditMode ? 'UPDATE BOOKING' : 'CREATE BOOKING'}</span>
               </>
             )}
           </Button>
         </div>
 
       </form>
-
 
 
       {signatureOpen && (
