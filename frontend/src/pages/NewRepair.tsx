@@ -33,6 +33,7 @@ import { useAuth } from '../context/AuthContext';
 import { apiClient } from '../lib/api';
 import toast from 'react-hot-toast';
 import SignatureCanvas from 'react-signature-canvas';
+import { compressBase64Image } from '../utils/imageCompressor';
 const ReactSignatureCanvas = (SignatureCanvas as any).default || SignatureCanvas;
 
 const DEVICE_BRANDS: Record<string, string[]> = {
@@ -373,7 +374,7 @@ export default function NewRepair() {
   const [customProblem, setCustomProblem] = useState('');
   const [deviceImages, setDeviceImages] = useState<string[]>([]);
 
-  // Handle selecting multiple images from Gallery
+  // Handle selecting multiple images from Gallery (with compression)
   const handleMultipleDeviceImagesUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
@@ -384,9 +385,10 @@ export default function NewRepair() {
         return;
       }
       const reader = new FileReader();
-      reader.onloadend = () => {
+      reader.onloadend = async () => {
         if (reader.result) {
-          setDeviceImages(prev => [...prev, reader.result as string]);
+          const compressed = await compressBase64Image(reader.result as string, 1200, 1200, 0.78);
+          setDeviceImages(prev => [...prev, compressed]);
         }
       };
       reader.readAsDataURL(file);
@@ -394,8 +396,8 @@ export default function NewRepair() {
     e.target.value = '';
   };
 
-  // Handle capturing photo from Camera
-  const handleCameraDeviceImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle capturing photo from Camera (with compression)
+  const handleCameraDeviceImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -404,9 +406,10 @@ export default function NewRepair() {
       return;
     }
     const reader = new FileReader();
-    reader.onloadend = () => {
+    reader.onloadend = async () => {
       if (reader.result) {
-        setDeviceImages(prev => [...prev, reader.result as string]);
+        const compressed = await compressBase64Image(reader.result as string, 1200, 1200, 0.78);
+        setDeviceImages(prev => [...prev, compressed]);
       }
     };
     reader.readAsDataURL(file);
@@ -932,7 +935,7 @@ export default function NewRepair() {
     toast.success(`Removed problem: "${probToRemove}"`);
   };
 
-  // File Upload Helper to convert files into Base64 strings
+  // File Upload Helper — converts files to compressed Base64 before storing
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, key: keyof typeof kycData, isDevicePhoto: boolean = false) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -951,7 +954,11 @@ export default function NewRepair() {
     setUploadProgress(prev => ({ ...prev, [key]: 10 }));
 
     const reader = new FileReader();
-    reader.onloadend = () => {
+    reader.onloadend = async () => {
+      const rawBase64 = reader.result as string;
+      // Compress image before storing in state
+      const compressed = await compressBase64Image(rawBase64, 1200, 1200, 0.78);
+
       let progress = 10;
       const interval = setInterval(() => {
         progress += 30;
@@ -960,7 +967,7 @@ export default function NewRepair() {
           setUploadProgress(prev => ({ ...prev, [key]: 100 }));
           setKycData(prev => ({
             ...prev,
-            [key]: reader.result as string
+            [key]: compressed
           }));
           toast.success(`${key} captured successfully!`);
           setTimeout(() => {

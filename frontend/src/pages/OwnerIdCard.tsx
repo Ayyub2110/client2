@@ -23,6 +23,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '../co
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import toast from 'react-hot-toast';
+import { compressFileImage } from '../utils/imageCompressor';
 
 // ─── Card design constants (all in px, matching 86×54mm ratio) ─────────────
 const CW = 325;    // card width
@@ -78,12 +79,14 @@ export default function OwnerIdCard() {
     }
   }, [shop]);
 
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 2 * 1024 * 1024) { toast.error('Photo size must be less than 2MB'); return; }
-      setSelectedPhoto(file);
-      setPhotoPreview(URL.createObjectURL(file));
+      // Compress to max 800px at 80% quality (profile photos don't need full resolution)
+      const compressed = await compressFileImage(file, 800, 0.80);
+      setSelectedPhoto(compressed);
+      setPhotoPreview(URL.createObjectURL(compressed));
     }
   };
 

@@ -20,6 +20,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../co
 import { Button } from '../components/ui/Button';
 import { apiClient } from '../lib/api';
 import toast from 'react-hot-toast';
+import { compressBase64Image } from '../utils/imageCompressor';
 
 interface RepairDetailData {
   id: string;
@@ -187,8 +188,8 @@ export default function DeliverRepair() {
     }
   };
 
-  // Capture frame from camera
-  const capturePhoto = () => {
+  // Capture frame from camera (with compression)
+  const capturePhoto = async () => {
     if (videoRef.current) {
       const canvas = document.createElement('canvas');
       canvas.width = videoRef.current.videoWidth;
@@ -196,8 +197,9 @@ export default function DeliverRepair() {
       const ctx = canvas.getContext('2d');
       if (ctx) {
         ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-        setCapturedPhoto(dataUrl);
+        const rawDataUrl = canvas.toDataURL('image/jpeg', 0.90);
+        const compressed = await compressBase64Image(rawDataUrl, 1200, 1200, 0.78);
+        setCapturedPhoto(compressed);
         stopCamera();
       }
     }
@@ -212,13 +214,14 @@ export default function DeliverRepair() {
     setCameraActive(false);
   };
 
-  // File fallback upload handler
+  // File fallback upload handler (with compression)
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setCapturedPhoto(reader.result as string);
+      reader.onloadend = async () => {
+        const compressed = await compressBase64Image(reader.result as string, 1200, 1200, 0.78);
+        setCapturedPhoto(compressed);
       };
       reader.readAsDataURL(file);
     }
