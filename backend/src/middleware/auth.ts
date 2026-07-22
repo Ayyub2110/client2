@@ -51,6 +51,20 @@ export async function authenticateToken(
       shop_id: profile.shop_id
     };
 
+    // Asynchronously update last_active_at for owner session tracking
+    if (profile.role === 'owner') {
+      (async () => {
+        try {
+          await supabaseAdmin
+            .from('active_admin_sessions')
+            .update({ last_active_at: new Date().toISOString() })
+            .eq('session_token', token);
+        } catch {
+          // Non-blocking background session update
+        }
+      })();
+    }
+
     next();
   } catch (err) {
     res.status(500).json({ error: 'Authentication internal server error' });

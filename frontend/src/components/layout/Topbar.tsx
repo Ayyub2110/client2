@@ -221,6 +221,25 @@ export default function Topbar({
                   </div>
                 )}
               </div>
+
+              {/* Admin Account Security Panel (Max 6 Members) */}
+              {userRole === 'owner' && (
+                <div className="pt-3 border-t border-border/30 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-xs font-black text-amber-400 uppercase tracking-wider">
+                      <Shield className="h-4 w-4 text-amber-400" />
+                      <span>Admin Security (Max 6 Sessions)</span>
+                    </div>
+                    <span className="text-[10px] font-extrabold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                      Cap: 6 Concurrent Members
+                    </span>
+                  </div>
+
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
+                    This admin account is protected by strict concurrent login limits. Maximum 6 simultaneous member devices are permitted. Any 7th sign-in attempt will be automatically blocked for security.
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Modal Footer */}

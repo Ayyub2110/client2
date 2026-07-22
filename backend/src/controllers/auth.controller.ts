@@ -245,6 +245,53 @@ export async function login(req: Request, res: Response): Promise<void> {
       return;
     }
 
+    // 4. Admin Security: Enforce Max 6 Simultaneous Active Sessions for Owner Account
+    if (profile.role === 'owner') {
+      try {
+        // Clean up stale/inactive admin sessions (older than 24 hours)
+        const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+        await supabaseAdmin
+          .from('active_admin_sessions')
+          .delete()
+          .eq('user_id', userId)
+          .lt('last_active_at', cutoff);
+
+        // Count current active admin sessions
+        const { data: activeSessions } = await supabaseAdmin
+          .from('active_admin_sessions')
+          .select('id, session_token')
+          .eq('user_id', userId);
+
+        const MAX_ADMIN_SESSIONS = 6;
+        if (activeSessions && activeSessions.length >= MAX_ADMIN_SESSIONS) {
+          // Simultaneous limit of 6 reached! Reject the 7th login attempt!
+          await supabaseClient.auth.signOut();
+          res.status(403).json({
+            error: `Security Alert: Maximum simultaneous admin sessions reached (6 members active). Access beyond 6 concurrent members is prohibited. Please sign out from another device or revoke an active session.`
+          });
+          return;
+        }
+
+        // Register the new active admin session token
+        const userAgent = (req.headers['user-agent'] || 'Unknown Device').slice(0, 150);
+        const clientIp = (req.headers['x-forwarded-for'] as string || req.ip || 'Unknown IP').slice(0, 45);
+
+        await supabaseAdmin
+          .from('active_admin_sessions')
+          .insert([{
+            user_id: userId,
+            shop_id: profile.shop_id,
+            session_token: sessionData.session.access_token,
+            device_info: userAgent,
+            ip_address: clientIp,
+            last_active_at: new Date().toISOString(),
+            created_at: new Date().toISOString()
+          }]);
+      } catch (secErr) {
+        console.error('Error enforcing admin session security:', secErr);
+      }
+    }
+
     res.json({
       accessToken: sessionData.session.access_token,
       refreshToken: sessionData.session.refresh_token,
@@ -381,12 +428,111 @@ export async function logout(req: Request, res: Response): Promise<void> {
   try {
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
-      // Local clean out call
+      const token = authHeader.split(' ')[1];
+      // Clean out session from active admin session tracking table
+      await supabaseAdmin
+        .from('active_admin_sessions')
+        .delete()
+        .eq('session_token', token);
+
       await supabaseClient.auth.signOut();
     }
     res.json({ success: true, message: 'Logged out successfully' });
   } catch (err) {
     res.status(500).json({ error: 'Failed to logout session' });
+  }
+}
+
+/**
+ * List all active admin sessions for the shop owner (Max 6 limit tracking)
+ */
+export async function getAdminSessions(req: Request, res: Response): Promise<void> {
+  const user = req.user;
+  if (!user || user.role !== 'owner') {
+    res.status(403).json({ error: 'Owner access required' });
+    return;
+  }
+
+  const currentToken = req.headers.authorization?.split(' ')[1];
+
+  try {
+    // Delete stale sessions older than 24h
+    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    await supabaseAdmin
+      .from('active_admin_sessions')
+      .delete()
+      .eq('user_id', user.id)
+      .lt('last_active_at', cutoff);
+
+    const { data: sessions, error } = await supabaseAdmin
+      .from('active_admin_sessions')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('last_active_at', { ascending: false });
+
+    if (error) {
+      res.status(400).json({ error: error.message });
+      return;
+    }
+
+    const formattedSessions = (sessions || []).map(s => ({
+      ...s,
+      isCurrentSession: s.session_token === currentToken
+    }));
+
+    res.json({
+      sessions: formattedSessions,
+      activeCount: formattedSessions.length,
+      maxAllowed: 6
+    });
+  } catch (err: any) {
+    console.error('Error fetching admin sessions:', err);
+    res.status(500).json({ error: 'Failed to fetch admin sessions' });
+  }
+}
+
+/**
+ * Revoke an active admin session or all other sessions
+ */
+export async function revokeAdminSession(req: Request, res: Response): Promise<void> {
+  const user = req.user;
+  if (!user || user.role !== 'owner') {
+    res.status(403).json({ error: 'Owner access required' });
+    return;
+  }
+
+  const { sessionId, revokeAllOthers } = req.body;
+  const currentToken = req.headers.authorization?.split(' ')[1];
+
+  try {
+    if (revokeAllOthers) {
+      const { error } = await supabaseAdmin
+        .from('active_admin_sessions')
+        .delete()
+        .eq('user_id', user.id)
+        .neq('session_token', currentToken || '');
+
+      if (error) throw error;
+      res.json({ message: 'All other active admin sessions have been revoked successfully.' });
+      return;
+    }
+
+    if (sessionId) {
+      const { error } = await supabaseAdmin
+        .from('active_admin_sessions')
+        .delete()
+        .eq('id', sessionId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      res.json({ message: 'Session revoked successfully.' });
+      return;
+    }
+
+    res.status(400).json({ error: 'Session ID or revokeAllOthers required' });
+  } catch (err: any) {
+    console.error('Error revoking admin session:', err);
+    res.status(500).json({ error: 'Failed to revoke admin session' });
   }
 }
 

@@ -14,7 +14,9 @@ import {
   updateOwnerIdCard,
   changePassword,
   resetStaffPassword,
-  updateShop
+  updateShop,
+  getAdminSessions,
+  revokeAdminSession
 } from '../controllers/auth.controller';
 
 const router = Router();
@@ -49,5 +51,9 @@ router.put('/profile/id-card', authenticateToken, uploadPhotoCard.single('photo'
 router.post('/change-password', authenticateToken, changePassword);
 router.post('/reset-staff-password', authenticateToken, requireOwner, resetStaffPassword);
 router.put('/shop', authenticateToken, requireOwner, upload.single('logo'), updateShop);
+
+// Admin Security: 6 Active Sessions Management Routes
+router.get('/admin-sessions', authenticateToken, requireOwner, getAdminSessions);
+router.post('/revoke-session', authenticateToken, requireOwner, revokeAdminSession);
 
 export default router;
