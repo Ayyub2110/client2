@@ -2035,29 +2035,40 @@ export default function NewRepair() {
 
         {/* SECTION 4: SERIAL NUMBER, IMEI & TECHNICIAN */}
         <div className="space-y-4 pt-6">
+          <div className="flex items-center gap-2 border-b border-border/40 pb-2">
+            <span className="text-base">🏷️</span>
+            <span className="text-sm font-extrabold text-foreground uppercase tracking-wider">Device Identification & Serial Numbers</span>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder="Serial Number (OPTIONAL)"
-                {...register('serialNumber')}
-                className="flex-1 bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold min-h-[44px]"
-              />
-              <Button
-                type="button"
-                onClick={() => toast.success('Mock barcode scanner triggered')}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground font-extrabold uppercase text-xs px-4 rounded-xl cursor-pointer min-h-[44px]"
-              >
-                SCAN
-              </Button>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-primary uppercase tracking-wider block">Serial Number (Optional)</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Enter Serial Number..."
+                  {...register('serialNumber')}
+                  className="flex-1 bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-bold min-h-[44px]"
+                />
+                <Button
+                  type="button"
+                  onClick={() => toast.success('Mock barcode scanner triggered')}
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground font-extrabold uppercase text-xs px-4 rounded-xl cursor-pointer min-h-[44px]"
+                >
+                  SCAN
+                </Button>
+              </div>
             </div>
             
-            <input
-              type="text"
-              placeholder="IMEI number (OPTIONAL)"
-              {...register('imei')}
-              className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-semibold min-h-[44px]"
-            />
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-primary uppercase tracking-wider block">IMEI Number (Optional)</label>
+              <input
+                type="text"
+                placeholder="Enter 15-digit IMEI..."
+                {...register('imei')}
+                className="w-full bg-secondary/35 border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary font-bold min-h-[44px]"
+              />
+            </div>
           </div>
 
           {authRole === 'owner' ? (
