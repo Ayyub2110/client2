@@ -193,16 +193,17 @@ export default function OwnerIdCard() {
         fc.drawImage(ownerPhoto, px+(pw-dw)/2+photoX*S, py+(ph-dh)/2+photoY*S, dw, dh);
         fc.restore();
       }
-      // SL.NO — plain text, no background box
+      // SL.NO — plain text aligned with the அடையாள அட்டை pill (top ~57)
       {
         const slText = serialNumber || '';
         if (slText) {
-          const fontSize = 12 * S;
+          const fontSize = 13 * S;
           fc.font = `bold ${fontSize}px Arial, sans-serif`;
           fc.fillStyle = '#FFFFFF';
           fc.textBaseline = 'middle';
-          const tx = W - fc.measureText(slText).width - 15 * S;
-          fc.fillText(slText, tx, 65 * S);
+          const tx = W - fc.measureText(slText).width - 16 * S;
+          // pill vertical center is at roughly y=63 in 204px card coords
+          fc.fillText(slText, tx, 63 * S);
         }
       }
       // Text rows
@@ -219,11 +220,21 @@ export default function OwnerIdCard() {
       fc.font=`500 ${11*S}px Arial, sans-serif`; fc.fillStyle='#FFFFFF';
       fc.fillText('Email :', 98*S, 128*S);
       ft(emailAddress, 148, 128, 165, 11);
-      // Signatures — drawn with multiply blend so black ink shows cleanly on any bg
-      fc.globalCompositeOperation = 'multiply';
-      { const sw=60*S, sh=(thalSig.height/thalSig.width)*60*S; fc.drawImage(thalSig,105*S,151*S,sw,sh); }
-      { const sw=68*S, sh=(secSig.height/secSig.width)*68*S; fc.drawImage(secSig,W-15*S-sw,153*S,sw,sh); }
-      fc.globalCompositeOperation = 'source-over';
+      // Signatures — crop 6px inset to eliminate any border frame in the PNG
+      const drawSig = (img: HTMLImageElement, dx: number, dy: number, dw: number) => {
+        const dh = (img.height / img.width) * dw;
+        const inset = 6 * S;  // crop this many px from each edge to hide border frame
+        fc.save();
+        fc.beginPath();
+        fc.rect(dx + inset, dy + inset, dw - inset * 2, dh - inset * 2);
+        fc.clip();
+        fc.globalCompositeOperation = 'multiply';
+        fc.drawImage(img, dx, dy, dw, dh);
+        fc.globalCompositeOperation = 'source-over';
+        fc.restore();
+      };
+      drawSig(thalSig, 105 * S, 151 * S, 60 * S);
+      drawSig(secSig, W - 15 * S - 68 * S, 153 * S, 68 * S);
 
       // BACK CARD
       const backCanvas = document.createElement('canvas');
@@ -320,8 +331,8 @@ export default function OwnerIdCard() {
                       : <User style={{ width:28, height:28, color:'#bbb' }} />}
                   </div>
                   {serialNumber && (
-                    <div style={{ position:'absolute', top:60, right:14, zIndex:4 }}>
-                      <span style={{ fontSize:12, color:'#FFFFFF', fontWeight:800, letterSpacing:0.5, fontFamily:'Arial, sans-serif', textShadow:'0 1px 3px rgba(0,0,0,0.5)' }}>{serialNumber}</span>
+                    <div style={{ position:'absolute', top:57, right:14, zIndex:4 }}>
+                      <span style={{ fontSize:13, color:'#FFFFFF', fontWeight:800, letterSpacing:0.5, fontFamily:'Arial, sans-serif', textShadow:'0 1px 4px rgba(0,0,0,0.6)' }}>{serialNumber}</span>
                     </div>
                   )}
                   <div style={{ position:'absolute', top:79, left:148, zIndex:4 }}>
@@ -336,11 +347,13 @@ export default function OwnerIdCard() {
                   <div style={{ position:'absolute', top:128, left:148, width:165, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', zIndex:4 }}>
                     <span style={{ fontSize:11, color:'white', fontWeight:500, fontFamily:'Arial, sans-serif' }}>{emailAddress}</span>
                   </div>
-                  <div style={{ position:'absolute', top:151, left:105, width:60, zIndex:4 }}>
-                    <img src={thalaivarSigUrl} alt="Thalaivar Sig" style={{ width:'100%', height:'auto', display:'block' }} />
+                  {/* Thalaivar Signature — overflow hidden crops any PNG border frame */}
+                  <div style={{ position:'absolute', top:153, left:107, width:56, height:32, overflow:'hidden', zIndex:4 }}>
+                    <img src={thalaivarSigUrl} alt="Thalaivar Sig" style={{ width:60, height:'auto', display:'block', marginLeft:-2, marginTop:-2 }} />
                   </div>
-                  <div style={{ position:'absolute', top:153, right:15, width:68, zIndex:4 }}>
-                    <img src={secretarySigUrl} alt="Secretary Sig" style={{ width:'100%', height:'auto', display:'block' }} />
+                  {/* Secretary Signature */}
+                  <div style={{ position:'absolute', top:155, right:17, width:64, height:28, overflow:'hidden', zIndex:4 }}>
+                    <img src={secretarySigUrl} alt="Secretary Sig" style={{ width:68, height:'auto', display:'block', marginLeft:-2, marginTop:-2 }} />
                   </div>
                 </div>
                 <div className="id-card-back" style={{ position:'relative', width:CW, height:CH, borderRadius:14, backgroundImage:`url(${cardBackTemplate})`, backgroundSize:'cover', backgroundPosition:'center', overflow:'hidden', boxShadow:'0 8px 32px rgba(0,0,0,0.55)', flexShrink:0 }}>
