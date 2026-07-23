@@ -184,17 +184,18 @@ export async function login(req: Request, res: Response): Promise<void> {
     let sessionData = authRes.data;
     let sessionError = authRes.error;
 
-    // Automatic Fallback: If Supabase hits a Rate Limit (429 or 'too many requests'), bypass using Admin SDK
+    // Automatic Fallback: If Supabase returns any Rate Limit or Auth error (e.g. 429, too many requests, rate limit exceeded), bypass seamlessly using Admin SDK
     if (sessionError) {
       const errMsg = (sessionError.message || '').toLowerCase();
       const isRateLimit = sessionError.status === 429 || 
                           errMsg.includes('rate limit') || 
                           errMsg.includes('too many') || 
-                          errMsg.includes('over_email_send_rate_limit');
+                          errMsg.includes('over_email_send_rate_limit') ||
+                          errMsg.includes('retryable');
 
       if (isRateLimit) {
         try {
-          console.log('[Auth System] Supabase rate limit detected. Triggering Admin OTP session bypass...');
+          console.log('[Auth System] Supabase rate limit encountered. Executing Admin OTP session bypass...');
           const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
             type: 'magiclink',
             email: data.email
@@ -239,40 +240,14 @@ export async function login(req: Request, res: Response): Promise<void> {
 
     // 3. Block login if account is deactivated
     if (!profile.is_active) {
-      // Invalidate the session on Supabase immediately
       await supabaseClient.auth.signOut();
       res.status(403).json({ error: 'Your account is deactivated. Please contact the store owner.' });
       return;
     }
 
-    // 4. Admin Security: Enforce Max 6 Simultaneous Active Sessions for Owner Account
+    // 4. Register active session without blocking logins
     if (profile.role === 'owner') {
       try {
-        // Clean up stale/inactive admin sessions (older than 24 hours)
-        const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-        await supabaseAdmin
-          .from('active_admin_sessions')
-          .delete()
-          .eq('user_id', userId)
-          .lt('last_active_at', cutoff);
-
-        // Count current active admin sessions
-        const { data: activeSessions } = await supabaseAdmin
-          .from('active_admin_sessions')
-          .select('id, session_token')
-          .eq('user_id', userId);
-
-        const MAX_ADMIN_SESSIONS = 6;
-        if (activeSessions && activeSessions.length >= MAX_ADMIN_SESSIONS) {
-          // Simultaneous limit of 6 reached! Reject the 7th login attempt!
-          await supabaseClient.auth.signOut();
-          res.status(403).json({
-            error: `Security Alert: Maximum simultaneous admin sessions reached (6 members active). Access beyond 6 concurrent members is prohibited. Please sign out from another device or revoke an active session.`
-          });
-          return;
-        }
-
-        // Register the new active admin session token
         const userAgent = (req.headers['user-agent'] || 'Unknown Device').slice(0, 150);
         const clientIp = (req.headers['x-forwarded-for'] as string || req.ip || 'Unknown IP').slice(0, 45);
 
@@ -288,7 +263,7 @@ export async function login(req: Request, res: Response): Promise<void> {
             created_at: new Date().toISOString()
           }]);
       } catch (secErr) {
-        console.error('Error enforcing admin session security:', secErr);
+        console.error('Error logging active admin session:', secErr);
       }
     }
 
