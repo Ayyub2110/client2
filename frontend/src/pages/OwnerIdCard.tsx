@@ -253,7 +253,7 @@ export default function OwnerIdCard() {
         fc.restore();
       }
 
-      // SL.NO — center Y = 60.5 (straight with அடையாள அட்டை pill)
+      // SL.NO — center Y = 70.0 (aligned dead-center with அடையாள அட்டை pill)
       {
         const slText = serialNumber || '';
         if (slText) {
@@ -262,7 +262,7 @@ export default function OwnerIdCard() {
           fc.fillStyle = '#FFFFFF';
           fc.textBaseline = 'middle';
           const tx = W - fc.measureText(slText).width - 16 * S;
-          fc.fillText(slText, tx, 60.5 * S);
+          fc.fillText(slText, tx, 70.0 * S);
         }
       }
 
@@ -315,19 +315,19 @@ export default function OwnerIdCard() {
         bc.fillText(text, x * S, centerY * S);
       };
 
-      // Row 1: Aadhaar Label + Colon + Value (Y = 131.0)
-      bt('ஆதார் கார்டு', 50, 131.0, true, 9.5);
-      bt(':', 124, 131.0, true, 11);
-      bt(formatAadhar(aadharNumber) || '---- ---- ----', 135, 131.0, false, 11);
+      // Row 1: Aadhaar Label + Colon + Value (Y = 123.0)
+      bt('ஆதார் கார்டு', 50, 123.0, true, 9.5);
+      bt(':', 124, 123.0, true, 11);
+      bt(formatAadhar(aadharNumber) || '---- ---- ----', 130, 123.0, false, 11);
 
-      // Row 2: Blood Group (Y = 149.0 next to pre-printed இரத்த வகை :)
-      bt(bloodGroup || '', 135, 149.0, false, 11);
+      // Row 2: Blood Group (Y = 145.0 next to pre-printed இரத்த வகை :)
+      bt(bloodGroup || '', 130, 145.0, false, 11);
 
-      // Row 3: DOB (Y = 169.0 next to pre-printed பிறந்த தேதி :)
-      bt(formatDob(dob), 135, 169.0, false, 11);
+      // Row 3: DOB (Y = 167.0 next to pre-printed பிறந்த தேதி :)
+      bt(formatDob(dob), 130, 167.0, false, 11);
 
-      // Row 4: Phone (Y = 189.0 next to pre-printed செல் நெம்பர் :)
-      bt(personalPhone || '', 135, 189.0, false, 11);
+      // Row 4: Phone (Y = 188.6 next to pre-printed செல் நெம்பர் :)
+      bt(personalPhone || '', 130, 188.6, false, 11);
 
       // ── COMBINE ───────────────────────────────────────────────────────────
       const GAP = 24 * S;
@@ -408,7 +408,7 @@ export default function OwnerIdCard() {
                       : <User style={{ width:28, height:28, color:'#bbb' }} />}
                   </div>
                   {serialNumber && (
-                    <div style={{ position:'absolute', top:54.5, right:14, height:12, display:'flex', alignItems:'center', zIndex:4 }}>
+                    <div style={{ position:'absolute', top:64.0, right:14, height:12, display:'flex', alignItems:'center', zIndex:4 }}>
                       <span style={{ fontSize:13, color:'#FFFFFF', fontWeight:800, letterSpacing:0.5, fontFamily:'Arial, sans-serif', textShadow:'0 1px 4px rgba(0,0,0,0.6)', lineHeight:1 }}>{serialNumber}</span>
                     </div>
                   )}
@@ -437,26 +437,26 @@ export default function OwnerIdCard() {
                   <div style={{ position:'absolute', top:44, left:50, width:230, maxHeight:65, overflow:'hidden', zIndex:4 }}>
                     <div style={{ fontSize:9.5, color:'#1E469C', fontWeight:500, lineHeight:1.35, wordBreak:'normal', overflowWrap:'break-word', whiteSpace:'normal', fontFamily:'Arial, sans-serif' }}>{homeAddress}</div>
                   </div>
-                  {/* Row 1: Aadhaar Card Label + Colon + Value (Y = 131.0) */}
-                  <div style={{ position:'absolute', top:125.0, left:50, height:12, display:'flex', alignItems:'center', zIndex:4 }}>
+                  {/* Row 1: Aadhaar Card Label + Colon + Value (Y = 123.0) */}
+                  <div style={{ position:'absolute', top:117.0, left:50, height:12, display:'flex', alignItems:'center', zIndex:4 }}>
                     <span style={{ fontSize:9.5, color:'#1E469C', fontWeight:700, whiteSpace:'nowrap', fontFamily:'Arial, sans-serif', lineHeight:1 }}>ஆதார் கார்டு</span>
                   </div>
-                  <div style={{ position:'absolute', top:125.0, left:124, height:12, display:'flex', alignItems:'center', zIndex:4 }}>
+                  <div style={{ position:'absolute', top:117.0, left:124, height:12, display:'flex', alignItems:'center', zIndex:4 }}>
                     <span style={{ fontSize:11, color:'#1E469C', fontWeight:700, lineHeight:1 }}>:</span>
                   </div>
-                  <div style={{ position:'absolute', top:125.0, left:135, width:157, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', height:12, display:'flex', alignItems:'center', zIndex:4 }}>
+                  <div style={{ position:'absolute', top:117.0, left:130, width:157, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', height:12, display:'flex', alignItems:'center', zIndex:4 }}>
                     <span style={{ fontSize:11, color:'#1E469C', fontWeight:500, fontFamily:'Arial, sans-serif', lineHeight:1 }}>{formatAadhar(aadharNumber) || '---- ---- ----'}</span>
                   </div>
-                  {/* Row 2: Blood Group Value (Y = 149.0 next to pre-printed இரத்த வகை :) */}
-                  <div style={{ position:'absolute', top:143.0, left:135, height:12, display:'flex', alignItems:'center', zIndex:4 }}>
+                  {/* Row 2: Blood Group Value (Y = 145.0 next to pre-printed இரத்த வகை :) */}
+                  <div style={{ position:'absolute', top:139.0, left:130, height:12, display:'flex', alignItems:'center', zIndex:4 }}>
                     <span style={{ fontSize:11, color:'#1E469C', fontWeight:500, fontFamily:'Arial, sans-serif', lineHeight:1 }}>{bloodGroup}</span>
                   </div>
-                  {/* Row 3: DOB Value (Y = 169.0 next to pre-printed பிறந்த தேதி :) */}
-                  <div style={{ position:'absolute', top:163.0, left:135, height:12, display:'flex', alignItems:'center', zIndex:4 }}>
+                  {/* Row 3: DOB Value (Y = 167.0 next to pre-printed பிறந்த தேதி :) */}
+                  <div style={{ position:'absolute', top:161.0, left:130, height:12, display:'flex', alignItems:'center', zIndex:4 }}>
                     <span style={{ fontSize:11, color:'#1E469C', fontWeight:500, fontFamily:'Arial, sans-serif', lineHeight:1 }}>{formatDob(dob)}</span>
                   </div>
-                  {/* Row 4: Phone Value (Y = 189.0 next to pre-printed செல் நெம்பர் :) */}
-                  <div style={{ position:'absolute', top:183.0, left:135, height:12, display:'flex', alignItems:'center', zIndex:4 }}>
+                  {/* Row 4: Phone Value (Y = 188.6 next to pre-printed செல் நெம்பர் :) */}
+                  <div style={{ position:'absolute', top:182.6, left:130, height:12, display:'flex', alignItems:'center', zIndex:4 }}>
                     <span style={{ fontSize:11, color:'#1E469C', fontWeight:500, fontFamily:'Arial, sans-serif', lineHeight:1 }}>{personalPhone}</span>
                   </div>
                 </div>
