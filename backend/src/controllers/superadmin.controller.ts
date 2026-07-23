@@ -3,12 +3,12 @@ import { supabaseAdmin } from '../utils/supabase';
 
 export async function getSuperAdminDashboard(_req: Request, res: Response): Promise<void> {
   try {
-    // 1. Fetch all shops with their owner profile
+    // 1. Fetch all shops with their owner profile (excluding the non-existent email column on public.users)
     const { data: shops, error: shopsError } = await supabaseAdmin
       .from('shops')
       .select(`
         *,
-        owner:users!shops_owner_id_fkey(id, name, email, is_active, created_at)
+        owner:users!shops_owner_id_fkey(id, name, is_active, created_at)
       `);
 
     if (shopsError) {
@@ -16,7 +16,18 @@ export async function getSuperAdminDashboard(_req: Request, res: Response): Prom
       return;
     }
 
-    // 2. Fetch global platform stats
+    // 2. Fetch auth users to map emails
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.listUsers();
+    const emailMap: Record<string, string> = {};
+    if (!authError && authData && authData.users) {
+      for (const u of authData.users) {
+        if (u.email) {
+          emailMap[u.id] = u.email;
+        }
+      }
+    }
+
+    // 3. Fetch global platform stats
     const { count: totalShops, error: countShopsErr } = await supabaseAdmin
       .from('shops')
       .select('*', { count: 'exact', head: true });
@@ -34,7 +45,7 @@ export async function getSuperAdminDashboard(_req: Request, res: Response): Prom
       return;
     }
 
-    // 3. For each shop, get total repairs count
+    // 4. For each shop, get total repairs count and map owner email
     const shopsWithStats = await Promise.all(
       (shops || []).map(async (shop) => {
         const { count: repairsCount } = await supabaseAdmin
@@ -42,8 +53,14 @@ export async function getSuperAdminDashboard(_req: Request, res: Response): Prom
           .select('*', { count: 'exact', head: true })
           .eq('shop_id', shop.id);
 
+        const owner = shop.owner ? {
+          ...shop.owner,
+          email: emailMap[shop.owner.id] || ''
+        } : null;
+
         return {
           ...shop,
+          owner,
           repairsCount: repairsCount || 0
         };
       })
