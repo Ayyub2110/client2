@@ -630,7 +630,7 @@ export default function MonthlySubscriptions() {
           <div className="bg-card/90 border border-amber-500/30 rounded-2xl p-5 shadow-xl space-y-4">
             <div className="flex items-center justify-between border-b border-border/40 pb-3">
               <span className="text-xs font-black text-amber-400 uppercase tracking-widest flex items-center gap-1.5">
-                <UserCheck className="h-4 w-4 text-amber-400" /> Member Search & Identification
+                <UserCheck className="h-4 w-4 text-amber-400" /> Member Registration & Identification
               </span>
               {phoneNumber && (
                 <span className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
@@ -642,13 +642,13 @@ export default function MonthlySubscriptions() {
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
               <div className="md:col-span-4 relative">
                 <label className="text-xs font-extrabold text-muted-foreground uppercase tracking-wider block mb-1">
-                  Name search
+                  Name
                 </label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <input
                     type="text"
-                    placeholder="Search member name..."
+                    placeholder="Enter member name..."
                     value={nameSearch}
                     onChange={(e) => {
                       setNameSearch(e.target.value);
@@ -661,13 +661,13 @@ export default function MonthlySubscriptions() {
 
               <div className="md:col-span-4 relative">
                 <label className="text-xs font-extrabold text-muted-foreground uppercase tracking-wider block mb-1">
-                  Number search
+                  Number
                 </label>
                 <div className="relative">
                   <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <input
                     type="text"
-                    placeholder="Search phone number..."
+                    placeholder="Enter phone number..."
                     value={numberSearch}
                     onChange={(e) => {
                       setNumberSearch(e.target.value);
