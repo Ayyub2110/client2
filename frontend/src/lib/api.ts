@@ -42,7 +42,7 @@ async function refreshAccessToken(): Promise<string> {
   });
 
   if (!response.ok) {
-    throw new ApiError('Refresh token expired', 401);
+    throw new ApiError('Refresh token expired', response.status);
   }
 
   const data = await response.json();
@@ -116,18 +116,23 @@ async function request<T>(
         isRefreshing = false;
         processQueue(refreshErr, null);
 
-        // Clear all auth state and redirect to login if session cannot be recovered
-        localStorage.removeItem('gk_access_token');
-        localStorage.removeItem('gk_refresh_token');
-        localStorage.removeItem('gk_cached_user');
-        localStorage.removeItem('gk_cached_shop');
-        localStorage.removeItem('gk_cached_role');
+        // ONLY log out if it is an auth error (400, 401, or 403 status from server)
+        const isAuthError = refreshErr instanceof ApiError && 
+          (refreshErr.status === 400 || refreshErr.status === 401 || refreshErr.status === 403);
+          
+        if (isAuthError) {
+          localStorage.removeItem('gk_access_token');
+          localStorage.removeItem('gk_refresh_token');
+          localStorage.removeItem('gk_cached_user');
+          localStorage.removeItem('gk_cached_shop');
+          localStorage.removeItem('gk_cached_role');
 
-        if (!window.location.pathname.includes('/login')) {
-          window.location.href = '/login';
+          if (!window.location.pathname.includes('/login')) {
+            window.location.href = '/login';
+          }
         }
 
-        throw new ApiError('Session expired. Please log in again.', 401);
+        throw refreshErr;
       }
     }
 
