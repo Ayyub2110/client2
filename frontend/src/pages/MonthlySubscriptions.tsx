@@ -304,10 +304,10 @@ export default function MonthlySubscriptions() {
   // Execute search automatically when debounced search term changes
   useEffect(() => {
     const timer = setTimeout(() => {
-      setDebouncedSearch((nameSearch || numberSearch).trim());
+      setDebouncedSearch(nameSearch.trim());
     }, 300);
     return () => clearTimeout(timer);
-  }, [nameSearch, numberSearch]);
+  }, [nameSearch]);
 
   useEffect(() => {
     if (debouncedSearch.length >= 1) {
@@ -346,8 +346,8 @@ export default function MonthlySubscriptions() {
     setCustomerName(item.customer_name);
     setPhoneNumber(item.phone_number);
     setShopName(item.shop_name);
-    setNameSearch(item.customer_name);
-    setNumberSearch(item.phone_number);
+    setNameSearch(''); // Clear search input
+    setNumberSearch('');
     setShowDropdown(false);
 
     await loadSubscriptionRecord(item.phone_number, item.customer_id, selectedYear);
@@ -704,16 +704,16 @@ export default function MonthlySubscriptions() {
               )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
-              <div className="md:col-span-4 relative">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end relative">
+              <div className="md:col-span-9 relative">
                 <label className="text-xs font-extrabold text-muted-foreground uppercase tracking-wider block mb-1">
-                  Name
+                  Quick Member Search
                 </label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <input
                     type="text"
-                    placeholder="Enter member name..."
+                    placeholder="Search registered member name, number, or shop..."
                     value={nameSearch}
                     onChange={(e) => {
                       setNameSearch(e.target.value);
@@ -723,28 +723,10 @@ export default function MonthlySubscriptions() {
                 </div>
               </div>
 
-              <div className="md:col-span-4 relative">
-                <label className="text-xs font-extrabold text-muted-foreground uppercase tracking-wider block mb-1">
-                  Number
-                </label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <input
-                    type="text"
-                    placeholder="Enter phone number..."
-                    value={numberSearch}
-                    onChange={(e) => {
-                      setNumberSearch(e.target.value);
-                    }}
-                    className="w-full bg-secondary/35 border border-border rounded-xl pl-9 pr-3 py-2.5 text-sm font-bold text-foreground focus:outline-none focus:border-amber-500"
-                  />
-                </div>
-              </div>
-
-              <div className="md:col-span-4 flex gap-2">
+              <div className="md:col-span-3 flex gap-2">
                 <button
                   type="button"
-                  onClick={() => handleSearch(nameSearch || numberSearch)}
+                  onClick={() => handleSearch(nameSearch)}
                   disabled={isSearching}
                   className="flex-1 bg-amber-500 hover:bg-amber-400 text-black font-black uppercase text-xs tracking-wider py-2.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
                 >
@@ -785,9 +767,9 @@ export default function MonthlySubscriptions() {
             </div>
 
             {/* Member Details Readout */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-border/30">
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 pt-2 border-t border-t-amber-500/10">
               <div>
-                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Shop name</label>
+                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Shop Name</label>
                 <input
                   type="text"
                   placeholder="Enter shop name..."
@@ -804,6 +786,17 @@ export default function MonthlySubscriptions() {
                   placeholder="Enter customer name..."
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
+                  className="w-full bg-secondary/20 border border-border/60 rounded-lg px-3 py-1.5 text-sm font-extrabold text-foreground"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">Phone Number</label>
+                <input
+                  type="text"
+                  placeholder="Enter phone number..."
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
                   className="w-full bg-secondary/20 border border-border/60 rounded-lg px-3 py-1.5 text-sm font-extrabold text-foreground"
                 />
               </div>
